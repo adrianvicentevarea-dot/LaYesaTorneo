@@ -23,6 +23,7 @@
             color: #333; 
         }
 
+        /* MENÚ */
         #nav { 
             width: 280px; 
             background: var(--azul-menu); 
@@ -31,7 +32,6 @@
             flex-direction: column; 
             box-shadow: 2px 0 10px rgba(0,0,0,0.4); 
             flex-shrink: 0;
-            overflow-y: auto;
         }
 
         .title-app { 
@@ -61,6 +61,7 @@
         .btn:hover { background: rgba(255,255,255,0.1); color: white; }
         .btn.active { background: var(--verde-activo); color: white; font-weight: bold; border-left: 5px solid white; }
 
+        /* CONTENIDO */
         #content { flex: 1; padding: 20px; overflow-y: auto; }
 
         .seccion-titulo { 
@@ -92,16 +93,16 @@
         td { padding: 12px 5px; border-bottom: 1px solid #f8f9fa; font-size: 0.95em; }
 
         .pts-bold { color: white; background: var(--azul-oscuro); border-radius: 4px; padding: 2px 6px; font-weight: bold; }
-        .tarjeta-amarilla { width: 12px; height: 18px; background: var(--amarillo); display: inline-block; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+        .tarjeta-box { width: 12px; height: 16px; background: var(--amarillo); display: inline-block; border-radius: 2px; vertical-align: middle; }
         
-        .marcador { font-weight: 800; background: #eee; padding: 4px 8px; border-radius: 4px; }
+        .marcador { font-weight: 800; background: #eee; padding: 4px 10px; border-radius: 4px; min-width: 50px; text-align: center; }
         .hidden { display: none; }
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #nav { width: 100%; height: auto; position: sticky; top: 0; }
             .nav-links { flex-direction: row; overflow-x: auto; }
-            .btn { flex-shrink: 0; padding: 12px 15px; font-size: 0.8em; border-bottom: none; }
+            .btn { flex-shrink: 0; padding: 12px 15px; font-size: 0.75em; border-bottom: none; }
             .btn.active { border-left: none; border-bottom: 4px solid white; }
         }
     </style>
@@ -112,26 +113,21 @@
         <div class="title-app">🏆 Torneo La Yesa</div>
         <div class="nav-links">
             <div id="btn-grupos" class="btn active" onclick="ver('grupos')">📊 Fase de Grupos</div>
-            <div id="btn-elim" class="btn" onclick="ver('elim')">⚔️ Eliminatorias</div>
             <div id="btn-gol" class="btn" onclick="ver('gol')">👟 Goleadores</div>
-            <div id="btn-tar" class="btn" onclick="ver('tar')">🟨 Tarjetas</div>
+            <div id="btn-elim" class="btn" onclick="ver('elim')">⚔️ Eliminatorias</div>
+            <div id="btn-tar" class="btn" onclick="ver('tar')">🟨 Tarjetas Amarillas</div>
         </div>
     </nav>
 
     <main id="content">
         <div id="grupos">
-            <div class="seccion-titulo">Clasificación Grupos</div>
-            <div id="grupos-container">Cargando...</div>
-        </div>
-
-        <div id="elim" class="hidden">
-            <div class="seccion-titulo">Fase Final</div>
-            <div id="elim-container">Cargando...</div>
+            <div class="seccion-titulo">Clasificación</div>
+            <div id="grupos-container">Cargando datos...</div>
         </div>
 
         <div id="gol" class="hidden">
             <div class="seccion-titulo">Pichichi</div>
-            <div class="card" style="max-width: 500px;">
+            <div class="card" style="max-width: 550px;">
                 <table id="tabla-gol">
                     <thead><tr><th>Pos</th><th>Jugador</th><th>Equipo</th><th>Goles</th></tr></thead>
                     <tbody></tbody>
@@ -139,11 +135,23 @@
             </div>
         </div>
 
+        <div id="elim" class="hidden">
+            <div class="seccion-titulo">Fase Final</div>
+            <div id="elim-container" style="max-width: 600px;">Cargando...</div>
+        </div>
+
         <div id="tar" class="hidden">
-            <div class="seccion-titulo">Fair Play</div>
-            <div class="card" style="max-width: 500px;">
+            <div class="seccion-titulo">Sanciones</div>
+            <div class="card" style="max-width: 600px;">
                 <table id="tabla-tar">
-                    <thead><tr><th>Jugador</th><th>Equipo</th><th><div class="tarjeta-amarilla"></div></th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Jugador</th>
+                            <th>Equipo</th>
+                            <th style="text-align:center"><div class="tarjeta-box"></div></th>
+                            <th style="text-align:center">Partidos</th>
+                        </tr>
+                    </thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -155,23 +163,23 @@
 
         async function cargarTodo() {
             try {
-                // Cargar Clasificación Grupos
+                // Grupos
                 const resC = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Clasificacion`);
                 renderClasificacion(await resC.json());
 
-                // Cargar Goleadores
+                // Goleadores
                 const resG = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`);
                 renderGoleadores(await resG.json());
 
-                // Cargar Tarjetas
-                const resT = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`);
-                renderTarjetas(await resT.json());
-
-                // Cargar Eliminatorias
+                // Eliminatorias
                 const resE = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Eliminatorias`);
                 renderEliminatorias(await resE.json());
 
-            } catch (e) { console.error("Error:", e); }
+                // Tarjetas
+                const resT = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`);
+                renderTarjetas(await resT.json());
+
+            } catch (e) { console.error("Error al cargar:", e); }
         }
 
         function renderClasificacion(data) {
@@ -192,22 +200,6 @@
             });
         }
 
-        function renderEliminatorias(data) {
-            const container = document.getElementById('elim-container');
-            container.innerHTML = "";
-            data.forEach(m => {
-                container.innerHTML += `
-                <div class="card">
-                    <small style="color:var(--verde-activo); font-weight:bold">${m.Fase}</small>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px">
-                        <span>${m.Local}</span>
-                        <span class="marcador">${m.GLocal} - ${m.GVisitante}</span>
-                        <span>${m.Visitante}</span>
-                    </div>
-                </div>`;
-            });
-        }
-
         function renderGoleadores(data) {
             data.sort((a, b) => parseInt(b.Goles) - parseInt(a.Goles));
             document.querySelector("#tabla-gol tbody").innerHTML = data.map((j, i) => `
@@ -215,15 +207,36 @@
             `).join('');
         }
 
+        function renderEliminatorias(data) {
+            const container = document.getElementById('elim-container');
+            container.innerHTML = "";
+            data.forEach(m => {
+                container.innerHTML += `
+                <div class="card">
+                    <div style="text-align:center; margin-bottom:10px;"><small style="color:var(--verde-activo); font-weight:bold; text-transform:uppercase;">${m.Fase}</small></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="flex:1; text-align:right; font-weight:bold;">${m.Local}</span>
+                        <span class="marcador" style="margin: 0 15px;">${m.GLocal} - ${m.GVisitante}</span>
+                        <span style="flex:1; text-align:left; font-weight:bold;">${m.Visitante}</span>
+                    </div>
+                </div>`;
+            });
+        }
+
         function renderTarjetas(data) {
             data.sort((a, b) => parseInt(b.Amarillas) - parseInt(a.Amarillas));
             document.querySelector("#tabla-tar tbody").innerHTML = data.map(j => `
-                <tr><td><b>${j.Nombre}</b></td><td style="color:gray">${j.Equipo}</td><td style="font-weight:bold">${j.Amarillas}</td></tr>
+                <tr>
+                    <td><b>${j.Nombre}</b></td>
+                    <td style="color:gray">${j.Equipo}</td>
+                    <td style="font-weight:bold; text-align:center">${j.Amarillas}</td>
+                    <td style="text-align:center; font-weight:bold; color:var(--azul-oscuro)">${j.Partidos || 0}</td>
+                </tr>
             `).join('');
         }
 
         function ver(s) {
-            const secciones = ['grupos', 'elim', 'gol', 'tar'];
+            const secciones = ['grupos', 'gol', 'elim', 'tar'];
             secciones.forEach(sec => {
                 document.getElementById(sec).classList.toggle('hidden', sec !== s);
                 document.getElementById('btn-' + sec).classList.toggle('active', sec === s);
