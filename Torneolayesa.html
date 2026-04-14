@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torneo La Yesa</title>
+    <style>
+        :root { 
+            --p: #1a5276; 
+            --s: #229954; 
+            --bg: #f0f3f4; 
+            --white: #ffffff;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            background: var(--bg); 
+            color: #333; 
+        }
+
+        /* BARRA LATERAL (PC) / MENÚ SUPERIOR (MÓVIL) */
+        #nav { 
+            width: 260px; 
+            background: var(--p); 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2); 
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .title-app { 
+            padding: 30px 20px; 
+            text-align: center; 
+            font-weight: 800; 
+            background: rgba(0,0,0,0.2); 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            font-size: 1.2em;
+        }
+
+        .nav-links { display: flex; flex-direction: column; flex: 1; }
+
+        .btn { 
+            padding: 20px 25px; 
+            cursor: pointer; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.1em;
+        }
+
+        .btn:hover { background: var(--s); }
+        .btn.active { background: var(--s); border-left: 5px solid white; }
+
+        /* ÁREA DE CONTENIDO */
+        #content { flex: 1; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+        .seccion-titulo { 
+            color: var(--p); 
+            font-size: 1.8em; 
+            margin-bottom: 25px; 
+            font-weight: 700; 
+            border-bottom: 4px solid var(--s); 
+            display: inline-block; 
+            padding-bottom: 5px; 
+        }
+
+        /* REJILLA DE GRUPOS */
+        #grupos-container { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 20px; 
+            max-width: 1200px;
+        }
+
+        .card { 
+            background: var(--white); 
+            padding: 15px; 
+            border-radius: 15px; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08); 
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .grupo-titulo { 
+            color: var(--p); 
+            margin: 0 0 15px 0; 
+            font-size: 1.3em; 
+            border-left: 4px solid var(--s);
+            padding-left: 10px;
+        }
+
+        /* TABLAS ESTILO APP */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; color: #95a5a6; font-size: 0.7em; text-transform: uppercase; padding: 10px 5px; border-bottom: 2px solid #f2f2f2; }
+        td { padding: 12px 5px; border-bottom: 1px solid #f8f9fa; font-size: 0.95em; }
+
+        .col-pos { width: 40px; font-weight: bold; color: #bdc3c7; }
+        .col-eq { font-weight: 700; color: #2c3e50; }
+        .col-num { width: 35px; text-align: center; font-weight: 600; }
+        .pts-bold { color: var(--p); background: #ebf5fb; border-radius: 6px; }
+
+        .hidden { display: none; }
+
+        /* --- DISEÑO ESPECÍFICO PARA MÓVIL --- */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            
+            #nav { 
+                width: 100%; 
+                height: auto; 
+                position: sticky; 
+                top: 0; 
+            }
+
+            .title-app { padding: 15px; font-size: 1em; }
+            
+            .nav-links { 
+                flex-direction: row; 
+            }
+
+            .btn { 
+                flex: 1; 
+                justify-content: center; 
+                padding: 15px 5px; 
+                font-size: 0.9em; 
+                border-bottom: none;
+                border-top: 2px solid transparent;
+            }
+            
+            .btn.active { border-left: none; border-top: 4px solid white; }
+
+            #content { padding: 15px; }
+            
+            /* En móvil, los grupos uno debajo de otro para que no se vea minúsculo */
+            #grupos-container { grid-template-columns: 1fr; }
+            
+            .seccion-titulo { font-size: 1.4em; }
+            
+            /* Hacemos las filas más altas en móvil para que sea fácil tocar con el dedo */
+            td { padding: 15px 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav id="nav">
+        <div class="title-app">🏆 Torneo La Yesa</div>
+        <div class="nav-links">
+            <div id="btn-clas" class="btn active" onclick="ver('clas')">📊 Clasificación</div>
+            <div id="btn-gol" class="btn" onclick="ver('gol')">👟 Goleadores</div>
+        </div>
+    </nav>
+
+    <main id="content">
+        <div id="clas">
+            <div class="seccion-titulo">Clasificación Grupos</div>
+            <div id="grupos-container">Cargando...</div>
+        </div>
+
+        <div id="gol" class="hidden">
+            <div class="seccion-titulo">Goleadores</div>
+            <div class="card" style="max-width: 100%;">
+                <table id="tabla-gol">
+                    <thead>
+                        <tr>
+                            <th class="col-pos">Pos</th>
+                            <th>Jugador</th>
+                            <th>Equipo</th>
+                            <th class="col-num">Goles</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg'; 
+
+        async function cargarTodo() {
+            try {
+                const resC = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Clasificacion`);
+                const dataC = await resC.json();
+                renderClasificacion(dataC);
+
+                const resG = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`);
+                const dataG = await resG.json();
+                renderGoleadores(dataG);
+            } catch (e) { console.error(e); }
+        }
+
+        function renderClasificacion(data) {
+            const container = document.getElementById('grupos-container');
+            container.innerHTML = "";
+            const grupos = {};
+
+            data.forEach(item => {
+                if (!grupos[item.Grupo]) grupos[item.Grupo] = [];
+                grupos[item.Grupo].push(item);
+            });
+
+            Object.keys(grupos).sort().forEach(gId => {
+                grupos[gId].sort((a, b) => (parseInt(b.Puntos) - parseInt(a.Puntos)) || (parseInt(b.Diferencia) - parseInt(a.Diferencia)));
+
+                let html = `<div class="card">
+                    <h2 class="grupo-titulo">Grupo ${gId}</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-pos">Pos</th>
+                                <th class="col-eq">Equipo</th>
+                                <th class="col-num">DG</th>
+                                <th class="col-num">PTS</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                
+                grupos[gId].forEach((e, i) => {
+                    html += `<tr>
+                        <td class="col-pos">${i+1}º</td>
+                        <td class="col-eq">${e.Nombre}</td>
+                        <td class="col-num" style="color:#7f8c8d">${e.Diferencia}</td>
+                        <td class="col-num pts-bold">${e.Puntos}</td>
+                    </tr>`;
+                });
+                
+                html += `</tbody></table></div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        function renderGoleadores(data) {
+            data.sort((a, b) => parseInt(b.Goles) - parseInt(a.Goles));
+            const tbody = document.querySelector("#tabla-gol tbody");
+            tbody.innerHTML = data.map((j, i) => `
+                <tr>
+                    <td class="col-pos">${i+1}º</td>
+                    <td class="col-eq">${j.Nombre}</td>
+                    <td style="color:#7f8c8d; font-size:0.85em">${j.Equipo}</td>
+                    <td class="col-num" style="color:var(--s); font-weight:800">${j.Goles}</td>
+                </tr>
+            `).join('');
+        }
+
+        function ver(s) {
+            document.getElementById('clas').classList.toggle('hidden', s !== 'clas');
+            document.getElementById('gol').classList.toggle('hidden', s !== 'gol');
+            document.getElementById('btn-clas').classList.toggle('active', s === 'clas');
+            document.getElementById('btn-gol').classList.toggle('active', s === 'gol');
+        }
+
+        cargarTodo();
+        setInterval(cargarTodo, 15000); 
+    </script>
+</body>
+</html>
