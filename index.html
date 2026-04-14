@@ -8,7 +8,8 @@
         :root { 
             --p: #1a5276; 
             --s: #229954; 
-            --bg: #f0f3f4; 
+            --rojo-fondo: #c0392b; 
+            --rojo-oscuro: #922b21; 
             --white: #ffffff;
         }
 
@@ -17,18 +18,18 @@
             margin: 0; 
             display: flex; 
             height: 100vh; 
-            background: var(--bg); 
+            background: var(--rojo-fondo); 
             color: #333; 
         }
 
-        /* BARRA LATERAL (PC) / MENÚ SUPERIOR (MÓVIL) */
+        /* MENÚ LATERAL / SUPERIOR */
         #nav { 
-            width: 260px; 
-            background: var(--p); 
+            width: 280px; 
+            background: var(--rojo-oscuro); 
             color: white; 
             display: flex; 
             flex-direction: column; 
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2); 
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3); 
             flex-shrink: 0;
             z-index: 100;
         }
@@ -48,31 +49,31 @@
         .btn { 
             padding: 20px 25px; 
             cursor: pointer; 
-            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 15px;
-            font-size: 1.1em;
+            font-size: 1em;
         }
 
-        .btn:hover { background: var(--s); }
-        .btn.active { background: var(--s); border-left: 5px solid white; }
+        .btn:hover { background: rgba(255,255,255,0.1); }
+        .btn.active { background: var(--white); color: var(--rojo-oscuro); font-weight: bold; }
 
-        /* ÁREA DE CONTENIDO */
+        /* CONTENIDO */
         #content { flex: 1; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
         .seccion-titulo { 
-            color: var(--p); 
+            color: var(--white); 
             font-size: 1.8em; 
             margin-bottom: 25px; 
             font-weight: 700; 
-            border-bottom: 4px solid var(--s); 
+            border-bottom: 4px solid var(--white); 
             display: inline-block; 
             padding-bottom: 5px; 
         }
 
-        /* REJILLA DE GRUPOS */
+        /* GRUPOS EN PARALELO (2 COLUMNAS EN PC) */
         #grupos-container { 
             display: grid; 
             grid-template-columns: repeat(2, 1fr); 
@@ -84,67 +85,36 @@
             background: var(--white); 
             padding: 15px; 
             border-radius: 15px; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08); 
-            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2); 
         }
 
         .grupo-titulo { 
-            color: var(--p); 
+            color: var(--rojo-oscuro); 
             margin: 0 0 15px 0; 
             font-size: 1.3em; 
-            border-left: 4px solid var(--s);
+            border-left: 4px solid var(--rojo-fondo);
             padding-left: 10px;
         }
 
-        /* TABLAS ESTILO APP */
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; color: #95a5a6; font-size: 0.7em; text-transform: uppercase; padding: 10px 5px; border-bottom: 2px solid #f2f2f2; }
+        th { text-align: left; color: #7f8c8d; font-size: 0.7em; text-transform: uppercase; padding: 10px 5px; border-bottom: 2px solid #f2f2f2; }
         td { padding: 12px 5px; border-bottom: 1px solid #f8f9fa; font-size: 0.95em; }
 
         .col-pos { width: 40px; font-weight: bold; color: #bdc3c7; }
         .col-eq { font-weight: 700; color: #2c3e50; }
         .col-num { width: 35px; text-align: center; font-weight: 600; }
-        .pts-bold { color: var(--p); background: #ebf5fb; border-radius: 6px; }
+        .pts-bold { color: var(--rojo-oscuro); background: #fdf2f2; border-radius: 6px; }
 
         .hidden { display: none; }
 
-        /* --- DISEÑO ESPECÍFICO PARA MÓVIL --- */
+        /* AJUSTE MÓVIL */
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            
-            #nav { 
-                width: 100%; 
-                height: auto; 
-                position: sticky; 
-                top: 0; 
-            }
-
-            .title-app { padding: 15px; font-size: 1em; }
-            
-            .nav-links { 
-                flex-direction: row; 
-            }
-
-            .btn { 
-                flex: 1; 
-                justify-content: center; 
-                padding: 15px 5px; 
-                font-size: 0.9em; 
-                border-bottom: none;
-                border-top: 2px solid transparent;
-            }
-            
-            .btn.active { border-left: none; border-top: 4px solid white; }
-
-            #content { padding: 15px; }
-            
-            /* En móvil, los grupos uno debajo de otro para que no se vea minúsculo */
+            #nav { width: 100%; height: auto; position: sticky; top: 0; }
+            .nav-links { flex-direction: row; }
+            .btn { flex: 1; justify-content: center; padding: 15px 5px; font-size: 0.85em; text-align: center; }
+            .btn.active { border-bottom: 4px solid var(--rojo-fondo); }
             #grupos-container { grid-template-columns: 1fr; }
-            
-            .seccion-titulo { font-size: 1.4em; }
-            
-            /* Hacemos las filas más altas en móvil para que sea fácil tocar con el dedo */
-            td { padding: 15px 5px; }
         }
     </style>
 </head>
@@ -153,20 +123,20 @@
     <nav id="nav">
         <div class="title-app">🏆 Torneo La Yesa</div>
         <div class="nav-links">
-            <div id="btn-clas" class="btn active" onclick="ver('clas')">📊 Clasificación</div>
+            <div id="btn-clas" class="btn active" onclick="ver('clas')">📊 Clasificación Fase de Grupos</div>
             <div id="btn-gol" class="btn" onclick="ver('gol')">👟 Goleadores</div>
         </div>
     </nav>
 
     <main id="content">
         <div id="clas">
-            <div class="seccion-titulo">Clasificación Grupos</div>
-            <div id="grupos-container">Cargando...</div>
+            <div class="seccion-titulo">Fase de Grupos</div>
+            <div id="grupos-container">Cargando datos...</div>
         </div>
 
         <div id="gol" class="hidden">
             <div class="seccion-titulo">Goleadores</div>
-            <div class="card" style="max-width: 100%;">
+            <div class="card" style="max-width: 600px;">
                 <table id="tabla-gol">
                     <thead>
                         <tr>
@@ -183,6 +153,7 @@
     </main>
 
     <script>
+        // TU ID DE GOOGLE SHEETS
         const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg'; 
 
         async function cargarTodo() {
@@ -194,7 +165,7 @@
                 const resG = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`);
                 const dataG = await resG.json();
                 renderGoleadores(dataG);
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Error cargando datos:", e); }
         }
 
         function renderClasificacion(data) {
@@ -243,6 +214,25 @@
             tbody.innerHTML = data.map((j, i) => `
                 <tr>
                     <td class="col-pos">${i+1}º</td>
+                    <td class="col-eq">${j.Nombre}</td>
+                    <td style="color:#7f8c8d; font-size:0.85em">${j.Equipo}</td>
+                    <td class="col-num" style="color:var(--rojo-fondo); font-weight:800">${j.Goles}</td>
+                </tr>
+            `).join('');
+        }
+
+        function ver(s) {
+            document.getElementById('clas').classList.toggle('hidden', s !== 'clas');
+            document.getElementById('gol').classList.toggle('hidden', s !== 'gol');
+            document.getElementById('btn-clas').classList.toggle('active', s === 'clas');
+            document.getElementById('btn-gol').classList.toggle('active', s === 'gol');
+        }
+
+        cargarTodo();
+        setInterval(cargarTodo, 30000); 
+    </script>
+</body>
+</html>
                     <td class="col-eq">${j.Nombre}</td>
                     <td style="color:#7f8c8d; font-size:0.85em">${j.Equipo}</td>
                     <td class="col-num" style="color:var(--s); font-weight:800">${j.Goles}</td>
