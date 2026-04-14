@@ -6,11 +6,11 @@
     <title>Torneo La Yesa</title>
     <style>
         :root { 
-            --p: #1a5276; 
-            --s: #229954; 
-            --rojo-fondo: #c0392b; 
-            --rojo-oscuro: #922b21; 
+            --azul-oscuro: #1b3a4b; /* El azul marino de la foto */
+            --azul-menu: #142d3b;   /* Un tono más oscuro para el menú */
+            --verde-activo: #229954; 
             --white: #ffffff;
+            --text-muted: #bdc3c7;
         }
 
         body { 
@@ -18,18 +18,18 @@
             margin: 0; 
             display: flex; 
             height: 100vh; 
-            background: var(--rojo-fondo); 
+            background: var(--azul-oscuro); /* FONDO COMO LA FOTO */
             color: #333; 
         }
 
         /* MENÚ LATERAL / SUPERIOR */
         #nav { 
             width: 280px; 
-            background: var(--rojo-oscuro); 
+            background: var(--azul-menu); 
             color: white; 
             display: flex; 
             flex-direction: column; 
-            box-shadow: 2px 0 10px rgba(0,0,0,0.3); 
+            box-shadow: 2px 0 10px rgba(0,0,0,0.4); 
             flex-shrink: 0;
             z-index: 100;
         }
@@ -38,7 +38,7 @@
             padding: 30px 20px; 
             text-align: center; 
             font-weight: 800; 
-            background: rgba(0,0,0,0.2); 
+            background: rgba(0,0,0,0.3); 
             text-transform: uppercase; 
             letter-spacing: 2px;
             font-size: 1.2em;
@@ -49,16 +49,24 @@
         .btn { 
             padding: 20px 25px; 
             cursor: pointer; 
-            border-bottom: 1px solid rgba(255,255,255,0.1); 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 15px;
             font-size: 1em;
+            color: var(--text-muted);
         }
 
-        .btn:hover { background: rgba(255,255,255,0.1); }
-        .btn.active { background: var(--white); color: var(--rojo-oscuro); font-weight: bold; }
+        .btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        
+        /* Estilo del botón activo (Verde como en tu captura) */
+        .btn.active { 
+            background: var(--verde-activo); 
+            color: white; 
+            font-weight: bold; 
+            border-left: 5px solid white;
+        }
 
         /* CONTENIDO */
         #content { flex: 1; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -68,12 +76,12 @@
             font-size: 1.8em; 
             margin-bottom: 25px; 
             font-weight: 700; 
-            border-bottom: 4px solid var(--white); 
+            border-bottom: 4px solid var(--verde-activo); 
             display: inline-block; 
             padding-bottom: 5px; 
         }
 
-        /* GRUPOS EN PARALELO (2 COLUMNAS EN PC) */
+        /* GRUPOS */
         #grupos-container { 
             display: grid; 
             grid-template-columns: repeat(2, 1fr); 
@@ -85,14 +93,14 @@
             background: var(--white); 
             padding: 15px; 
             border-radius: 15px; 
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
         }
 
         .grupo-titulo { 
-            color: var(--rojo-oscuro); 
+            color: var(--azul-oscuro); 
             margin: 0 0 15px 0; 
             font-size: 1.3em; 
-            border-left: 4px solid var(--rojo-fondo);
+            border-left: 4px solid var(--verde-activo);
             padding-left: 10px;
         }
 
@@ -103,17 +111,17 @@
         .col-pos { width: 40px; font-weight: bold; color: #bdc3c7; }
         .col-eq { font-weight: 700; color: #2c3e50; }
         .col-num { width: 35px; text-align: center; font-weight: 600; }
-        .pts-bold { color: var(--rojo-oscuro); background: #fdf2f2; border-radius: 6px; }
+        .pts-bold { color: white; background: var(--azul-oscuro); border-radius: 6px; }
 
         .hidden { display: none; }
 
-        /* AJUSTE MÓVIL */
+        /* MÓVIL */
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #nav { width: 100%; height: auto; position: sticky; top: 0; }
             .nav-links { flex-direction: row; }
-            .btn { flex: 1; justify-content: center; padding: 15px 5px; font-size: 0.85em; text-align: center; }
-            .btn.active { border-bottom: 4px solid var(--rojo-fondo); }
+            .btn { flex: 1; justify-content: center; padding: 15px 5px; font-size: 0.8em; text-align: center; border-bottom: none; }
+            .btn.active { border-left: none; border-bottom: 4px solid white; }
             #grupos-container { grid-template-columns: 1fr; }
         }
     </style>
@@ -131,12 +139,12 @@
     <main id="content">
         <div id="clas">
             <div class="seccion-titulo">Fase de Grupos</div>
-            <div id="grupos-container">Cargando datos...</div>
+            <div id="grupos-container">Cargando...</div>
         </div>
 
         <div id="gol" class="hidden">
             <div class="seccion-titulo">Goleadores</div>
-            <div class="card" style="max-width: 600px;">
+            <div class="card" style="max-width: 500px;">
                 <table id="tabla-gol">
                     <thead>
                         <tr>
@@ -153,7 +161,6 @@
     </main>
 
     <script>
-        // TU ID DE GOOGLE SHEETS
         const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg'; 
 
         async function cargarTodo() {
@@ -165,7 +172,7 @@
                 const resG = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`);
                 const dataG = await resG.json();
                 renderGoleadores(dataG);
-            } catch (e) { console.error("Error cargando datos:", e); }
+            } catch (e) { console.error(e); }
         }
 
         function renderClasificacion(data) {
@@ -216,7 +223,7 @@
                     <td class="col-pos">${i+1}º</td>
                     <td class="col-eq">${j.Nombre}</td>
                     <td style="color:#7f8c8d; font-size:0.85em">${j.Equipo}</td>
-                    <td class="col-num" style="color:var(--rojo-fondo); font-weight:800">${j.Goles}</td>
+                    <td class="col-num" style="color:var(--verde-activo); font-weight:800">${j.Goles}</td>
                 </tr>
             `).join('');
         }
@@ -230,25 +237,6 @@
 
         cargarTodo();
         setInterval(cargarTodo, 30000); 
-    </script>
-</body>
-</html>
-                    <td class="col-eq">${j.Nombre}</td>
-                    <td style="color:#7f8c8d; font-size:0.85em">${j.Equipo}</td>
-                    <td class="col-num" style="color:var(--s); font-weight:800">${j.Goles}</td>
-                </tr>
-            `).join('');
-        }
-
-        function ver(s) {
-            document.getElementById('clas').classList.toggle('hidden', s !== 'clas');
-            document.getElementById('gol').classList.toggle('hidden', s !== 'gol');
-            document.getElementById('btn-clas').classList.toggle('active', s === 'clas');
-            document.getElementById('btn-gol').classList.toggle('active', s === 'gol');
-        }
-
-        cargarTodo();
-        setInterval(cargarTodo, 15000); 
     </script>
 </body>
 </html>
