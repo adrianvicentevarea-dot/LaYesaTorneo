@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo La Yesa - Control Automático</title>
+    <title>Torneo La Yesa - Sistema Automatizado</title>
     <style>
         :root { --azul-oscuro: #1b3a4b; --azul-menu: #142d3b; --verde: #229954; --blanco: #ffffff; --rojo: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--azul-oscuro); color: #333; }
@@ -40,7 +40,7 @@
 
     <main id="content">
         <div id="tar" class="hidden">
-            <div class="seccion-titulo">Sanciones Automáticas</div>
+            <div class="seccion-titulo">Sanciones y PJ</div>
             <div class="card">
                 <table>
                     <thead><tr><th>Jugador</th><th style="text-align: center;">🟨</th><th style="text-align: center;">PJ</th><th>Estado</th></tr></thead>
@@ -49,9 +49,18 @@
             </div>
         </div>
 
+        <div id="gol" class="hidden">
+            <div class="seccion-titulo">Goleadores</div>
+            <div class="card">
+                <table>
+                    <thead><tr><th>Jugador</th><th>Equipo</th><th style="text-align:center;">PJ</th><th style="text-align:center;">Goles</th></tr></thead>
+                    <tbody id="body-gol"></tbody>
+                </table>
+            </div>
+        </div>
+
         <div id="partidos"><div class="seccion-titulo">Resultados</div><div id="partidos-container"></div></div>
         <div id="grupos" class="hidden"><div class="seccion-titulo">Clasificación</div><div id="grupos-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;"></div></div>
-        <div id="gol" class="hidden"><div class="seccion-titulo">Goleadores</div><div class="card"><table><thead><tr><th>Jugador</th><th>Equipo</th><th style="text-align:center;">Goles</th></tr></thead><tbody id="body-gol"></tbody></table></div></div>
     </main>
 
     <script>
@@ -76,10 +85,23 @@
                 });
 
                 renderTarjetas(resT, equipoPJTotal);
-                renderGoleadores(resG);
+                renderGoleadores(resG, equipoPJTotal, resT);
                 renderPartidos(resP);
                 renderClasificacion(resC, equipoPJTotal);
             } catch (e) { console.error(e); }
+        }
+
+        // Función auxiliar para calcular PJ del jugador restando sanciones
+        function calcularPJReal(nombreJugador, nombreEquipo, tarjetasData, equipoPJTotal) {
+            const pjEquipo = equipoPJTotal[nombreEquipo] || 0;
+            const jugador = tarjetasData.find(j => j.Nombre === nombreJugador);
+            if (!jugador) return pjEquipo;
+
+            const amarillas = parseInt(jugador.Amarillas) || 0;
+            // Restamos un partido por cada ciclo de 3 amarillas
+            const sanciones = Math.floor(amarillas / 3);
+            const pjReal = pjEquipo - sanciones;
+            return pjReal < 0 ? 0 : pjReal;
         }
 
         function renderTarjetas(tarjetasData, equipoPJTotal) {
@@ -87,12 +109,9 @@
                 const amarillas = parseInt(j.Amarillas) || 0;
                 const pjEquipo = equipoPJTotal[j.Equipo] || 0;
                 
-                // Lógica de Sanción: Cada 3 amarillas es un partido de castigo
-                let esCicloSancion = (amarillas > 0 && amarillas % 3 === 0);
-                
-                // Si está en ciclo de sanción (3, 6, 9...), se le resta el partido actual al jugador
-                let pjCalculados = esCicloSancion ? (pjEquipo - 1) : pjEquipo;
-                if (pjCalculados < 0) pjCalculados = 0;
+                // Si tiene 3, 6, 9... amarillas está sancionado este partido
+                const esCicloSancion = (amarillas > 0 && amarillas % 3 === 0);
+                const pjJugador = calcularPJReal(j.Nombre, j.Equipo, tarjetasData, equipoPJTotal);
 
                 let estado = esCicloSancion ? 
                     `<span class="status-sancion">⚠️ SANCIONADO</span>` : 
@@ -100,26 +119,27 @@
 
                 return `
                     <tr>
-                        <td>
-                            <span class="dorsal-text">${j.Dorsal || ''}</span>
-                            <b>${j.Nombre}</b><br><small>${j.Equipo}</small>
-                        </td>
+                        <td><span class="dorsal-text">${j.Dorsal || ''}</span><b>${j.Nombre}</b><br><small>${j.Equipo}</small></td>
                         <td style="text-align: center;"><span class="amarilla-box">${amarillas}</span></td>
-                        <td style="text-align: center; font-weight: bold;">${pjCalculados}</td>
+                        <td style="text-align: center; font-weight: bold;">${pjJugador}</td>
                         <td>${estado}</td>
                     </tr>
                 `;
             }).join('');
         }
 
-        function renderGoleadores(data) {
-            document.getElementById("body-gol").innerHTML = data.filter(j => j.Nombre).map(j => `
-                <tr>
-                    <td><span class="dorsal-text">${j.Dorsal || ''}</span>${j.Nombre}</td>
-                    <td>${j.Equipo}</td>
-                    <td style="text-align:center; font-weight:bold; color:var(--verde);">${j.Goles || 0}</td>
-                </tr>
-            `).join('');
+        function renderGoleadores(goleadoresData, equipoPJTotal, tarjetasData) {
+            document.getElementById("body-gol").innerHTML = goleadoresData.filter(j => j.Nombre).map(j => {
+                const pjJugador = calcularPJReal(j.Nombre, j.Equipo, tarjetasData, equipoPJTotal);
+                return `
+                    <tr>
+                        <td><span class="dorsal-text">${j.Dorsal || ''}</span>${j.Nombre}</td>
+                        <td>${j.Equipo}</td>
+                        <td style="text-align:center; font-weight:bold;">${pjJugador}</td>
+                        <td style="text-align:center; font-weight:bold; color:var(--verde);">${j.Goles || 0}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function renderPartidos(data) {
