@@ -3,22 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo La Yesa - Automatización Total</title>
+    <title>Torneo La Yesa - Sistema Automático</title>
     <style>
         :root { --azul-oscuro: #1b3a4b; --azul-menu: #142d3b; --verde: #229954; --blanco: #ffffff; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--azul-oscuro); color: #333; }
+        
+        /* Menú Lateral */
         #nav { width: 220px; background: var(--azul-menu); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
         .btn { padding: 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); color: #bdc3c7; transition: 0.3s; }
+        .btn:hover { background: rgba(255,255,255,0.1); color: white; }
         .btn.active { background: var(--verde); color: white; font-weight: bold; border-left: 5px solid white; }
+        
+        /* Contenedor Principal */
         #content { flex: 1; padding: 20px; overflow-y: auto; }
         .seccion-titulo { color: white; font-size: 1.5em; margin-bottom: 20px; border-bottom: 3px solid var(--verde); display: inline-block; padding-bottom: 5px; }
         .card { background: var(--blanco); border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; }
+        
+        /* Marcador y Tablas */
         .marcador-box { background: var(--azul-oscuro); color: white; padding: 4px 12px; border-radius: 6px; margin: 0 15px; font-weight: 800; font-size: 1.1em; min-width: 45px; text-align: center; }
         table { width: 100%; border-collapse: collapse; background: white; }
         td, th { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        th { color: #7f8c8d; font-size: 0.85em; text-transform: uppercase; }
         .hidden { display: none; }
         .pts { font-weight: bold; color: var(--verde); }
-        .dorsal { background:#eee; padding:2px 6px; border-radius:4px; font-weight:bold; margin-right:8px; font-size: 0.9em; }
+        .dorsal { background:#eee; padding:2px 6px; border-radius:4px; font-weight:bold; margin-right:8px; font-size: 0.9em; color: #333; }
+        .sancionado { color: #e74c3c; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -34,7 +43,7 @@
     <main id="content">
         <div id="partidos">
             <div class="seccion-titulo">Resultados</div>
-            <div id="partidos-container">Cargando...</div>
+            <div id="partidos-container">Cargando datos del torneo...</div>
         </div>
 
         <div id="grupos" class="hidden">
@@ -75,19 +84,20 @@
                     fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json())
                 ]);
 
-                // Lógica de detección: ¿Se ha jugado el partido?
+                // PROCESAMIENTO AUTOMÁTICO DE DATOS
                 const stats = {};
                 resP.forEach(p => {
                     if (!stats[p.Local]) stats[p.Local] = { pts: 0, pj: 0, dg: 0 };
                     if (!stats[p.Visitante]) stats[p.Visitante] = { pts: 0, pj: 0, dg: 0 };
 
-                    // Si hay números en GolesL o GolesV, el partido CUENTA
+                    // Si hay un resultado anotado en GolesL, el partido ha ocurrido
                     if (p.GolesL !== "" && p.GolesL !== undefined) {
                         const gL = parseInt(p.GolesL), gV = parseInt(p.GolesV);
                         stats[p.Local].pj++; 
                         stats[p.Visitante].pj++;
                         stats[p.Local].dg += (gL - gV);
                         stats[p.Visitante].dg += (gV - gL);
+                        
                         if (gL > gV) stats[p.Local].pts += 3;
                         else if (gL < gV) stats[p.Visitante].pts += 3;
                         else { stats[p.Local].pts += 1; stats[p.Visitante].pts += 1; }
@@ -98,14 +108,14 @@
                 renderClasificacion(resC, stats);
                 renderGoleadores(resG, stats);
                 renderTarjetas(resT, stats);
-            } catch (e) { console.error("Error:", e); }
+            } catch (e) { console.error("Error cargando el torneo:", e); }
         }
 
         function renderPartidos(data) {
             document.getElementById('partidos-container').innerHTML = data.map(m => `
                 <div class="card">
                     <div style="text-align:center; padding: 4px; background: #f8f9fa; color: #7f8c8d; font-size: 0.75em; font-weight: bold;">
-                        🕒 ${m.Hora || '--:--'}
+                        🕒 HORA: ${m.Hora || '--:--'}
                     </div>
                     <div style="display:flex; justify-content:center; align-items:center; padding: 15px 10px;">
                         <div style="flex:1; text-align:right; font-weight:700;">${m.Local}</div>
@@ -137,7 +147,7 @@
 
             container.innerHTML = Object.keys(grupos).map(gId => `
                 <div class="card" style="padding:15px;">
-                    <h3 style="margin:0 0 10px 0;">Grupo ${gId}</h3>
+                    <h3 style="margin:0 0 10px 0; color:var(--azul-oscuro);">Grupo ${gId}</h3>
                     <table>
                         <thead><tr><th>Equipo</th><th>PJ</th><th>DG</th><th>PTS</th></tr></thead>
                         <tbody>${grupos[gId].map(e => `<tr><td>${e.Nombre}</td><td>${e.PJ}</td><td>${e.DG}</td><td class="pts">${e.Puntos}</td></tr>`).join('')}</tbody>
@@ -147,34 +157,29 @@
         }
 
         function renderGoleadores(data, stats) {
-            // AQUÍ ESTÁ EL CAMBIO: Los PJ se calculan mirando si el equipo del jugador ha jugado
-            const orden = data.map(j => ({ 
-                ...j, 
-                PJ: stats[j.Equipo]?.pj || 0 
-            })).sort((a,b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
+            const orden = data.map(j => ({ ...j, PJ: stats[j.Equipo]?.pj || 0 }))
+                .sort((a,b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
 
             document.getElementById("body-gol").innerHTML = orden.map(j => `
                 <tr>
                     <td><span class="dorsal">${j.Dorsal || '-'}</span><b>${j.Nombre}</b></td>
-                    <td>${j.Equipo}</td>
-                    <td>${j.PJ}</td> <td class="pts">${j.Goles || 0}</td>
+                    <td>${j.Equipo}</td><td style="text-align:center;">${j.PJ}</td><td class="pts" style="text-align:center;">${j.Goles || 0}</td>
                 </tr>
             `).join('');
         }
 
         function renderTarjetas(data, stats) {
-            const orden = data.map(j => ({ 
-                ...j, 
-                PJ: stats[j.Equipo]?.pj || 0 
-            })).sort((a,b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
+            const orden = data.map(j => ({ ...j, PJ: stats[j.Equipo]?.pj || 0 }))
+                .sort((a,b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
 
             document.getElementById("body-tar").innerHTML = orden.map(j => {
                 const am = parseInt(j.Amarillas) || 0;
                 const sancionado = am > 0 && am % 3 === 0;
                 return `<tr>
                     <td><b>${j.Nombre}</b><br><small>${j.Equipo}</small></td>
-                    <td><span style="background:#f1c40f; padding:2px 6px; border-radius:4px;">${am}</span></td>
-                    <td>${j.PJ}</td> <td style="color:${sancionado ? '#e74c3c' : '#2ecc71'}; font-weight:bold;">${sancionado ? '⚠️ SANCIONADO' : '✅ OK'}</td>
+                    <td><span style="background:#f1c40f; padding:2px 6px; border-radius:4px; font-weight:bold;">${am}</span></td>
+                    <td style="text-align:center;">${j.PJ}</td>
+                    <td class="${sancionado ? 'sancionado' : ''}">${sancionado ? '⚠️ SANCIONADO' : '✅ OK'}</td>
                 </tr>`;
             }).join('');
         }
