@@ -1,73 +1,39 @@
-<style>
-    /* Estilo para el marcador central */
-    .marcador-central {
-        background: #f1f1f1;
-        color: #1b3a4b;
-        font-size: 1.4em;
-        font-weight: 900;
-        padding: 5px 15px;
-        border-radius: 8px;
-        margin: 0 20px;
-        min-width: 50px;
-        text-align: center;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    /* Contenedor de detalles (goles y tarjetas) */
-    .detalles-partido {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 12px;
-        padding-top: 10px;
-        border-top: 1px solid #eee;
-        font-size: 0.9em;
-    }
-
-    .info-equipo {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .info-izq { text-align: right; padding-right: 10px; color: #444; }
-    .info-der { text-align: left; padding-left: 10px; color: #444; }
-</style>
-
-<script>
 function renderPartidos(data) {
     const container = document.getElementById('partidos-container');
-    if(!data.length) return container.innerHTML = "No hay partidos registrados.";
+    if (!data || data.length === 0) {
+        container.innerHTML = "<p style='color:white; text-align:center;'>No hay partidos registrados aún.</p>";
+        return;
+    }
 
     container.innerHTML = data.map(m => `
-        <div class="card">
-            <div style="text-align:center; margin-bottom:8px;">
+        <div class="card" style="margin-bottom: 20px; padding: 20px;">
+            <div style="text-align:center; margin-bottom:10px;">
                 <small style="color:#7f8c8d; font-weight:bold;">🕒 ${m.Hora || '--:--'}</small>
             </div>
             
-            <div style="display:flex; justify-content:center; align-items:center;">
-                <span style="flex:1; text-align:right; font-weight:700; color:#1b3a4b; font-size:1.1em;">
-                    ${m.Local || 'Equipo L'}
-                </span>
+            <div style="display:flex; justify-content:center; align-items:center; margin-bottom: 15px;">
+                <div style="flex:1; text-align:right; font-weight:700; color:#1b3a4b; font-size:1.1em;">
+                    ${m.Local || 'Equipo A'}
+                </div>
                 
-                <div class="marcador-central">
+                <div style="background:#f1f1f1; padding:8px 15px; border-radius:8px; margin:0 20px; min-width:60px; text-align:center; font-weight:900; font-size:1.4em; color:#229954; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
                     ${m.GolesL || 0} - ${m.GolesV || 0}
                 </div>
                 
-                <span style="flex:1; text-align:left; font-weight:700; color:#1b3a4b; font-size:1.1em;">
-                    ${m.Visitante || 'Equipo V'}
-                </span>
+                <div style="flex:1; text-align:left; font-weight:700; color:#1b3a4b; font-size:1.1em;">
+                    ${m.Visitante || 'Equipo B'}
+                </div>
             </div>
 
-            <div class="detalles-partido">
-                <div class="info-equipo info-izq">
-                    ${m.DetalleL || ''}
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed #eee; padding-top:10px; font-size:0.9em;">
+                <div style="flex:1; text-align:right; color:#555; padding-right:15px; font-style: italic;">
+                    ${m.DetalleL && m.DetalleL !== '-' ? m.DetalleL : ''}
                 </div>
                 <div style="width:1px; background:#eee;"></div>
-                <div class="info-equipo info-der">
-                    ${m.DetalleV || ''}
+                <div style="flex:1; text-align:left; color:#555; padding-left:15px; font-style: italic;">
+                    ${m.DetalleV && m.DetalleV !== '-' ? m.DetalleV : ''}
                 </div>
             </div>
         </div>
     `).join('');
 }
-</script>
