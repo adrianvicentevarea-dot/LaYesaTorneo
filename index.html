@@ -3,48 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo La Yesa - Goleadores con Dorsal</title>
+    <title>Torneo La Yesa - Goleadores</title>
     <style>
         :root { --azul-oscuro: #1b3a4b; --azul-menu: #142d3b; --verde: #229954; --blanco: #ffffff; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--azul-oscuro); color: #333; }
-        
-        /* Navegación */
-        #nav { width: 220px; background: var(--azul-menu); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
-        .btn { padding: 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); color: #bdc3c7; transition: 0.3s; }
-        .btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--azul-oscuro); }
+        #nav { width: 220px; background: var(--azul-menu); color: white; display: flex; flex-direction: column; }
+        .btn { padding: 15px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .btn.active { background: var(--verde); color: white; font-weight: bold; border-left: 5px solid white; }
-        
-        /* Contenedor */
         #content { flex: 1; padding: 20px; overflow-y: auto; }
-        .seccion-titulo { color: white; font-size: 1.5em; margin-bottom: 20px; border-bottom: 3px solid var(--verde); display: inline-block; padding-bottom: 5px; }
-        .card { background: var(--blanco); border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; }
-        
-        /* Tabla Goleadores Estilizada */
-        table { width: 100%; border-collapse: collapse; background: white; }
+        .seccion-titulo { color: white; font-size: 1.5em; margin-bottom: 20px; border-bottom: 3px solid var(--verde); display: inline-block; }
+        .card { background: var(--blanco); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
         td, th { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
         th { color: #7f8c8d; font-size: 0.85em; text-transform: uppercase; }
+        .dorsal-tag { background: #eee; padding: 3px 8px; border-radius: 4px; font-weight: bold; margin-right: 12px; color: #333; display: inline-block; min-width: 25px; text-align: center; }
         .hidden { display: none; }
-        
-        /* BURBUJA DEL DORSAL - IMPORTANTE */
-        .dorsal-tag { 
-            background: #eee; 
-            padding: 3px 8px; 
-            border-radius: 4px; 
-            font-weight: bold; 
-            margin-right: 12px; 
-            color: #333; 
-            display: inline-block;
-            min-width: 25px;
-            text-align: center;
-            border: 1px solid #ddd;
-        }
-        .goles-num { font-weight: bold; color: var(--verde); font-size: 1.1em; }
     </style>
 </head>
 <body>
 
     <nav id="nav">
-        <div style="padding: 20px; text-align: center; font-weight: bold; background: rgba(0,0,0,0.2);">🏆 TORNEO LA YESA</div>
+        <div style="padding: 20px; text-align: center; font-weight: bold;">🏆 TORNEO LA YESA</div>
         <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ Partidos</div>
         <div id="btn-gol" class="btn" onclick="ver('gol')">👟 Goleadores</div>
     </nav>
@@ -52,7 +31,7 @@
     <main id="content">
         <div id="partidos">
             <div class="seccion-titulo">Resultados</div>
-            <div id="partidos-container">Cargando...</div>
+            <div id="partidos-container"></div>
         </div>
 
         <div id="gol" class="hidden">
@@ -60,12 +39,7 @@
             <div class="card">
                 <table>
                     <thead>
-                        <tr>
-                            <th>JUGADOR</th>
-                            <th>EQUIPO</th>
-                            <th style="text-align:center;">PJ</th>
-                            <th style="text-align:center;">GOLES</th>
-                        </tr>
+                        <tr><th>JUGADOR</th><th>EQUIPO</th><th style="text-align:center;">PJ</th><th style="text-align:center;">GOLES</th></tr>
                     </thead>
                     <tbody id="body-gol"></tbody>
                 </table>
@@ -78,72 +52,68 @@
 
         async function cargarTodo() {
             try {
-                // Descargamos las pestañas
                 const [resP, resG] = await Promise.all([
                     fetch(`https://opensheet.elk.sh/${SHEET_ID}/Partidos`).then(r => r.json()),
                     fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`).then(r => r.json())
                 ]);
 
-                // 1. Calcular Partidos Jugados (PJ) automáticamente mirando resultados
+                // Cálculo de Partidos Jugados (PJ) automático
                 const stats = {};
                 resP.forEach(p => {
-                    if (!stats[p.Local]) stats[p.Local] = { pj: 0 };
-                    if (!stats[p.Visitante]) stats[p.Visitante] = { pj: 0 };
-                    
-                    // Si hay marcador en GolesL, el partido se cuenta
-                    if (p.GolesL !== "" && p.GolesL !== undefined) {
-                        stats[p.Local].pj++;
-                        stats[p.Visitante].pj++;
+                    if (p.Local && p.Visitante) {
+                        if (!stats[p.Local]) stats[p.Local] = { pj: 0 };
+                        if (!stats[p.Visitante]) stats[p.Visitante] = { pj: 0 };
+                        if (p.GolesL !== "" && p.GolesL !== undefined) {
+                            stats[p.Local].pj++;
+                            stats[p.Visitante].pj++;
+                        }
                     }
                 });
 
                 renderPartidos(resP);
                 renderGoleadores(resG, stats);
-            } catch (e) { console.error("Error al cargar:", e); }
+            } catch (e) { console.error("Error:", e); }
         }
 
         function renderPartidos(data) {
-            document.getElementById('partidos-container').innerHTML = data.map(m => `
-                <div class="card">
-                    <div style="text-align:center; padding: 4px; background: #f8f9fa; color: #7f8c8d; font-size: 0.75em; font-weight: bold;">
-                        🕒 HORA: ${m.Hora || '--:--'}
-                    </div>
-                    <div style="display:flex; justify-content:center; align-items:center; padding: 15px 10px;">
-                        <div style="flex:1; text-align:right; font-weight:700;">${m.Local}</div>
-                        <div style="background:#1b3a4b; color:white; padding:4px 12px; border-radius:6px; margin:0 15px; font-weight:800;">
-                            ${m.GolesL !== "" ? m.GolesL : '-'} - ${m.GolesV !== "" ? m.GolesV : '-'}
+            document.getElementById('partidos-container').innerHTML = data
+                .filter(m => m.Local) // Filtra filas vacías
+                .map(m => `
+                <div class="card" style="margin-bottom:15px; padding:15px;">
+                    <div style="text-align:center; color:#7f8c8d; font-size:0.8em; margin-bottom:10px;">🕒 ${m.Hora || '--:--'}</div>
+                    <div style="display:flex; justify-content:center; align-items:center;">
+                        <div style="flex:1; text-align:right; font-weight:bold;">${m.Local}</div>
+                        <div style="background:#1b3a4b; color:white; padding:5px 15px; border-radius:8px; margin:0 20px;">
+                            ${m.GolesL !== "" ? m.GolesL : '-'} : ${m.GolesV !== "" ? m.GolesV : '-'}
                         </div>
-                        <div style="flex:1; text-align:left; font-weight:700;">${m.Visitante}</div>
+                        <div style="flex:1; text-align:left; font-weight:bold;">${m.Visitante}</div>
                     </div>
                 </div>
             `).join('');
         }
 
         function renderGoleadores(data, stats) {
-            // Ordenar por goles y mapear datos
-            const orden = data.map(j => ({ 
-                ...j, 
-                PJ_Auto: stats[j.Equipo]?.pj || 0 
-            })).sort((a,b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
+            // Filtramos los que no tienen nombre para evitar el "undefined"
+            const filtrados = data.filter(j => j.Nombre && j.Nombre.trim() !== "");
 
-            document.getElementById("body-gol").innerHTML = orden.map(j => `
+            document.getElementById("body-gol").innerHTML = filtrados.map(j => `
                 <tr>
                     <td>
                         <span class="dorsal-tag">${j.Dorsal || '-'}</span>
                         <b>${j.Nombre}</b>
                     </td>
-                    <td>${j.Equipo}</td>
-                    <td style="text-align:center;">${j.PJ_Auto}</td>
-                    <td style="text-align:center;" class="goles-num">${j.Goles || 0}</td>
+                    <td>${j.Equipo || '-'}</td>
+                    <td style="text-align:center;">${stats[j.Equipo]?.pj || 0}</td>
+                    <td style="text-align:center; font-weight:bold; color:#229954;">${j.Goles || 0}</td>
                 </tr>
             `).join('');
         }
 
         function ver(s) {
-            ['partidos', 'gol'].forEach(id => {
-                document.getElementById(id).classList.toggle('hidden', id !== s);
-                document.getElementById('btn-' + id).classList.toggle('active', id === s);
-            });
+            document.getElementById('partidos').classList.toggle('hidden', s !== 'partidos');
+            document.getElementById('gol').classList.toggle('hidden', s !== 'gol');
+            document.getElementById('btn-partidos').classList.toggle('active', s === 'partidos');
+            document.getElementById('btn-gol').classList.toggle('active', s === 'gol');
         }
 
         cargarTodo();
