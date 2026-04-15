@@ -23,9 +23,8 @@
         td, th { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
         th { color: #7f8c8d; font-size: 0.85em; text-transform: uppercase; }
         .hidden { display: none; }
-        .pts { font-weight: bold; color: var(--verde); text-align: center; }
         
-        /* Burbuja del Dorsal */
+        /* Dorsal y Goles */
         .dorsal-tag { 
             background: #eee; 
             padding: 3px 8px; 
@@ -34,11 +33,11 @@
             margin-right: 10px; 
             color: #333; 
             display: inline-block;
-            min-width: 20px;
+            min-width: 25px;
             text-align: center;
         }
-
-        .marcador-box { background: var(--azul-oscuro); color: white; padding: 4px 12px; border-radius: 6px; margin: 0 15px; font-weight: 800; font-size: 1.1em; text-align: center; }
+        .goles-num { font-weight: bold; color: var(--verde); font-size: 1.1em; }
+        .marcador-box { background: var(--azul-oscuro); color: white; padding: 4px 12px; border-radius: 6px; font-weight: 800; }
     </style>
 </head>
 <body>
@@ -66,7 +65,14 @@
             <div class="seccion-titulo">Goleadores</div>
             <div class="card">
                 <table>
-                    <thead><tr><th>Jugador</th><th>Equipo</th><th style="text-align:center;">PJ</th><th style="text-align:center;">Goles</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Jugador</th>
+                            <th>Equipo</th>
+                            <th style="text-align:center;">PJ</th>
+                            <th style="text-align:center;">Goles</th>
+                        </tr>
+                    </thead>
                     <tbody id="body-gol"></tbody>
                 </table>
             </div>
@@ -76,7 +82,14 @@
             <div class="seccion-titulo">Sanciones</div>
             <div class="card">
                 <table>
-                    <thead><tr><th>Jugador</th><th>🟨</th><th style="text-align:center;">PJ</th><th>Estado</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Jugador</th>
+                            <th>🟨</th>
+                            <th style="text-align:center;">PJ</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
                     <tbody id="body-tar"></tbody>
                 </table>
             </div>
@@ -95,12 +108,13 @@
                     fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json())
                 ]);
 
-                // 1. Calcular PJ y Puntos automáticamente desde la pestaña Partidos
+                // 1. Lógica Automática de PJ y Puntos (mirando la pestaña Partidos)
                 const stats = {};
                 resP.forEach(p => {
                     if (!stats[p.Local]) stats[p.Local] = { pts: 0, pj: 0, dg: 0 };
                     if (!stats[p.Visitante]) stats[p.Visitante] = { pts: 0, pj: 0, dg: 0 };
 
+                    // Si hay un número en GolesL, el partido se cuenta como jugado
                     if (p.GolesL !== "" && p.GolesL !== undefined) {
                         const gL = parseInt(p.GolesL), gV = parseInt(p.GolesV);
                         stats[p.Local].pj++; stats[p.Visitante].pj++;
@@ -113,9 +127,9 @@
 
                 renderPartidos(resP);
                 renderClasificacion(resC, stats);
-                renderGoleadores(resG, stats); // El dorsal se procesa aquí
+                renderGoleadores(resG, stats);
                 renderTarjetas(resT, stats);
-            } catch (e) { console.error("Error cargando el torneo:", e); }
+            } catch (e) { console.error("Error:", e); }
         }
 
         function renderPartidos(data) {
@@ -153,17 +167,17 @@
                     <h3 style="margin:0 0 10px 0;">Grupo ${gId}</h3>
                     <table>
                         <thead><tr><th>Equipo</th><th>PJ</th><th>DG</th><th>PTS</th></tr></thead>
-                        <tbody>${grupos[gId].map(e => `<tr><td>${e.Nombre}</td><td>${e.PJ}</td><td>${e.DG}</td><td class="pts">${e.Puntos}</td></tr>`).join('')}</tbody>
+                        <tbody>${grupos[gId].map(e => `<tr><td>${e.Nombre}</td><td>${e.PJ}</td><td>${e.DG}</td><td style="font-weight:bold; color:var(--verde);">${e.Puntos}</td></tr>`).join('')}</tbody>
                     </table>
                 </div>
             `).join('');
         }
 
         function renderGoleadores(data, stats) {
-            // Se lee el 'Dorsal' directamente de la columna C del Excel
+            // Buscamos el Dorsal y calculamos PJ mirando si su equipo ha jugado
             const orden = data.map(j => ({ 
                 ...j, 
-                PJ_Calculado: stats[j.Equipo]?.pj || 0 
+                PJ_Auto: stats[j.Equipo]?.pj || 0 
             })).sort((a,b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
 
             document.getElementById("body-gol").innerHTML = orden.map(j => `
@@ -173,14 +187,14 @@
                         <b>${j.Nombre}</b>
                     </td>
                     <td>${j.Equipo}</td>
-                    <td style="text-align:center;">${j.PJ_Calculado}</td>
-                    <td class="pts" style="text-align:center;">${j.Goles || 0}</td>
+                    <td style="text-align:center;">${j.PJ_Auto}</td>
+                    <td style="text-align:center;" class="goles-num">${j.Goles || 0}</td>
                 </tr>
             `).join('');
         }
 
         function renderTarjetas(data, stats) {
-            const orden = data.map(j => ({ ...j, PJ_Calculado: stats[j.Equipo]?.pj || 0 }))
+            const orden = data.map(j => ({ ...j, PJ_Auto: stats[j.Equipo]?.pj || 0 }))
                 .sort((a,b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
 
             document.getElementById("body-tar").innerHTML = orden.map(j => {
@@ -189,8 +203,8 @@
                 return `<tr>
                     <td><b>${j.Nombre}</b><br><small>${j.Equipo}</small></td>
                     <td><span style="background:#f1c40f; padding:2px 6px; border-radius:4px; font-weight:bold;">${am}</span></td>
-                    <td style="text-align:center;">${j.PJ_Calculado}</td>
-                    <td style="color:${sancionado ? '#e74c3c' : '#2ecc71'}; font-weight:bold;">${sancionado ? '⚠️ SANCIONADO' : '✅ OK'}</td>
+                    <td style="text-align:center;">${j.PJ_Auto}</td>
+                    <td style="color:${sancionado ? '#e74c3c' : '#2ecc71'}; font-weight:bold;">${sancionado ? '⚠️ SANCIONADO' : '✅ DISPONIBLE'}</td>
                 </tr>`;
             }).join('');
         }
