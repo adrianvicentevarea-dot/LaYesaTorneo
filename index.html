@@ -11,7 +11,6 @@
         /* Navegación */
         #nav { width: 220px; background: var(--azul-menu); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
         .btn { padding: 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); color: #bdc3c7; transition: 0.3s; }
-        .btn:hover { background: rgba(255,255,255,0.1); color: white; }
         .btn.active { background: var(--verde); color: white; font-weight: bold; border-left: 5px solid white; }
         
         /* Contenido */
@@ -19,15 +18,27 @@
         .seccion-titulo { color: white; font-size: 1.5em; margin-bottom: 20px; border-bottom: 3px solid var(--verde); display: inline-block; padding-bottom: 5px; }
         .card { background: var(--blanco); border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; }
         
-        /* Tablas y Marcadores */
-        .marcador-box { background: var(--azul-oscuro); color: white; padding: 4px 12px; border-radius: 6px; margin: 0 15px; font-weight: 800; font-size: 1.1em; min-width: 45px; text-align: center; }
+        /* Estilos de Tabla */
         table { width: 100%; border-collapse: collapse; background: white; }
         td, th { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
         th { color: #7f8c8d; font-size: 0.85em; text-transform: uppercase; }
         .hidden { display: none; }
         .pts { font-weight: bold; color: var(--verde); text-align: center; }
-        .dorsal { background:#eee; padding:2px 6px; border-radius:4px; font-weight:bold; margin-right:8px; font-size: 0.9em; color: #333; }
-        .sancionado { color: #e74c3c; font-weight: bold; }
+        
+        /* Burbuja del Dorsal */
+        .dorsal-tag { 
+            background: #eee; 
+            padding: 3px 8px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            margin-right: 10px; 
+            color: #333; 
+            display: inline-block;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .marcador-box { background: var(--azul-oscuro); color: white; padding: 4px 12px; border-radius: 6px; margin: 0 15px; font-weight: 800; font-size: 1.1em; text-align: center; }
     </style>
 </head>
 <body>
@@ -43,7 +54,7 @@
     <main id="content">
         <div id="partidos">
             <div class="seccion-titulo">Resultados</div>
-            <div id="partidos-container">Cargando...</div>
+            <div id="partidos-container">Cargando datos...</div>
         </div>
 
         <div id="grupos" class="hidden">
@@ -55,14 +66,7 @@
             <div class="seccion-titulo">Goleadores</div>
             <div class="card">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Jugador</th>
-                            <th>Equipo</th>
-                            <th style="text-align:center;">PJ</th>
-                            <th style="text-align:center;">Goles</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Jugador</th><th>Equipo</th><th style="text-align:center;">PJ</th><th style="text-align:center;">Goles</th></tr></thead>
                     <tbody id="body-gol"></tbody>
                 </table>
             </div>
@@ -72,14 +76,7 @@
             <div class="seccion-titulo">Sanciones</div>
             <div class="card">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Jugador</th>
-                            <th>🟨</th>
-                            <th style="text-align:center;">PJ</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Jugador</th><th>🟨</th><th style="text-align:center;">PJ</th><th>Estado</th></tr></thead>
                     <tbody id="body-tar"></tbody>
                 </table>
             </div>
@@ -98,47 +95,39 @@
                     fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json())
                 ]);
 
-                // LÓGICA AUTOMÁTICA: Analizar partidos jugados y puntos
-                const statsEquipos = {};
+                // 1. Calcular PJ y Puntos automáticamente desde la pestaña Partidos
+                const stats = {};
                 resP.forEach(p => {
-                    if (!statsEquipos[p.Local]) statsEquipos[p.Local] = { pts: 0, pj: 0, dg: 0 };
-                    if (!statsEquipos[p.Visitante]) statsEquipos[p.Visitante] = { pts: 0, pj: 0, dg: 0 };
+                    if (!stats[p.Local]) stats[p.Local] = { pts: 0, pj: 0, dg: 0 };
+                    if (!stats[p.Visitante]) stats[p.Visitante] = { pts: 0, pj: 0, dg: 0 };
 
-                    // Si hay resultado en GolesL, el partido se ha jugado
                     if (p.GolesL !== "" && p.GolesL !== undefined) {
                         const gL = parseInt(p.GolesL), gV = parseInt(p.GolesV);
-                        statsEquipos[p.Local].pj++; 
-                        statsEquipos[p.Visitante].pj++;
-                        statsEquipos[p.Local].dg += (gL - gV);
-                        statsEquipos[p.Visitante].dg += (gV - gL);
-                        
-                        if (gL > gV) statsEquipos[p.Local].pts += 3;
-                        else if (gL < gV) statsEquipos[p.Visitante].pts += 3;
-                        else { statsEquipos[p.Local].pts += 1; statsEquipos[p.Visitante].pts += 1; }
+                        stats[p.Local].pj++; stats[p.Visitante].pj++;
+                        stats[p.Local].dg += (gL - gV); stats[p.Visitante].dg += (gV - gL);
+                        if (gL > gV) stats[p.Local].pts += 3;
+                        else if (gL < gV) stats[p.Visitante].pts += 3;
+                        else { stats[p.Local].pts += 1; stats[p.Visitante].pts += 1; }
                     }
                 });
 
                 renderPartidos(resP);
-                renderClasificacion(resC, statsEquipos);
-                renderGoleadores(resG, statsEquipos);
-                renderTarjetas(resT, statsEquipos);
-            } catch (e) { console.error("Error cargando datos:", e); }
+                renderClasificacion(resC, stats);
+                renderGoleadores(resG, stats); // El dorsal se procesa aquí
+                renderTarjetas(resT, stats);
+            } catch (e) { console.error("Error cargando el torneo:", e); }
         }
 
         function renderPartidos(data) {
             document.getElementById('partidos-container').innerHTML = data.map(m => `
                 <div class="card">
                     <div style="text-align:center; padding: 4px; background: #f8f9fa; color: #7f8c8d; font-size: 0.75em; font-weight: bold;">
-                        🕒 HORA: ${m.Hora || '--:--'}
+                        🕒 ${m.Hora || '--:--'}
                     </div>
                     <div style="display:flex; justify-content:center; align-items:center; padding: 15px 10px;">
                         <div style="flex:1; text-align:right; font-weight:700;">${m.Local}</div>
                         <div class="marcador-box">${m.GolesL !== "" ? m.GolesL : '-'} - ${m.GolesV !== "" ? m.GolesV : '-'}</div>
                         <div style="flex:1; text-align:left; font-weight:700;">${m.Visitante}</div>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; padding: 8px 12px; border-top: 1px solid #eee; font-size: 0.8em; color: #555;">
-                        <div style="flex:1; text-align:right; padding-right:10px; border-right: 1px solid #eee;">${m.DetalleL || ''}</div>
-                        <div style="flex:1; text-align:left; padding-left:10px;">${m.DetalleV || ''}</div>
                     </div>
                 </div>
             `).join('');
@@ -147,21 +136,21 @@
         function renderClasificacion(data, stats) {
             const container = document.getElementById('grupos-container');
             const grupos = {};
-            const equiposFiltrados = data.map(e => ({
+            const equipos = data.map(e => ({
                 ...e, 
                 Puntos: stats[e.Nombre]?.pts || 0, 
                 PJ: stats[e.Nombre]?.pj || 0, 
                 DG: stats[e.Nombre]?.dg || 0
             })).sort((a,b) => b.Puntos - a.Puntos || b.DG - a.DG);
 
-            equiposFiltrados.forEach(e => {
+            equipos.forEach(e => {
                 if (!grupos[e.Grupo]) grupos[e.Grupo] = [];
                 grupos[e.Grupo].push(e);
             });
 
             container.innerHTML = Object.keys(grupos).map(gId => `
                 <div class="card" style="padding:15px;">
-                    <h3 style="margin:0 0 10px 0; color:var(--azul-oscuro);">Grupo ${gId}</h3>
+                    <h3 style="margin:0 0 10px 0;">Grupo ${gId}</h3>
                     <table>
                         <thead><tr><th>Equipo</th><th>PJ</th><th>DG</th><th>PTS</th></tr></thead>
                         <tbody>${grupos[gId].map(e => `<tr><td>${e.Nombre}</td><td>${e.PJ}</td><td>${e.DG}</td><td class="pts">${e.Puntos}</td></tr>`).join('')}</tbody>
@@ -171,36 +160,37 @@
         }
 
         function renderGoleadores(data, stats) {
-            // Se muestra el dorsal y el PJ se calcula solo basándose en el equipo
-            const ordenados = data.map(j => ({ 
+            // Se lee el 'Dorsal' directamente de la columna C del Excel
+            const orden = data.map(j => ({ 
                 ...j, 
-                PJ_Auto: stats[j.Equipo]?.pj || 0 
+                PJ_Calculado: stats[j.Equipo]?.pj || 0 
             })).sort((a,b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
 
-            document.getElementById("body-gol").innerHTML = ordenados.map(j => `
+            document.getElementById("body-gol").innerHTML = orden.map(j => `
                 <tr>
-                    <td><span class="dorsal">${j.Dorsal || '-'}</span><b>${j.Nombre}</b></td>
+                    <td>
+                        <span class="dorsal-tag">${j.Dorsal || '-'}</span>
+                        <b>${j.Nombre}</b>
+                    </td>
                     <td>${j.Equipo}</td>
-                    <td style="text-align:center;">${j.PJ_Auto}</td>
+                    <td style="text-align:center;">${j.PJ_Calculado}</td>
                     <td class="pts" style="text-align:center;">${j.Goles || 0}</td>
                 </tr>
             `).join('');
         }
 
         function renderTarjetas(data, stats) {
-            const ordenadas = data.map(j => ({ 
-                ...j, 
-                PJ_Auto: stats[j.Equipo]?.pj || 0 
-            })).sort((a,b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
+            const orden = data.map(j => ({ ...j, PJ_Calculado: stats[j.Equipo]?.pj || 0 }))
+                .sort((a,b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
 
-            document.getElementById("body-tar").innerHTML = ordenadas.map(j => {
+            document.getElementById("body-tar").innerHTML = orden.map(j => {
                 const am = parseInt(j.Amarillas) || 0;
                 const sancionado = am > 0 && am % 3 === 0;
                 return `<tr>
                     <td><b>${j.Nombre}</b><br><small>${j.Equipo}</small></td>
                     <td><span style="background:#f1c40f; padding:2px 6px; border-radius:4px; font-weight:bold;">${am}</span></td>
-                    <td style="text-align:center;">${j.PJ_Auto}</td>
-                    <td class="${sancionado ? 'sancionado' : ''}">${sancionado ? '⚠️ SANCIONADO' : '✅ OK'}</td>
+                    <td style="text-align:center;">${j.PJ_Calculado}</td>
+                    <td style="color:${sancionado ? '#e74c3c' : '#2ecc71'}; font-weight:bold;">${sancionado ? '⚠️ SANCIONADO' : '✅ OK'}</td>
                 </tr>`;
             }).join('');
         }
