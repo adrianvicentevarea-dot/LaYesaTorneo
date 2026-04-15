@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo La Yesa - Sistema Total</title>
+    <title>Torneo La Yesa - Control Automático</title>
     <style>
         :root { --azul-oscuro: #1b3a4b; --azul-menu: #142d3b; --verde: #229954; --blanco: #ffffff; --rojo: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--azul-oscuro); color: #333; }
@@ -50,21 +50,8 @@
         </div>
 
         <div id="partidos"><div class="seccion-titulo">Resultados</div><div id="partidos-container"></div></div>
-        
-        <div id="grupos" class="hidden">
-            <div class="seccion-titulo">Clasificación</div>
-            <div id="grupos-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;"></div>
-        </div>
-
-        <div id="gol" class="hidden">
-            <div class="seccion-titulo">Goleadores</div>
-            <div class="card">
-                <table>
-                    <thead><tr><th>Jugador</th><th>Equipo</th><th style="text-align:center;">Goles</th></tr></thead>
-                    <tbody id="body-gol"></tbody>
-                </table>
-            </div>
-        </div>
+        <div id="grupos" class="hidden"><div class="seccion-titulo">Clasificación</div><div id="grupos-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;"></div></div>
+        <div id="gol" class="hidden"><div class="seccion-titulo">Goleadores</div><div class="card"><table><thead><tr><th>Jugador</th><th>Equipo</th><th style="text-align:center;">Goles</th></tr></thead><tbody id="body-gol"></tbody></table></div></div>
     </main>
 
     <script>
@@ -79,7 +66,7 @@
                     fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json())
                 ]);
 
-                // 1. Calcular PJ totales por EQUIPO
+                // 1. Calcular Partidos Totales del Equipo
                 const equipoPJTotal = {};
                 resP.forEach(p => {
                     if (p.Local && p.GolesL !== "" && p.GolesL !== undefined) {
@@ -100,26 +87,16 @@
                 const amarillas = parseInt(j.Amarillas) || 0;
                 const pjEquipo = equipoPJTotal[j.Equipo] || 0;
                 
-                // Lógica: Si el jugador ha llegado a un múltiplo de 3 amarillas,
-                // se asume que ha jugado 1 partido menos que su equipo (el de sanción).
-                let sancionesCumplidas = Math.floor(amarillas / 3);
-                let pjCalculados = pjEquipo - sancionesCumplidas;
+                // Lógica de Sanción: Cada 3 amarillas es un partido de castigo
+                let esCicloSancion = (amarillas > 0 && amarillas % 3 === 0);
+                
+                // Si está en ciclo de sanción (3, 6, 9...), se le resta el partido actual al jugador
+                let pjCalculados = esCicloSancion ? (pjEquipo - 1) : pjEquipo;
                 if (pjCalculados < 0) pjCalculados = 0;
 
-                let estado = `<span class="status-ok">✅ DISPONIBLE</span>`;
-                
-                // Si el equipo acaba de jugar el partido donde el jugador llegó al límite
-                // (Es decir, si las amarillas/3 coinciden exactamente con la "ausencia" en el campo)
-                if (amarillas > 0 && amarillas % 3 === 0) {
-                    // Aquí la lógica es: si el jugador TIENE la 3ª tarjeta pero su equipo 
-                    // NO ha jugado aún el siguiente partido para que él descanse.
-                    // Para simplificar: el admin sube la 3ª tarjeta -> aparece SANCIONADO -> el equipo juega -> PJ Equipo sube -> queda DISPONIBLE.
-                    estado = `<span class="status-sancion">⚠️ SANCIONADO</span>`;
-                    
-                    // Si ya pasó un partido desde la sanción (asumiendo que el admin no borra tarjetas)
-                    // En este sistema, mientras tenga 3, 6, 9... estará sancionado hasta que el ciclo de amarillas cambie 
-                    // o se gestione manualmente el "reset" de amarillas tras cumplir.
-                }
+                let estado = esCicloSancion ? 
+                    `<span class="status-sancion">⚠️ SANCIONADO</span>` : 
+                    `<span class="status-ok">✅ DISPONIBLE</span>`;
 
                 return `
                     <tr>
