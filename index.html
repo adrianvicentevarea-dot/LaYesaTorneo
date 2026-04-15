@@ -1,47 +1,121 @@
-<style>
-    /* Estilos nuevos para los detalles del partido */
-    .detalles-container {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px dashed #eee;
-        font-size: 0.85em;
-    }
-    .col-detalle { flex: 1; display: flex; flex-direction: column; }
-    .izq { text-align: right; padding-right: 15px; color: #555; }
-    .der { text-align: left; padding-left: 15px; color: #555; }
-    .evento-gol { color: #229954; font-weight: 600; }
-    .evento-tarjeta { color: #f1c40f; font-weight: 600; }
-</style>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torneo La Yesa</title>
+    <style>
+        :root { 
+            --azul-oscuro: #1b3a4b; --azul-menu: #142d3b; --verde-activo: #229954; 
+            --amarillo: #f1c40f; --rojo-alerta: #e74c3c; --white: #ffffff;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--azul-oscuro); color: #333; }
+        #nav { width: 250px; background: var(--azul-menu); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+        .btn { padding: 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.1); color: #bdc3c7; }
+        .btn.active { background: var(--verde-activo); color: white; border-left: 5px solid white; }
+        #content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card { background: var(--white); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .seccion-titulo { color: white; font-size: 1.5em; margin-bottom: 20px; border-bottom: 3px solid var(--verde-activo); display: inline-block; }
+        .detalles-container { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee; font-size: 0.85em; }
+        .col-detalle { flex: 1; }
+        .vs-text { color: var(--verde-activo); font-weight: 800; margin: 0 15px; }
+        .hidden { display: none; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 0.8em; color: #7f8c8d; border-bottom: 2px solid #eee; }
+        td { padding: 10px 5px; border-bottom: 1px solid #f8f9fa; }
+        .sancionado { color: var(--rojo-alerta); font-weight: bold; background: #fdedec; padding: 2px 5px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <nav id="nav">
+        <div style="padding: 20px; text-align: center; font-weight: bold;">🏆 Torneo La Yesa</div>
+        <div class="btn active" id="btn-partidos" onclick="ver('partidos')">⚽ Partidos</div>
+        <div class="btn" id="btn-grupos" onclick="ver('grupos')">📊 Clasificación</div>
+        <div class="btn" id="btn-gol" onclick="ver('gol')">👟 Goleadores</div>
+        <div class="btn" id="btn-tar" onclick="ver('tar')">🟨 Tarjetas</div>
+    </nav>
 
-<script>
-function renderPartidos(data) {
-    const container = document.getElementById('partidos-container');
-    container.innerHTML = data.map(m => `
-        <div class="card">
-            <div style="text-align:center; margin-bottom:10px;">
-                <small style="color:#7f8c8d; font-weight:bold;">🕒 ${m.Hora || 'TBD'}</small>
-            </div>
-            
-            <div style="display:flex; justify-content:center; align-items:center;">
-                <span style="flex:1; text-align:right; font-weight:700; color:var(--azul-oscuro); font-size:1.1em;">${m.Local}</span>
-                <span class="vs-text">VS</span>
-                <span style="flex:1; text-align:left; font-weight:700; color:var(--azul-oscuro); font-size:1.1em;">${m.Visitante}</span>
-            </div>
-
-            <div class="detalles-container">
-                <div class="col-detalle izq">
-                    ${m.GolesLocal && m.GolesLocal !== '-' ? `<span class="evento-gol">⚽ ${m.GolesLocal}</span>` : ''}
-                    ${m.TarjetasLocal && m.TarjetasLocal !== '-' ? `<span class="evento-tarjeta">🟨 ${m.TarjetasLocal}</span>` : ''}
-                </div>
-
-                <div class="col-detalle der">
-                    ${m.GolesVisitante && m.GolesVisitante !== '-' ? `<span class="evento-gol">${m.GolesVisitante} ⚽</span>` : ''}
-                    ${m.TarjetasVisitante && m.TarjetasVisitante !== '-' ? `<span class="evento-tarjeta">${m.TarjetasVisitante} 🟨</span>` : ''}
-                </div>
-            </div>
+    <main id="content">
+        <div id="partidos">
+            <div class="seccion-titulo">Resultados y Goles</div>
+            <div id="partidos-container">Cargando...</div>
         </div>
-    `).join('');
-}
-</script>
+        <div id="grupos" class="hidden">
+            <div class="seccion-titulo">Clasificación</div>
+            <div id="grupos-container">Cargando...</div>
+        </div>
+        <div id="gol" class="hidden">
+            <div class="seccion-titulo">Goleadores</div>
+            <div class="card"><table id="tabla-gol"><thead><tr><th>Jugador</th><th>Goles</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div id="tar" class="hidden">
+            <div class="seccion-titulo">Tarjetas y Sanciones</div>
+            <div class="card"><table id="tabla-tar"><thead><tr><th>Jugador</th><th>Amarillas</th><th>Estado</th></tr></thead><tbody></tbody></table></div>
+        </div>
+    </main>
+
+    <script>
+        const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg';
+
+        async function cargarDatos() {
+            try {
+                const [p, c, g, t] = await Promise.all([
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Partidos`).then(r => r.json()),
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Clasificacion`).then(r => r.json()),
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`).then(r => r.json()),
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json())
+                ]);
+                renderPartidos(p);
+                renderTarjetas(t);
+                // (Otras funciones de renderizado aquí...)
+            } catch (e) { document.getElementById('partidos-container').innerHTML = "Error al conectar con el Excel. Revisa los nombres de las pestañas."; }
+        }
+
+        function renderPartidos(data) {
+            const container = document.getElementById('partidos-container');
+            if(!data.length) return container.innerHTML = "No hay partidos registrados.";
+            container.innerHTML = data.map(m => `
+                <div class="card">
+                    <div style="text-align:center; margin-bottom:5px;"><small>🕒 ${m.Hora || '--:--'}</small></div>
+                    <div style="display:flex; justify-content:center; align-items:center; font-weight:bold;">
+                        <span>${m.Local || 'Equipo'}</span>
+                        <span class="vs-text">VS</span>
+                        <span>${m.Visitante || 'Equipo'}</span>
+                    </div>
+                    <div class="detalles-container">
+                        <div class="col-detalle" style="text-align:right; padding-right:10px; border-right:1px solid #eee;">
+                            <div style="color:var(--verde-activo)">⚽ ${m.GolesLocal || ''}</div>
+                            <div style="color:var(--amarillo)">🟨 ${m.TarjetasLocal || ''}</div>
+                        </div>
+                        <div class="col-detalle" style="padding-left:10px;">
+                            <div style="color:var(--verde-activo)">${m.GolesVisitante || ''} ⚽</div>
+                            <div style="color:var(--amarillo)">${m.TarjetasVisitante || ''} 🟨</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderTarjetas(data) {
+            const tbody = document.querySelector("#tabla-tar tbody");
+            tbody.innerHTML = data.map(j => {
+                const am = parseInt(j.Amarillas) || 0;
+                const sancion = am > 0 && am % 3 === 0;
+                return `<tr>
+                    <td><b>${j.Nombre || '---'}</b><br><small>${j.Equipo || ''}</small></td>
+                    <td style="text-align:center;"><span class="${sancion ? 'sancionado' : ''}">${am}</span></td>
+                    <td>${sancion ? '⚠️ Sancionado' : '✅ Ok'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function ver(s) {
+            ['partidos','grupos','gol','tar'].forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', id !== s);
+                document.getElementById('btn-'+id).classList.toggle('active', id === s);
+            });
+        }
+        cargarDatos();
+    </script>
+</body>
+</html>
