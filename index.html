@@ -1,171 +1,115 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo La Yesa</title>
-    <style>
-        :root { --azul-oscuro: #1b3a4b; --azul-menu: #142d3b; --verde: #229954; --blanco: #ffffff; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--azul-oscuro); color: #333; }
-        
-        /* Menú Lateral */
-        #nav { width: 220px; background: var(--azul-menu); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
-        .btn { padding: 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); color: #bdc3c7; transition: 0.3s; }
-        .btn:hover { background: rgba(255,255,255,0.1); color: white; }
-        .btn.active { background: var(--verde); color: white; font-weight: bold; border-left: 5px solid white; }
-        
-        /* Contenedor Principal */
-        #content { flex: 1; padding: 20px; overflow-y: auto; }
-        .seccion-titulo { color: white; font-size: 1.5em; margin-bottom: 20px; border-bottom: 3px solid var(--verde); display: inline-block; padding-bottom: 5px; }
-        .card { background: var(--blanco); border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; }
-        
-        /* Marcador */
-        .marcador-box { background: var(--azul-oscuro); color: white; padding: 4px 12px; border-radius: 6px; margin: 0 15px; font-weight: 800; font-size: 1.1em; min-width: 45px; text-align: center; }
+// ... (Mantén el resto del HTML y CSS igual, solo sustituye el <script>)
 
-        /* Tablas */
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; }
-        td, th { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
-        th { color: #7f8c8d; font-size: 0.85em; text-transform: uppercase; }
-        .hidden { display: none; }
-        .pts { font-weight: bold; color: var(--verde); }
-    </style>
-</head>
-<body>
+<script>
+    const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg';
 
-    <nav id="nav">
-        <div style="padding: 20px; text-align: center; font-weight: bold; background: rgba(0,0,0,0.2);">🏆 TORNEO LA YESA</div>
-        <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ Partidos</div>
-        <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 Clasificación</div>
-        <div id="btn-gol" class="btn" onclick="ver('gol')">👟 Goleadores</div>
-        <div id="btn-tar" class="btn" onclick="ver('tar')">🟨 Tarjetas</div>
-    </nav>
+    async function cargarTodo() {
+        try {
+            const [resP, resC, resG, resT] = await Promise.all([
+                fetch(`https://opensheet.elk.sh/${SHEET_ID}/Partidos`).then(r => r.json()),
+                fetch(`https://opensheet.elk.sh/${SHEET_ID}/Clasificacion`).then(r => r.json()),
+                fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`).then(r => r.json()),
+                fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json())
+            ]);
 
-    <main id="content">
-        <div id="partidos">
-            <div class="seccion-titulo">Resultados</div>
-            <div id="partidos-container">Cargando...</div>
-        </div>
+            // Procesar lógica automática
+            const estadisticasEquipos = calcularEstadisticas(resP);
+            
+            renderPartidos(resP);
+            renderClasificacion(resC, estadisticasEquipos);
+            renderGoleadores(resG, estadisticasEquipos);
+            renderTarjetas(resT, estadisticasEquipos);
+        } catch (e) { console.error("Error:", e); }
+    }
 
-        <div id="grupos" class="hidden">
-            <div class="seccion-titulo">Clasificación (por Puntos)</div>
-            <div id="grupos-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;"></div>
-        </div>
+    function calcularEstadisticas(partidos) {
+        const stats = {};
+        partidos.forEach(p => {
+            const local = p.Local;
+            const visit = p.Visitante;
+            const gL = parseInt(p.GolesL);
+            const gV = parseInt(p.GolesV);
 
-        <div id="gol" class="hidden">
-            <div class="seccion-titulo">Pichichi (por Goles)</div>
-            <div class="card">
-                <table id="tabla-gol">
-                    <thead><tr><th>Jugador</th><th>Equipo</th><th>Goles</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
+            if (!stats[local]) stats[local] = { pts: 0, pj: 0, dg: 0 };
+            if (!stats[visit]) stats[visit] = { pts: 0, pj: 0, dg: 0 };
 
-        <div id="tar" class="hidden">
-            <div class="seccion-titulo">Sanciones (por Amarillas)</div>
-            <div class="card">
+            // Solo contar si hay resultado puesto (GolesL no está vacío)
+            if (p.GolesL !== "" && p.GolesL !== undefined) {
+                stats[local].pj++;
+                stats[visit].pj++;
+                stats[local].dg += (gL - gV);
+                stats[visit].dg += (gV - gL);
+
+                if (gL > gV) stats[local].pts += 3;
+                else if (gL < gV) stats[visit].pts += 3;
+                else { stats[local].pts += 1; stats[visit].pts += 1; }
+            }
+        });
+        return stats;
+    }
+
+    function renderClasificacion(data, stats) {
+        const container = document.getElementById('grupos-container');
+        const grupos = {};
+
+        // Unir datos del Excel con cálculos automáticos
+        const dataProcesada = data.map(e => ({
+            ...e,
+            Puntos: stats[e.Nombre]?.pts || 0,
+            PJ: stats[e.Nombre]?.pj || 0,
+            Diferencia: stats[e.Nombre]?.dg || 0
+        }));
+
+        // Ordenar por puntos
+        dataProcesada.sort((a, b) => b.Puntos - a.Puntos);
+
+        dataProcesada.forEach(item => {
+            if (!grupos[item.Grupo]) grupos[item.Grupo] = [];
+            grupos[item.Grupo].push(item);
+        });
+
+        container.innerHTML = Object.keys(grupos).map(gId => `
+            <div class="card" style="padding:15px;">
+                <h3 style="margin:0 0 10px 0; color:var(--azul-oscuro);">Grupo ${gId}</h3>
                 <table>
-                    <thead><tr><th>Jugador</th><th>🟨</th><th>PJ</th><th>Estado</th></tr></thead>
-                    <tbody id="body-tar"></tbody>
+                    <thead><tr><th>Equipo</th><th>PJ</th><th>DG</th><th>PTS</th></tr></thead>
+                    <tbody>${grupos[gId].map(e => `
+                        <tr><td>${e.Nombre}</td><td>${e.PJ}</td><td>${e.Diferencia}</td><td class="pts">${e.Puntos}</td></tr>
+                    `).join('')}</tbody>
                 </table>
             </div>
-        </div>
-    </main>
+        `).join('');
+    }
 
-    <script>
-        const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg';
+    function renderGoleadores(data, stats) {
+        // Sumar partidos jugados del equipo al jugador
+        const dataOrdenada = data.map(j => ({
+            ...j,
+            PJ: stats[j.Equipo]?.pj || 0
+        })).sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
+        
+        document.querySelector("#tabla-gol tbody").innerHTML = dataOrdenada.map(j => `
+            <tr><td><b>${j.Nombre}</b></td><td>${j.Equipo}</td><td>${j.PJ} PJ</td><td class="pts">${j.Goles || 0}</td></tr>
+        `).join('');
+    }
 
-        async function cargarTodo() {
-            try {
-                const [resP, resC, resG, resT] = await Promise.all([
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Partidos`).then(r => r.json()),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Clasificacion`).then(r => r.json()),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`).then(r => r.json()),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json())
-                ]);
+    function renderTarjetas(data, stats) {
+        const dataOrdenada = data.map(j => ({
+            ...j,
+            PJ: stats[j.Equipo]?.pj || 0
+        })).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
 
-                renderPartidos(resP);
-                renderClasificacion(resC);
-                renderGoleadores(resG);
-                renderTarjetas(resT);
-            } catch (e) { console.error("Error:", e); }
-        }
+        document.getElementById("body-tar").innerHTML = dataOrdenada.map(j => {
+            const am = parseInt(j.Amarillas) || 0;
+            const sancionado = am > 0 && am % 3 === 0;
+            return `<tr>
+                <td><b>${j.Nombre}</b><br><small>${j.Equipo}</small></td>
+                <td><span style="background:#f1c40f; padding:2px 6px; border-radius:4px; font-weight:bold;">${am}</span></td>
+                <td>${j.PJ}</td>
+                <td>${sancionado ? '<b style="color:#e74c3c">⚠️ SANCIONADO</b>' : '<b style="color:#2ecc71">✅ OK</b>'}</td>
+            </tr>`;
+        }).join('');
+    }
 
-        function renderPartidos(data) {
-            document.getElementById('partidos-container').innerHTML = data.map(m => `
-                <div class="card">
-                    <div style="text-align:center; padding: 4px; background: #f8f9fa; color: #7f8c8d; font-size: 0.75em; font-weight: bold;">
-                        🕒 HORA: ${m.Hora || '--:--'}
-                    </div>
-                    <div style="display:flex; justify-content:center; align-items:center; padding: 15px 10px;">
-                        <div style="flex:1; text-align:right; font-weight:700; color:var(--azul-oscuro);">${m.Local}</div>
-                        <div class="marcador-box">${m.GolesL || 0} - ${m.GolesV || 0}</div>
-                        <div style="flex:1; text-align:left; font-weight:700; color:var(--azul-oscuro);">${m.Visitante}</div>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; padding: 8px 12px; border-top: 1px solid #eee; font-size: 0.8em; background: #fff; color: #555;">
-                        <div style="flex:1; text-align:right; padding-right:10px; border-right: 1px solid #eee;">${m.DetalleL || ''}</div>
-                        <div style="flex:1; text-align:left; padding-left:10px;">${m.DetalleV || ''}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function renderClasificacion(data) {
-            const container = document.getElementById('grupos-container');
-            const grupos = {};
-            
-            // Ordenamos por Puntos (mayor a menor) antes de agrupar
-            const dataOrdenada = [...data].sort((a, b) => (parseInt(b.Puntos) || 0) - (parseInt(a.Puntos) || 0));
-
-            dataOrdenada.forEach(item => {
-                if (!grupos[item.Grupo]) grupos[item.Grupo] = [];
-                grupos[item.Grupo].push(item);
-            });
-
-            container.innerHTML = Object.keys(grupos).map(gId => `
-                <div class="card" style="padding:15px;">
-                    <h3 style="margin-top:0; color:var(--azul-oscuro);">Grupo ${gId}</h3>
-                    <table>
-                        <thead><tr><th>Equipo</th><th>DG</th><th>PTS</th></tr></thead>
-                        <tbody>${grupos[gId].map(e => `<tr><td>${e.Nombre}</td><td>${e.Diferencia}</td><td class="pts">${e.Puntos}</td></tr>`).join('')}</tbody>
-                    </table>
-                </div>
-            `).join('');
-        }
-
-        function renderGoleadores(data) {
-            // Ordenar por Goles (mayor a menor)
-            const dataOrdenada = [...data].sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
-            
-            document.querySelector("#tabla-gol tbody").innerHTML = dataOrdenada.map(j => `
-                <tr><td><b>${j.Nombre}</b></td><td>${j.Equipo}</td><td class="pts">${j.Goles}</td></tr>
-            `).join('');
-        }
-
-        function renderTarjetas(data) {
-            // Ordenar por Amarillas (mayor a menor)
-            const dataOrdenada = [...data].sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
-
-            document.getElementById("body-tar").innerHTML = dataOrdenada.map(j => {
-                const am = parseInt(j.Amarillas) || 0;
-                const sancionado = am > 0 && am % 3 === 0;
-                return `<tr>
-                    <td><b>${j.Nombre}</b><br><small>${j.Equipo}</small></td>
-                    <td><span style="background:#f1c40f; padding:2px 6px; border-radius:4px; font-weight:bold;">${am}</span></td>
-                    <td>${j.Partidos || 0}</td>
-                    <td>${sancionado ? '<b style="color:#e74c3c">⚠️ SANCIONADO</b>' : '<b style="color:#2ecc71">✅ OK</b>'}</td>
-                </tr>`;
-            }).join('');
-        }
-
-        function ver(s) {
-            ['partidos', 'grupos', 'gol', 'tar'].forEach(id => {
-                document.getElementById(id).classList.toggle('hidden', id !== s);
-                document.getElementById('btn-' + id).classList.toggle('active', id === s);
-            });
-        }
-
-        cargarTodo();
-    </script>
-</body>
-</html>
+    // ... (Mantén las funciones renderPartidos y ver igual que antes)
+</script>
