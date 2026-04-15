@@ -19,18 +19,8 @@
         .seccion-titulo { color: white; font-size: 1.5em; margin-bottom: 20px; border-bottom: 3px solid var(--verde); display: inline-block; padding-bottom: 5px; }
         .card { background: var(--blanco); border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; }
         
-        /* Marcador Ajustado */
-        .marcador-box { 
-            background: var(--azul-oscuro); 
-            color: white; 
-            padding: 4px 12px; 
-            border-radius: 6px; 
-            margin: 0 15px; 
-            font-weight: 800; 
-            font-size: 1.1em; /* Tamaño reducido */
-            min-width: 45px; 
-            text-align: center; 
-        }
+        /* Marcador */
+        .marcador-box { background: var(--azul-oscuro); color: white; padding: 4px 12px; border-radius: 6px; margin: 0 15px; font-weight: 800; font-size: 1.1em; min-width: 45px; text-align: center; }
 
         /* Tablas */
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; }
@@ -57,12 +47,12 @@
         </div>
 
         <div id="grupos" class="hidden">
-            <div class="seccion-titulo">Clasificación</div>
+            <div class="seccion-titulo">Clasificación (por Puntos)</div>
             <div id="grupos-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;"></div>
         </div>
 
         <div id="gol" class="hidden">
-            <div class="seccion-titulo">Pichichi</div>
+            <div class="seccion-titulo">Pichichi (por Goles)</div>
             <div class="card">
                 <table id="tabla-gol">
                     <thead><tr><th>Jugador</th><th>Equipo</th><th>Goles</th></tr></thead>
@@ -72,7 +62,7 @@
         </div>
 
         <div id="tar" class="hidden">
-            <div class="seccion-titulo">Sanciones</div>
+            <div class="seccion-titulo">Sanciones (por Amarillas)</div>
             <div class="card">
                 <table>
                     <thead><tr><th>Jugador</th><th>🟨</th><th>PJ</th><th>Estado</th></tr></thead>
@@ -123,10 +113,15 @@
         function renderClasificacion(data) {
             const container = document.getElementById('grupos-container');
             const grupos = {};
-            data.forEach(item => {
+            
+            // Ordenamos por Puntos (mayor a menor) antes de agrupar
+            const dataOrdenada = [...data].sort((a, b) => (parseInt(b.Puntos) || 0) - (parseInt(a.Puntos) || 0));
+
+            dataOrdenada.forEach(item => {
                 if (!grupos[item.Grupo]) grupos[item.Grupo] = [];
                 grupos[item.Grupo].push(item);
             });
+
             container.innerHTML = Object.keys(grupos).map(gId => `
                 <div class="card" style="padding:15px;">
                     <h3 style="margin-top:0; color:var(--azul-oscuro);">Grupo ${gId}</h3>
@@ -139,18 +134,24 @@
         }
 
         function renderGoleadores(data) {
-            document.querySelector("#tabla-gol tbody").innerHTML = data.sort((a,b) => b.Goles - a.Goles).map(j => `
+            // Ordenar por Goles (mayor a menor)
+            const dataOrdenada = [...data].sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
+            
+            document.querySelector("#tabla-gol tbody").innerHTML = dataOrdenada.map(j => `
                 <tr><td><b>${j.Nombre}</b></td><td>${j.Equipo}</td><td class="pts">${j.Goles}</td></tr>
             `).join('');
         }
 
         function renderTarjetas(data) {
-            document.getElementById("body-tar").innerHTML = data.map(j => {
+            // Ordenar por Amarillas (mayor a menor)
+            const dataOrdenada = [...data].sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
+
+            document.getElementById("body-tar").innerHTML = dataOrdenada.map(j => {
                 const am = parseInt(j.Amarillas) || 0;
                 const sancionado = am > 0 && am % 3 === 0;
                 return `<tr>
                     <td><b>${j.Nombre}</b><br><small>${j.Equipo}</small></td>
-                    <td><span style="background:#f1c40f; padding:2px 6px; border-radius:4px;">${am}</span></td>
+                    <td><span style="background:#f1c40f; padding:2px 6px; border-radius:4px; font-weight:bold;">${am}</span></td>
                     <td>${j.Partidos || 0}</td>
                     <td>${sancionado ? '<b style="color:#e74c3c">⚠️ SANCIONADO</b>' : '<b style="color:#2ecc71">✅ OK</b>'}</td>
                 </tr>`;
