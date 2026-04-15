@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torneo La Yesa - Sistema Automatizado</title>
+    <title>Torneo La Yesa - Sistema PJ Automático</title>
     <style>
         :root { --azul-oscuro: #1b3a4b; --azul-menu: #142d3b; --verde: #229954; --blanco: #ffffff; --rojo: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--azul-oscuro); color: #333; }
@@ -40,7 +40,7 @@
 
     <main id="content">
         <div id="tar" class="hidden">
-            <div class="seccion-titulo">Sanciones y PJ</div>
+            <div class="seccion-titulo">Sanciones</div>
             <div class="card">
                 <table>
                     <thead><tr><th>Jugador</th><th style="text-align: center;">🟨</th><th style="text-align: center;">PJ</th><th>Estado</th></tr></thead>
@@ -75,7 +75,7 @@
                     fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json())
                 ]);
 
-                // 1. Calcular Partidos Totales del Equipo
+                // 1. Calcular PJ del Equipo (Partidos con resultado)
                 const equipoPJTotal = {};
                 resP.forEach(p => {
                     if (p.Local && p.GolesL !== "" && p.GolesL !== undefined) {
@@ -85,23 +85,10 @@
                 });
 
                 renderTarjetas(resT, equipoPJTotal);
-                renderGoleadores(resG, equipoPJTotal, resT);
+                renderGoleadores(resG, equipoPJTotal);
                 renderPartidos(resP);
                 renderClasificacion(resC, equipoPJTotal);
             } catch (e) { console.error(e); }
-        }
-
-        // Función auxiliar para calcular PJ del jugador restando sanciones
-        function calcularPJReal(nombreJugador, nombreEquipo, tarjetasData, equipoPJTotal) {
-            const pjEquipo = equipoPJTotal[nombreEquipo] || 0;
-            const jugador = tarjetasData.find(j => j.Nombre === nombreJugador);
-            if (!jugador) return pjEquipo;
-
-            const amarillas = parseInt(jugador.Amarillas) || 0;
-            // Restamos un partido por cada ciclo de 3 amarillas
-            const sanciones = Math.floor(amarillas / 3);
-            const pjReal = pjEquipo - sanciones;
-            return pjReal < 0 ? 0 : pjReal;
         }
 
         function renderTarjetas(tarjetasData, equipoPJTotal) {
@@ -109,33 +96,32 @@
                 const amarillas = parseInt(j.Amarillas) || 0;
                 const pjEquipo = equipoPJTotal[j.Equipo] || 0;
                 
-                // Si tiene 3, 6, 9... amarillas está sancionado este partido
-                const esCicloSancion = (amarillas > 0 && amarillas % 3 === 0);
-                const pjJugador = calcularPJReal(j.Nombre, j.Equipo, tarjetasData, equipoPJTotal);
-
-                let estado = esCicloSancion ? 
-                    `<span class="status-sancion">⚠️ SANCIONADO</span>` : 
-                    `<span class="status-ok">✅ DISPONIBLE</span>`;
+                // Si amarillas es 3, 6, 9... está sancionado
+                const sancionado = (amarillas > 0 && amarillas % 3 === 0);
+                
+                // Lógica solicitada: Si está sancionado, pierde un partido (PJ Equipo - 1)
+                const pjFinal = sancionado ? (pjEquipo - 1) : pjEquipo;
 
                 return `
                     <tr>
                         <td><span class="dorsal-text">${j.Dorsal || ''}</span><b>${j.Nombre}</b><br><small>${j.Equipo}</small></td>
                         <td style="text-align: center;"><span class="amarilla-box">${amarillas}</span></td>
-                        <td style="text-align: center; font-weight: bold;">${pjJugador}</td>
-                        <td>${estado}</td>
+                        <td style="text-align: center; font-weight: bold;">${pjFinal < 0 ? 0 : pjFinal}</td>
+                        <td>${sancionado ? '<span class="status-sancion">⚠️ SANCIONADO</span>' : '<span class="status-ok">✅ DISPONIBLE</span>'}</td>
                     </tr>
                 `;
             }).join('');
         }
 
-        function renderGoleadores(goleadoresData, equipoPJTotal, tarjetasData) {
+        function renderGoleadores(goleadoresData, equipoPJTotal) {
             document.getElementById("body-gol").innerHTML = goleadoresData.filter(j => j.Nombre).map(j => {
-                const pjJugador = calcularPJReal(j.Nombre, j.Equipo, tarjetasData, equipoPJTotal);
+                // En goleadores, siempre son los mismos PJ que el equipo (están convocados)
+                const pjEquipo = equipoPJTotal[j.Equipo] || 0;
                 return `
                     <tr>
                         <td><span class="dorsal-text">${j.Dorsal || ''}</span>${j.Nombre}</td>
                         <td>${j.Equipo}</td>
-                        <td style="text-align:center; font-weight:bold;">${pjJugador}</td>
+                        <td style="text-align:center; font-weight:bold;">${pjEquipo}</td>
                         <td style="text-align:center; font-weight:bold; color:var(--verde);">${j.Goles || 0}</td>
                     </tr>
                 `;
