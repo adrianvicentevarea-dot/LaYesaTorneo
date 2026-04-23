@@ -2,217 +2,215 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Torneo La Yesa</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Yesa League - Compacto</title>
     <style>
-        :root { --azul-oscuro: #1b3a4b; --azul-nav: #142d3b; --verde: #27ae60; --blanco: #ffffff; --rojo: #e74c3c; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: sans-serif; margin: 0; background: var(--azul-oscuro); display: flex; height: 100vh; overflow: hidden; }
-
-        #sidebar { width: 160px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
-        .nav-header { padding: 10px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.8em; color: var(--verde); }
-        .btn { padding: 8px 12px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.75em; }
-        .btn.active { background: var(--verde); color: white; }
-
-        #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        header { background: var(--azul-nav); color: white; padding: 5px 10px; display: flex; align-items: center; }
-        .menu-toggle { font-size: 1.1em; cursor: pointer; margin-right: 10px; }
-        
-        #content { flex: 1; padding: 4px; overflow-y: auto; width: 100%; }
-        .seccion-titulo { color: white; font-size: 0.75em; margin: 4px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
-
-        /* GRUPOS EN PAREJAS */
-        .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-
-        .card { background: var(--blanco); border-radius: 4px; margin-bottom: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); overflow: hidden; }
-        
-        /* RESULTADOS */
-        .match-row { padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8em; }
-        .match-team { width: 40%; font-weight: bold; color: #333; }
-        .match-score { background: var(--azul-nav); color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 0.8em; min-width: 40px; text-align: center; }
-
-        /* TABLAS ULTRA COMPACTAS */
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        td, th { padding: 3px 4px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.72em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        th { background: #f9f9f9; color: #999; font-size: 0.55em; text-transform: uppercase; }
-        
-        /* Columnas Pegadas */
-        .col-nombre { width: auto; }
-        .col-data { width: 30px; text-align: center; }
-        .pts-verde { color: var(--verde); font-weight: bold; }
-
-        .hidden { display: none; }
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; }
-
-        @media (max-width: 500px) { .grid-grupos { grid-template-columns: repeat(2, 1fr); gap: 4px; } }
-        @media (max-width: 768px) {
-            #sidebar { position: absolute; left: -160px; height: 100%; }
-            #sidebar.open { left: 0; }
-            #overlay.open { display: block; }
+        :root {
+            --bg-color: #1b3a4b;
+            --card-bg: #ffffff;
+            --text-main: #333;
+            --accent: #27ae60;
         }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            color: white;
+        }
+
+        .section-header {
+            border-left: 4px solid var(--accent);
+            padding-left: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        /* --- CONTENEDOR DE GRUPOS (2 por fila) --- */
+        .grupos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 4px;
+            color: var(--text-main);
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 5px;
+        }
+
+        .card-header {
+            background: #f8f9fa;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+            color: #555;
+        }
+
+        /* --- TABLAS COMPACTAS --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            font-size: 0.65rem;
+            color: #888;
+            padding: 4px 10px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 6px 10px; /* Reducido de 12px a 6px */
+            font-size: 0.85rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Ajuste de columnas para que no haya distancia */
+        .col-pj, .col-pts {
+            width: 40px;
+            text-align: center;
+        }
+
+        .pts-value {
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        /* --- RESULTADOS ESTILO BARRA --- */
+        .match-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+        }
+
+        .match-team {
+            flex: 1;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .match-score {
+            background: var(--bg-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin: 0 15px;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        /* --- SANCIONES --- */
+        .sancion-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            align-items: center;
+        }
+
+        .warning-box {
+            background: #f1c40f;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-weight: bold;
+            font-size: 0.75rem;
+        }
+
+        .status-red {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 0.7rem;
+        }
+
     </style>
 </head>
 <body>
-    <div id="overlay" onclick="toggleMenu()"></div>
-    <nav id="sidebar">
-        <div class="nav-header">TORNEO LA YESA</div>
-        <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ PARTIDOS</div>
-        <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 GRUPOS</div>
-        <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLES</div>
-        <div id="btn-tar" class="btn" onclick="ver('tar')">🟨 SANCIONES</div>
-    </nav>
 
-    <div id="main-container">
-        <header>
-            <div class="menu-toggle" onclick="toggleMenu()">☰</div>
-            <div style="font-size: 0.8em; font-weight: bold;">TORNEO LA YESA</div>
-        </header>
-        <main id="content">
-            <div id="partidos">
-                <span class="seccion-titulo">Resultados</span>
-                <div id="partidos-container"></div>
-            </div>
-            <div id="grupos" class="hidden">
-                <span class="seccion-titulo">Clasificación</span>
-                <div id="grupos-container" class="grid-grupos"></div>
-            </div>
-            <div id="gol" class="hidden">
-                <span class="seccion-titulo">Goleadores</span>
-                <div class="card">
-                    <table>
-                        <thead><tr><th>JUGADOR</th><th class="col-data">PJ</th><th class="col-data">G</th></tr></thead>
-                        <tbody id="body-gol"></tbody>
-                    </table>
-                </div>
-            </div>
-            <div id="tar" class="hidden">
-                <span class="seccion-titulo">Sanciones</span>
-                <div class="card">
-                    <table>
-                        <thead><tr><th>JUGADOR</th><th class="col-data">🟨</th><th style="text-align:right; width:60px;">ESTADO</th></tr></thead>
-                        <tbody id="body-tar"></tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+    <div class="section-header">Clasificación</div>
+    
+    <div class="grupos-grid">
+        <div class="card">
+            <div class="card-header">GRUPO 1</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Equipo</th>
+                        <th class="col-pj">PJ</th>
+                        <th class="col-pts">PTS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Valencia</td>
+                        <td class="col-pj">1</td>
+                        <td class="col-pts"><span class="pts-value">3</span></td>
+                    </tr>
+                    <tr>
+                        <td>Celta</td>
+                        <td class="col-pj">1</td>
+                        <td class="col-pts"><span class="pts-value">0</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">GRUPO 2</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Equipo</th>
+                        <th class="col-pj">PJ</th>
+                        <th class="col-pts">PTS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Valencia</td>
+                        <td class="col-pj">0</td>
+                        <td class="col-pts"><span class="pts-value">0</span></td>
+                    </tr>
+                    <tr>
+                        <td>Celta</td>
+                        <td class="col-pj">0</td>
+                        <td class="col-pts"><span class="pts-value">0</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <script>
-        const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg';
+    <div class="section-header" style="margin-top: 20px;">Últimos Resultados</div>
+    
+    <div class="card">
+        <div class="match-row">
+            <div class="match-team" style="text-align: right;">Valencia</div>
+            <div class="match-score">2 : 1</div>
+            <div class="match-team">Celta</div>
+        </div>
+    </div>
 
-        async function cargarTodo() {
-            try {
-                const [resP, resC, resG, resT] = await Promise.all([
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Partidos`).then(r => r.json()),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Clasificacion`).then(r => r.json()),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`).then(r => r.json()),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json())
-                ]);
+    <div class="section-header" style="margin-top: 20px;">Sanciones</div>
+    
+    <div class="card">
+        <div class="sancion-row">
+            <span>Jose</span>
+            <div>
+                <span class="warning-box">6</span>
+                <span class="status-red" style="margin-left: 10px;">SANCIONADO</span>
+            </div>
+        </div>
+    </div>
 
-                const statsPJ = {}; 
-                const tienePend = {}; 
-
-                resP.forEach(p => {
-                    if (!p.Local || !p.Visitante) return;
-                    const loc = p.Local.trim();
-                    const vis = p.Visitante.trim();
-                    const vL = p.GolesL?.toString().trim();
-                    const vV = p.GolesV?.toString().trim();
-                    
-                    const jugado = (vL !== "" && vL !== "-" && !isNaN(vL)) && (vV !== "" && vV !== "-" && !isNaN(vV));
-                    
-                    if (jugado) {
-                        statsPJ[loc] = (statsPJ[loc] || 0) + 1;
-                        statsPJ[vis] = (statsPJ[vis] || 0) + 1;
-                    } else {
-                        tienePend[loc] = true; 
-                        tienePend[vis] = true;
-                    }
-                });
-
-                renderPartidos(resP);
-                renderClasificacion(resC, statsPJ);
-                renderGoleadores(resG, statsPJ);
-                renderTarjetas(resT, statsPJ, tienePend);
-
-            } catch (e) { console.error(e); }
-        }
-
-        function renderPartidos(data) {
-            document.getElementById('partidos-container').innerHTML = data.filter(m => m.Local).map(m => `
-                <div class="card">
-                    <div class="match-row">
-                        <div class="match-team" style="text-align:right;">${m.Local}</div>
-                        <div class="match-score">${m.GolesL}:${m.GolesV}</div>
-                        <div class="match-team">${m.Visitante}</div>
-                    </div>
-                </div>`).join('');
-        }
-
-        function renderClasificacion(data, stats) {
-            const container = document.getElementById('grupos-container');
-            const grupos = {};
-            data.filter(e => e.Nombre).forEach(e => {
-                const n = e.Nombre.trim();
-                if (!grupos[e.Grupo]) grupos[e.Grupo] = [];
-                grupos[e.Grupo].push({...e, Nombre: n});
-            });
-
-            container.innerHTML = Object.keys(grupos).map(g => {
-                const orden = grupos[g].sort((a, b) => (parseInt(b.Puntos) || 0) - (parseInt(a.Puntos) || 0));
-                return `
-                <div class="card">
-                    <div style="padding:2px 5px; background:#eee; font-weight:bold; font-size:0.55em;">GRUPO ${g}</div>
-                    <table>
-                        <thead><tr><th class="col-nombre">EQ</th><th class="col-data">PJ</th><th class="col-data">PTS</th></tr></thead>
-                        <tbody>
-                            ${orden.map(e => `<tr>
-                                <td class="col-nombre">${e.Nombre}</td>
-                                <td class="col-data">${stats[e.Nombre] || 0}</td>
-                                <td class="col-data pts-verde">${e.Puntos || 0}</td>
-                            </tr>`).join('')}
-                        </tbody>
-                    </table>
-                </div>`;
-            }).join('');
-        }
-
-        function renderGoleadores(data, stats) {
-            const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
-            document.getElementById("body-gol").innerHTML = orden.map(j => {
-                const eq = j.Equipo?.trim();
-                return `<tr><td><b>${j.Nombre}</b></td><td class="col-data">${stats[eq] || 0}</td><td class="col-data pts-verde">${j.Goles || 0}</td></tr>`;
-            }).join('');
-        }
-
-        function renderTarjetas(data, stats, pend) {
-            const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
-            document.getElementById("body-tar").innerHTML = orden.map(j => {
-                const eq = j.Equipo?.trim();
-                const am = parseInt(j.Amarillas) || 0;
-                const sancion = (am > 0 && am % 3 === 0 && pend[eq]);
-                return `<tr>
-                    <td>${j.Nombre}</td>
-                    <td class="col-data"><span style="background:#f1c40f; padding:1px 3px; border-radius:2px; font-weight:bold">${am}</span></td>
-                    <td style="text-align:right; font-weight:bold;">${sancion ? '<span style="color:var(--rojo)">SANCION</span>' : '<span style="color:var(--verde)">OK</span>'}</td>
-                </tr>`;
-            }).join('');
-        }
-
-        function ver(s) {
-            ['partidos', 'grupos', 'gol', 'tar'].forEach(id => {
-                document.getElementById(id).classList.toggle('hidden', id !== s);
-                document.getElementById('btn-' + id).classList.toggle('active', id === s);
-            });
-            if (window.innerWidth <= 768) toggleMenu();
-        }
-
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('overlay').classList.toggle('open');
-        }
-
-        cargarTodo();
-    </script>
 </body>
 </html>
