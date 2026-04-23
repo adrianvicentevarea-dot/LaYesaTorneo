@@ -22,24 +22,35 @@
         #content { flex: 1; padding: 4px; overflow-y: auto; width: 100%; }
         .seccion-titulo { color: white; font-size: 0.75em; margin: 4px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
 
-        /* TARJETAS ULTRA COMPACTAS (Como tus fotos) */
+        /* CONTENEDOR DE GRUPOS EN PAREJAS */
+        .grid-grupos { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); /* Dos columnas iguales */
+            gap: 8px; /* Separación entre grupos */
+        }
+
         .card { background: var(--blanco); border-radius: 4px; margin-bottom: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); overflow: hidden; }
         
-        /* Resultados (Igual a tu imagen 3) */
+        /* Resultados */
         .match-row { padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8em; }
         .match-team { width: 40%; font-weight: bold; color: #333; }
         .match-score { background: var(--azul-nav); color: white; padding: 2px 8px; border-radius: 3px; font-weight: bold; font-size: 0.85em; min-width: 45px; text-align: center; }
 
-        /* Tablas (Igual a tu imagen 2) */
+        /* Tablas */
         table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 3px 8px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.75em; }
-        th { background: #f9f9f9; color: #999; font-size: 0.6em; text-transform: uppercase; padding: 2px 8px; }
+        td, th { padding: 3px 6px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.7em; }
+        th { background: #f9f9f9; color: #999; font-size: 0.55em; text-transform: uppercase; padding: 2px 6px; }
         
-        .col-dat { width: 50px; text-align: center; }
+        .col-dat { width: 35px; text-align: center; }
         .pts-verde { color: var(--verde); font-weight: bold; }
 
         .hidden { display: none; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; }
+
+        /* En pantallas muy pequeñas (móviles verticales), quizás prefieras uno debajo de otro */
+        @media (max-width: 480px) {
+            .grid-grupos { grid-template-columns: 1fr; }
+        }
 
         @media (max-width: 768px) {
             #sidebar { position: absolute; left: -160px; height: 100%; }
@@ -53,7 +64,7 @@
     <nav id="sidebar">
         <div class="nav-header">TORNEO LA YESA</div>
         <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ PARTIDOS</div>
-        <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 TABLAS</div>
+        <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 GRUPOS</div>
         <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLES</div>
         <div id="btn-tar" class="btn" onclick="ver('tar')">🟨 SANCIONES</div>
     </nav>
@@ -71,7 +82,7 @@
 
             <div id="grupos" class="hidden">
                 <span class="seccion-titulo">Clasificación</span>
-                <div id="grupos-container"></div>
+                <div id="grupos-container" class="grid-grupos"></div>
             </div>
 
             <div id="gol" class="hidden">
@@ -157,7 +168,7 @@
                 const orden = grupos[g].sort((a, b) => (parseInt(b.Puntos) || 0) - (parseInt(a.Puntos) || 0));
                 return `
                 <div class="card">
-                    <div style="padding:3px 8px; background:#eee; font-weight:bold; font-size:0.6em;">GRUPO ${g}</div>
+                    <div style="padding:2px 6px; background:#eee; font-weight:bold; font-size:0.55em;">GRUPO ${g}</div>
                     <table>
                         <thead><tr><th>EQUIPO</th><th class="col-dat">PJ</th><th class="col-dat">PTS</th></tr></thead>
                         <tbody>${orden.map(e => `<tr><td>${e.Nombre}</td><td class="col-dat">${stats[e.Nombre] || 0}</td><td class="col-dat pts-verde">${e.Puntos || 0}</td></tr>`).join('')}</tbody>
@@ -180,7 +191,7 @@
                 return `<tr>
                     <td>${j.Nombre}</td>
                     <td class="col-dat"><span style="background:#f1c40f; padding:1px 4px; border-radius:2px; font-weight:bold">${am}</span></td>
-                    <td style="text-align:right; font-weight:bold; font-size:0.9em;">${sancion ? '<span style="color:var(--rojo)">SANCION</span>' : '<span style="color:var(--verde)">OK</span>'}</td>
+                    <td style="text-align:right; font-weight:bold; font-size:0.8em;">${sancion ? '<span style="color:var(--rojo)">SANCION</span>' : '<span style="color:var(--verde)">OK</span>'}</td>
                 </tr>`;
             }).join('');
         }
