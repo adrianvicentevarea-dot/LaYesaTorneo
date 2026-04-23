@@ -9,7 +9,6 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
         body { margin: 0; background: var(--azul-oscuro); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar */
         #sidebar { width: 150px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
         .nav-header { padding: 10px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.75em; color: var(--verde); }
         .btn { padding: 10px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.7em; }
@@ -22,20 +21,16 @@
         #content { flex: 1; padding: 4px; overflow-y: auto; }
         .seccion-titulo { color: white; font-size: 0.7em; margin: 4px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
 
-        /* GRUPOS EN PAREJAS - DISTANCIA MÍNIMA */
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
         .card { background: var(--blanco); border-radius: 3px; margin-bottom: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         
-        /* TABLAS PEGADAS */
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         td, th { padding: 4px 6px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.75em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         th { background: #f9f9f9; color: #999; font-size: 0.55em; letter-spacing: 0.5px; }
         
-        /* Columnas de datos muy juntas */
-        .col-pj, .col-pts { width: 32px; text-align: center; font-weight: bold; }
+        .col-pj, .col-dat { width: 32px; text-align: center; font-weight: bold; }
         .pts-verde { color: var(--verde); }
 
-        /* RESULTADOS ESTILO BARRA DELGADA */
         .match-row { padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.75em; }
         .match-team { width: 42%; font-weight: bold; color: #333; }
         .match-score { background: var(--azul-nav); color: white; padding: 2px 6px; border-radius: 3px; min-width: 40px; text-align: center; font-weight: bold; }
@@ -64,20 +59,20 @@
         <header><div class="menu-toggle" onclick="toggleMenu()">☰</div><div style="font-size:0.75em; font-weight:bold;">LA YESA LEAGUE</div></header>
         <main id="content">
             <div id="partidos">
-                <span class="seccion-titulo">Resultados y Calendario</span>
+                <span class="seccion-titulo">Resultados</span>
                 <div id="partidos-container"></div>
             </div>
             <div id="grupos" class="hidden">
-                <span class="seccion-titulo">Clasificación por Grupos</span>
+                <span class="seccion-titulo">Clasificación</span>
                 <div id="grupos-container" class="grid-grupos"></div>
             </div>
             <div id="gol" class="hidden">
-                <span class="seccion-titulo">Tabla de Goleadores</span>
-                <div class="card"><table><thead><tr><th>JUGADOR</th><th class="col-pj">PJ</th><th class="col-pts">G</th></tr></thead><tbody id="body-gol"></tbody></table></div>
+                <span class="seccion-titulo">Goleadores</span>
+                <div class="card"><table><thead><tr><th>JUGADOR</th><th class="col-pj">PJ</th><th class="col-dat">G</th></tr></thead><tbody id="body-gol"></tbody></table></div>
             </div>
             <div id="tar" class="hidden">
-                <span class="seccion-titulo">Estado de Sanciones</span>
-                <div class="card"><table><thead><tr><th>JUGADOR</th><th class="col-pj">🟨</th><th style="text-align:right; padding-right:10px;">ESTADO</th></tr></thead><tbody id="body-tar"></tbody></table></div>
+                <span class="seccion-titulo">Sanciones</span>
+                <div class="card"><table><thead><tr><th>JUGADOR</th><th class="col-pj">PJ</th><th class="col-dat">🟨</th><th style="text-align:right; padding-right:10px;">ESTADO</th></tr></thead><tbody id="body-tar"></tbody></table></div>
             </div>
         </main>
     </div>
@@ -147,11 +142,11 @@
                 <div class="card">
                     <div style="padding:3px 6px; background:#f0f0f0; font-weight:bold; font-size:0.55em; color: #666;">GRUPO ${g}</div>
                     <table>
-                        <thead><tr><th>EQUIPO</th><th class="col-pj">PJ</th><th class="col-pts">PTS</th></tr></thead>
+                        <thead><tr><th>EQUIPO</th><th class="col-pj">PJ</th><th class="col-dat">PTS</th></tr></thead>
                         <tbody>${orden.map(e => `<tr>
                             <td>${e.nombre}</td>
                             <td class="col-pj">${e.pj}</td>
-                            <td class="col-pts pts-verde">${e.pts}</td>
+                            <td class="col-dat pts-verde">${e.pts}</td>
                         </tr>`).join('')}</tbody>
                     </table>
                 </div>`;
@@ -161,18 +156,20 @@
         function renderGoleadores(data, stats) {
             const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
             document.getElementById("body-gol").innerHTML = orden.map(j => `
-                <tr><td><b>${j.Nombre}</b></td><td class="col-pj">${stats[j.Equipo.trim()]?.pj || 0}</td><td class="col-pts pts-verde">${j.Goles || 0}</td></tr>`).join('');
+                <tr><td><b>${j.Nombre}</b></td><td class="col-pj">${stats[j.Equipo.trim()]?.pj || 0}</td><td class="col-dat pts-verde">${j.Goles || 0}</td></tr>`).join('');
         }
 
         function renderTarjetas(data, stats) {
             const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
             document.getElementById("body-tar").innerHTML = orden.map(j => {
                 const am = parseInt(j.Amarillas) || 0;
+                const pjJugados = stats[j.Equipo.trim()]?.pj || 0;
                 const sancion = (am > 0 && am % 3 === 0);
                 return `<tr>
                     <td>${j.Nombre}</td>
-                    <td class="col-pj"><span style="background:#f1c40f; padding:1px 4px; border-radius:2px; font-weight:bold">${am}</span></td>
-                    <td style="text-align:right; font-weight:bold; color:${sancion ? 'var(--rojo)' : 'var(--verde)'}; padding-right:10px;">${sancion ? 'SANCIONADO' : 'OK'}</td>
+                    <td class="col-pj">${pjJugados}</td>
+                    <td class="col-dat"><span style="background:#f1c40f; padding:1px 4px; border-radius:2px; font-weight:bold">${am}</span></td>
+                    <td style="text-align:right; font-weight:bold; color:${sancion ? 'var(--rojo)' : 'var(--verde)'}; padding-right:10px;">${sancion ? 'SANCION' : 'OK'}</td>
                 </tr>`;
             }).join('');
         }
