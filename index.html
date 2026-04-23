@@ -2,215 +2,195 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Yesa League - Compacto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Torneo La Yesa</title>
     <style>
-        :root {
-            --bg-color: #1b3a4b;
-            --card-bg: #ffffff;
-            --text-main: #333;
-            --accent: #27ae60;
-        }
+        :root { --azul-oscuro: #1b3a4b; --azul-nav: #142d3b; --verde: #27ae60; --blanco: #ffffff; --rojo: #e74c3c; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
+        body { margin: 0; background: var(--azul-oscuro); display: flex; height: 100vh; overflow: hidden; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 10px;
-            color: white;
-        }
+        /* Sidebar */
+        #sidebar { width: 150px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
+        .nav-header { padding: 10px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.75em; color: var(--verde); }
+        .btn { padding: 10px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.7em; }
+        .btn.active { background: var(--verde); color: white; }
 
-        .section-header {
-            border-left: 4px solid var(--accent);
-            padding-left: 8px;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
+        #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        header { background: var(--azul-nav); color: white; padding: 6px 10px; display: flex; align-items: center; }
+        .menu-toggle { font-size: 1.1em; cursor: pointer; margin-right: 10px; }
+        
+        #content { flex: 1; padding: 4px; overflow-y: auto; }
+        .seccion-titulo { color: white; font-size: 0.7em; margin: 4px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
 
-        /* --- CONTENEDOR DE GRUPOS (2 por fila) --- */
-        .grupos-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 10px;
-        }
+        /* GRUPOS EN PAREJAS - DISTANCIA MÍNIMA */
+        .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+        .card { background: var(--blanco); border-radius: 3px; margin-bottom: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        
+        /* TABLAS PEGADAS */
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        td, th { padding: 4px 6px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.75em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        th { background: #f9f9f9; color: #999; font-size: 0.55em; letter-spacing: 0.5px; }
+        
+        /* Columnas de datos muy juntas */
+        .col-pj, .col-pts { width: 32px; text-align: center; font-weight: bold; }
+        .pts-verde { color: var(--verde); }
 
-        .card {
-            background: var(--card-bg);
-            border-radius: 4px;
-            color: var(--text-main);
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            margin-bottom: 5px;
-        }
+        /* RESULTADOS ESTILO BARRA DELGADA */
+        .match-row { padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.75em; }
+        .match-team { width: 42%; font-weight: bold; color: #333; }
+        .match-score { background: var(--azul-nav); color: white; padding: 2px 6px; border-radius: 3px; min-width: 40px; text-align: center; font-weight: bold; }
 
-        .card-header {
-            background: #f8f9fa;
-            padding: 5px 10px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            border-bottom: 1px solid #ddd;
-            color: #555;
-        }
+        .hidden { display: none; }
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
 
-        /* --- TABLAS COMPACTAS --- */
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        @media (max-width: 768px) {
+            #sidebar { position: absolute; left: -150px; height: 100%; }
+            #sidebar.open { left: 0; }
+            #overlay.open { display: block; }
         }
-
-        th {
-            text-align: left;
-            font-size: 0.65rem;
-            color: #888;
-            padding: 4px 10px;
-            text-transform: uppercase;
-        }
-
-        td {
-            padding: 6px 10px; /* Reducido de 12px a 6px */
-            font-size: 0.85rem;
-            border-bottom: 1px solid #eee;
-        }
-
-        /* Ajuste de columnas para que no haya distancia */
-        .col-pj, .col-pts {
-            width: 40px;
-            text-align: center;
-        }
-
-        .pts-value {
-            font-weight: bold;
-            color: var(--accent);
-        }
-
-        /* --- RESULTADOS ESTILO BARRA --- */
-        .match-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 15px;
-        }
-
-        .match-team {
-            flex: 1;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .match-score {
-            background: var(--bg-color);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-weight: bold;
-            margin: 0 15px;
-            min-width: 30px;
-            text-align: center;
-        }
-
-        /* --- SANCIONES --- */
-        .sancion-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 10px;
-            align-items: center;
-        }
-
-        .warning-box {
-            background: #f1c40f;
-            padding: 2px 6px;
-            border-radius: 2px;
-            font-weight: bold;
-            font-size: 0.75rem;
-        }
-
-        .status-red {
-            color: #e74c3c;
-            font-weight: bold;
-            font-size: 0.7rem;
-        }
-
     </style>
 </head>
 <body>
+    <div id="overlay" onclick="toggleMenu()"></div>
+    <nav id="sidebar">
+        <div class="nav-header">LA YESA LEAGUE</div>
+        <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ PARTIDOS</div>
+        <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 GRUPOS</div>
+        <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLES</div>
+        <div id="btn-tar" class="btn" onclick="ver('tar')">🟨 SANCIONES</div>
+    </nav>
 
-    <div class="section-header">Clasificación</div>
-    
-    <div class="grupos-grid">
-        <div class="card">
-            <div class="card-header">GRUPO 1</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Equipo</th>
-                        <th class="col-pj">PJ</th>
-                        <th class="col-pts">PTS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Valencia</td>
-                        <td class="col-pj">1</td>
-                        <td class="col-pts"><span class="pts-value">3</span></td>
-                    </tr>
-                    <tr>
-                        <td>Celta</td>
-                        <td class="col-pj">1</td>
-                        <td class="col-pts"><span class="pts-value">0</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <div class="card-header">GRUPO 2</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Equipo</th>
-                        <th class="col-pj">PJ</th>
-                        <th class="col-pts">PTS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Valencia</td>
-                        <td class="col-pj">0</td>
-                        <td class="col-pts"><span class="pts-value">0</span></td>
-                    </tr>
-                    <tr>
-                        <td>Celta</td>
-                        <td class="col-pj">0</td>
-                        <td class="col-pts"><span class="pts-value">0</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="section-header" style="margin-top: 20px;">Últimos Resultados</div>
-    
-    <div class="card">
-        <div class="match-row">
-            <div class="match-team" style="text-align: right;">Valencia</div>
-            <div class="match-score">2 : 1</div>
-            <div class="match-team">Celta</div>
-        </div>
-    </div>
-
-    <div class="section-header" style="margin-top: 20px;">Sanciones</div>
-    
-    <div class="card">
-        <div class="sancion-row">
-            <span>Jose</span>
-            <div>
-                <span class="warning-box">6</span>
-                <span class="status-red" style="margin-left: 10px;">SANCIONADO</span>
+    <div id="main-container">
+        <header><div class="menu-toggle" onclick="toggleMenu()">☰</div><div style="font-size:0.75em; font-weight:bold;">LA YESA LEAGUE</div></header>
+        <main id="content">
+            <div id="partidos">
+                <span class="seccion-titulo">Resultados y Calendario</span>
+                <div id="partidos-container"></div>
             </div>
-        </div>
+            <div id="grupos" class="hidden">
+                <span class="seccion-titulo">Clasificación por Grupos</span>
+                <div id="grupos-container" class="grid-grupos"></div>
+            </div>
+            <div id="gol" class="hidden">
+                <span class="seccion-titulo">Tabla de Goleadores</span>
+                <div class="card"><table><thead><tr><th>JUGADOR</th><th class="col-pj">PJ</th><th class="col-pts">G</th></tr></thead><tbody id="body-gol"></tbody></table></div>
+            </div>
+            <div id="tar" class="hidden">
+                <span class="seccion-titulo">Estado de Sanciones</span>
+                <div class="card"><table><thead><tr><th>JUGADOR</th><th class="col-pj">🟨</th><th style="text-align:right; padding-right:10px;">ESTADO</th></tr></thead><tbody id="body-tar"></tbody></table></div>
+            </div>
+        </main>
     </div>
 
+    <script>
+        const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg';
+
+        async function cargarTodo() {
+            try {
+                const [resP, resC, resG, resT] = await Promise.all([
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Partidos`).then(r => r.json()),
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Clasificacion`).then(r => r.json()),
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`).then(r => r.json()),
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json())
+                ]);
+
+                const stats = {}; 
+
+                resP.forEach(p => {
+                    if (!p.Local || !p.Visitante) return;
+                    const loc = p.Local.trim();
+                    const vis = p.Visitante.trim();
+                    const gL = parseInt(p.GolesL);
+                    const gV = parseInt(p.GolesV);
+
+                    if (!stats[loc]) stats[loc] = { pj: 0, pts: 0 };
+                    if (!stats[vis]) stats[vis] = { pj: 0, pts: 0 };
+
+                    if (!isNaN(gL) && !isNaN(gV)) {
+                        stats[loc].pj++;
+                        stats[vis].pj++;
+                        if (gL > gV) stats[loc].pts += 3;
+                        else if (gV > gL) stats[vis].pts += 3;
+                        else { stats[loc].pts += 1; stats[vis].pts += 1; }
+                    }
+                });
+
+                renderPartidos(resP);
+                renderClasificacion(resC, stats);
+                renderGoleadores(resG, stats);
+                renderTarjetas(resT, stats);
+
+            } catch (e) { console.error(e); }
+        }
+
+        function renderPartidos(data) {
+            document.getElementById('partidos-container').innerHTML = data.filter(m => m.Local).map(m => `
+                <div class="card"><div class="match-row">
+                    <div class="match-team" style="text-align:right;">${m.Local}</div>
+                    <div class="match-score">${isNaN(parseInt(m.GolesL)) ? '- : -' : m.GolesL + ' : ' + m.GolesV}</div>
+                    <div class="match-team">${m.Visitante}</div>
+                </div></div>`).join('');
+        }
+
+        function renderClasificacion(data, stats) {
+            const container = document.getElementById('grupos-container');
+            const grupos = {};
+            data.filter(e => e.Nombre).forEach(e => {
+                const n = e.Nombre.trim();
+                if (!grupos[e.Grupo]) grupos[e.Grupo] = [];
+                grupos[e.Grupo].push({ nombre: n, pts: stats[n]?.pts || 0, pj: stats[n]?.pj || 0 });
+            });
+
+            container.innerHTML = Object.keys(grupos).map(g => {
+                const orden = grupos[g].sort((a, b) => b.pts - a.pts);
+                return `
+                <div class="card">
+                    <div style="padding:3px 6px; background:#f0f0f0; font-weight:bold; font-size:0.55em; color: #666;">GRUPO ${g}</div>
+                    <table>
+                        <thead><tr><th>EQUIPO</th><th class="col-pj">PJ</th><th class="col-pts">PTS</th></tr></thead>
+                        <tbody>${orden.map(e => `<tr>
+                            <td>${e.nombre}</td>
+                            <td class="col-pj">${e.pj}</td>
+                            <td class="col-pts pts-verde">${e.pts}</td>
+                        </tr>`).join('')}</tbody>
+                    </table>
+                </div>`;
+            }).join('');
+        }
+
+        function renderGoleadores(data, stats) {
+            const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
+            document.getElementById("body-gol").innerHTML = orden.map(j => `
+                <tr><td><b>${j.Nombre}</b></td><td class="col-pj">${stats[j.Equipo.trim()]?.pj || 0}</td><td class="col-pts pts-verde">${j.Goles || 0}</td></tr>`).join('');
+        }
+
+        function renderTarjetas(data, stats) {
+            const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
+            document.getElementById("body-tar").innerHTML = orden.map(j => {
+                const am = parseInt(j.Amarillas) || 0;
+                const sancion = (am > 0 && am % 3 === 0);
+                return `<tr>
+                    <td>${j.Nombre}</td>
+                    <td class="col-pj"><span style="background:#f1c40f; padding:1px 4px; border-radius:2px; font-weight:bold">${am}</span></td>
+                    <td style="text-align:right; font-weight:bold; color:${sancion ? 'var(--rojo)' : 'var(--verde)'}; padding-right:10px;">${sancion ? 'SANCIONADO' : 'OK'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function ver(s) {
+            ['partidos', 'grupos', 'gol', 'tar'].forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', id !== s);
+                document.getElementById('btn-' + id).classList.toggle('active', id === s);
+            });
+            if (window.innerWidth <= 768) toggleMenu();
+        }
+
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('open');
+        }
+
+        cargarTodo();
+    </script>
 </body>
 </html>
