@@ -6,44 +6,48 @@
     <title>Torneo La Yesa</title>
     <style>
         :root { --azul-oscuro: #1b3a4b; --azul-nav: #142d3b; --verde: #27ae60; --blanco: #ffffff; --rojo: #e74c3c; }
-        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: sans-serif; margin: 0; background: var(--azul-oscuro); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Barra Lateral */
-        #sidebar { width: 200px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
-        .nav-header { padding: 20px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1.1em; color: var(--verde); }
-        .btn { padding: 15px 20px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9em; }
+        /* Menú Lateral Compacto */
+        #sidebar { width: 180px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
+        .nav-header { padding: 15px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9em; color: var(--verde); }
+        .btn { padding: 12px 15px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85em; }
         .btn.active { background: var(--verde); color: white; font-weight: bold; }
 
         /* Contenedor Principal */
         #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        header { background: var(--azul-nav); color: white; padding: 15px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .menu-toggle { font-size: 1.5em; cursor: pointer; margin-right: 15px; }
+        header { background: var(--azul-nav); color: white; padding: 10px 15px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .menu-toggle { font-size: 1.2em; cursor: pointer; margin-right: 12px; }
         
-        #content { flex: 1; padding: 10px; overflow-y: auto; width: 100%; }
-        .seccion-titulo { color: white; font-size: 1em; margin-bottom: 12px; display: block; border-left: 4px solid var(--verde); padding-left: 10px; text-transform: uppercase; }
+        #content { flex: 1; padding: 8px; overflow-y: auto; width: 100%; }
+        .seccion-titulo { color: white; font-size: 0.9em; margin-bottom: 10px; display: block; border-left: 3px solid var(--verde); padding-left: 8px; text-transform: uppercase; font-weight: bold; }
 
-        /* Tarjetas */
-        .card { background: var(--blanco); border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); overflow: hidden; }
+        /* Tarjetas de Partido Súper Compactas */
+        .card { background: var(--blanco); border-radius: 6px; margin-bottom: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.2); overflow: hidden; }
+        .match-row { padding: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8em; }
+        .match-team { width: 40%; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .match-score { background: var(--azul-oscuro); color: white; padding: 3px 6px; border-radius: 4px; font-weight: bold; min-width: 42px; text-align: center; font-size: 0.9em; }
+
+        /* Tablas Compactas */
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        td, th { padding: 12px 5px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.82em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        th { background: #f8f9fa; color: #777; font-size: 0.7em; }
+        td, th { padding: 8px 4px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.8em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        th { background: #f8f9fa; color: #777; font-size: 0.65em; text-transform: uppercase; }
 
-        .col-nom { width: 45%; }
-        .col-dat { width: 15%; text-align: center; }
-        .col-est { width: 25%; text-align: right; padding-right: 8px; }
+        .col-nom { width: 42%; }
+        .col-eq { width: 20%; color: #666; }
+        .col-dat { width: 12%; text-align: center; }
+        .col-est { width: 26%; text-align: right; padding-right: 5px; }
 
-        .amarilla-box { background: #f1c40f; color: #000; padding: 2px 5px; border-radius: 3px; font-weight: bold; }
-        .status-sancion { color: var(--rojo); font-weight: bold; font-size: 0.75em; }
-        .status-ok { color: var(--verde); font-weight: bold; font-size: 0.75em; }
+        .amarilla-box { background: #f1c40f; color: #000; padding: 1px 4px; border-radius: 2px; font-weight: bold; font-size: 0.9em; }
+        .status-sancion { color: var(--rojo); font-weight: bold; font-size: 0.8em; }
+        .status-ok { color: var(--verde); font-weight: bold; font-size: 0.8em; }
         
         .hidden { display: none; }
-
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; }
 
         @media (max-width: 768px) {
-            #sidebar { position: absolute; left: -200px; height: 100%; }
+            #sidebar { position: absolute; left: -180px; height: 100%; }
             #sidebar.open { left: 0; }
             #overlay.open { display: block; }
         }
@@ -55,26 +59,26 @@
 
     <nav id="sidebar">
         <div class="nav-header">TORNEO LA YESA</div>
-        <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ RESULTADOS</div>
-        <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 CLASIFICACIÓN</div>
-        <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLEADORES</div>
+        <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ PARTIDOS</div>
+        <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 TABLAS</div>
+        <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLES</div>
         <div id="btn-tar" class="btn" onclick="ver('tar')">🟨 SANCIONES</div>
     </nav>
 
     <div id="main-container">
         <header>
             <div class="menu-toggle" onclick="toggleMenu()">☰</div>
-            <div>🏆 TORNEO LA YESA</div>
+            <div style="font-size: 0.9em; font-weight: bold;">TORNEO LA YESA</div>
         </header>
 
         <main id="content">
             <div id="partidos">
-                <span class="seccion-titulo">Resultados y Calendario</span>
+                <span class="seccion-titulo">Resultados</span>
                 <div id="partidos-container"></div>
             </div>
 
             <div id="grupos" class="hidden">
-                <span class="seccion-titulo">Tabla de Posiciones</span>
+                <span class="seccion-titulo">Clasificación</span>
                 <div id="grupos-container"></div>
             </div>
 
@@ -82,7 +86,7 @@
                 <span class="seccion-titulo">Goleadores</span>
                 <div class="card">
                     <table>
-                        <thead><tr><th class="col-nom">Jugador</th><th style="width:20%">Eq</th><th class="col-dat">PJ</th><th class="col-dat">G</th></tr></thead>
+                        <thead><tr><th class="col-nom">Nombre</th><th class="col-eq">Eq</th><th class="col-dat">PJ</th><th class="col-dat">G</th></tr></thead>
                         <tbody id="body-gol"></tbody>
                     </table>
                 </div>
@@ -117,11 +121,8 @@
 
                 resP.forEach(p => {
                     if (!p.Local) return;
-                    
                     const valL = p.GolesL?.toString().trim();
-                    // Si el valor no es nulo, ni vacío, ni un guion, es un número válido
                     const haJugado = (valL !== undefined && valL !== "" && valL !== "-" && !isNaN(valL));
-                    
                     if (haJugado) {
                         equipoPJ[p.Local] = (equipoPJ[p.Local] || 0) + 1;
                         equipoPJ[p.Visitante] = (equipoPJ[p.Visitante] || 0) + 1;
@@ -141,12 +142,12 @@
 
         function renderPartidos(data) {
             document.getElementById('partidos-container').innerHTML = data.filter(m => m.Local).map(m => `
-                <div class="card" style="padding:12px; display:flex; align-items:center; justify-content:space-between; font-size:0.85em;">
-                    <div style="width:38%; text-align:right; font-weight:bold;">${m.Local}</div>
-                    <div style="background:var(--azul-oscuro); color:white; padding:4px 10px; border-radius:6px; font-weight:bold; min-width:55px; text-align:center;">
-                        ${m.GolesL} : ${m.GolesV}
+                <div class="card">
+                    <div class="match-row">
+                        <div class="match-team" style="text-align:right;">${m.Local}</div>
+                        <div class="match-score">${m.GolesL} : ${m.GolesV}</div>
+                        <div class="match-team">${m.Visitante}</div>
                     </div>
-                    <div style="width:38%; text-align:left; font-weight:bold;">${m.Visitante}</div>
                 </div>`).join('');
         }
 
@@ -159,14 +160,13 @@
             });
 
             container.innerHTML = Object.keys(grupos).map(g => {
-                // Ordenar por puntos de mayor a menor
                 const ordenados = grupos[g].sort((a, b) => (parseInt(b.Puntos) || 0) - (parseInt(a.Puntos) || 0));
                 return `
                 <div class="card">
-                    <div style="padding:8px 12px; background:#f1f1f1; font-weight:bold; font-size:0.75em;">GRUPO ${g}</div>
+                    <div style="padding:5px 10px; background:#f1f1f1; font-weight:bold; font-size:0.65em;">GRUPO ${g}</div>
                     <table>
                         <thead><tr><th class="col-nom">Equipo</th><th class="col-dat">PJ</th><th class="col-dat">PTS</th></tr></thead>
-                        <tbody>${ordenados.map(e => `<tr><td>${e.Nombre}</td><td class="col-dat">${stats[e.Nombre] || 0}</td><td class="col-dat" style="font-weight:bold; color:var(--verde)">${e.Puntos || 0}</td></tr>`).join('')}</tbody>
+                        <tbody>${ordenados.map(e => `<tr><td class="col-nom">${e.Nombre}</td><td class="col-dat">${stats[e.Nombre] || 0}</td><td class="col-dat" style="font-weight:bold; color:var(--verde)">${e.Puntos || 0}</td></tr>`).join('')}</tbody>
                     </table>
                 </div>`;
             }).join('');
@@ -177,7 +177,7 @@
             document.getElementById("body-gol").innerHTML = ordenados.map(j => `
                 <tr>
                     <td class="col-nom"><b>${j.Nombre}</b></td>
-                    <td style="font-size:0.7em; color:#666;">${j.Equipo.substring(0,8)}</td>
+                    <td class="col-eq">${j.Equipo.substring(0,6)}</td>
                     <td class="col-dat">${stats[j.Equipo] || 0}</td>
                     <td class="col-dat" style="color:var(--verde); font-weight:bold;">${j.Goles || 0}</td>
                 </tr>`).join('');
@@ -188,19 +188,13 @@
             document.getElementById("body-tar").innerHTML = ordenados.map(j => {
                 const am = parseInt(j.Amarillas) || 0;
                 const pjEq = stats[j.Equipo] || 0;
-                const cicloSancion = (am > 0 && am % 3 === 0);
-                const tienePendiente = pend[j.Equipo] || false;
-
-                let estado = `<span class="status-ok">✅ OK</span>`;
-                let pjFinal = pjEq - Math.floor(am / 3);
-
-                if (cicloSancion && tienePendiente) {
-                    estado = `<span class="status-sancion">⚠️ SANCION</span>`;
-                    pjFinal = pjEq; 
-                }
+                const esSancion = (am > 0 && am % 3 === 0 && pend[j.Equipo]);
+                
+                const estado = esSancion ? `<span class="status-sancion">SANCION</span>` : `<span class="status-ok">OK</span>`;
+                const pjFinal = esSancion ? pjEq : (pjEq - Math.floor(am / 3));
 
                 return `<tr>
-                    <td class="col-nom"><b>${j.Nombre}</b><br><small style="color:#999">${j.Equipo}</small></td>
+                    <td class="col-nom"><b>${j.Nombre}</b><br><small style="font-size:0.8em; color:#999">${j.Equipo.substring(0,8)}</small></td>
                     <td class="col-dat"><span class="amarilla-box">${am}</span></td>
                     <td class="col-dat">${pjFinal < 0 ? 0 : pjFinal}</td>
                     <td class="col-est">${estado}</td>
