@@ -9,9 +9,9 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
         body { margin: 0; background: var(--azul-oscuro); display: flex; height: 100vh; overflow: hidden; }
 
-        #sidebar { width: 150px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
-        .nav-header { padding: 10px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.75em; color: var(--verde); }
-        .btn { padding: 10px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.7em; }
+        #sidebar { width: 140px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
+        .nav-header { padding: 10px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.7em; color: var(--verde); }
+        .btn { padding: 10px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.65em; }
         .btn.active { background: var(--verde); color: white; }
 
         #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -19,29 +19,29 @@
         .menu-toggle { font-size: 1.1em; cursor: pointer; margin-right: 10px; }
         
         #content { flex: 1; padding: 4px; overflow-y: auto; }
-        .seccion-titulo { color: white; font-size: 0.7em; margin: 4px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
+        .seccion-titulo { color: white; font-size: 0.65em; margin: 4px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
 
-        .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+        .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
         .card { background: var(--blanco); border-radius: 3px; margin-bottom: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        td, th { padding: 4px 5px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.72em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        th { background: #f9f9f9; color: #999; font-size: 0.52em; letter-spacing: 0.3px; }
+        td, th { padding: 4px 3px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.68em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        th { background: #f9f9f9; color: #999; font-size: 0.5em; letter-spacing: 0.2px; }
         
-        /* Columnas de datos ajustadas */
-        .col-pj, .col-dat { width: 28px; text-align: center; font-weight: bold; }
-        .col-club { width: 60px; color: #666; font-style: italic; }
+        .col-pj, .col-dat { width: 22px; text-align: center; font-weight: bold; }
+        .col-club { width: 45px; color: #777; font-style: italic; font-size: 0.9em; }
+        .col-estado { width: 50px; text-align: right; font-weight: bold; font-size: 0.85em; }
         .pts-verde { color: var(--verde); }
 
-        .match-row { padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.75em; }
-        .match-team { width: 42%; font-weight: bold; color: #333; }
-        .match-score { background: var(--azul-nav); color: white; padding: 2px 6px; border-radius: 3px; min-width: 40px; text-align: center; font-weight: bold; }
+        .match-row { padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.7em; }
+        .match-team { width: 40%; font-weight: bold; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .match-score { background: var(--azul-nav); color: white; padding: 2px 4px; border-radius: 2px; min-width: 35px; text-align: center; font-weight: bold; font-size: 0.9em; }
 
         .hidden { display: none; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
 
         @media (max-width: 768px) {
-            #sidebar { position: absolute; left: -150px; height: 100%; }
+            #sidebar { position: absolute; left: -140px; height: 100%; }
             #sidebar.open { left: 0; }
             #overlay.open { display: block; }
         }
@@ -50,7 +50,7 @@
 <body>
     <div id="overlay" onclick="toggleMenu()"></div>
     <nav id="sidebar">
-        <div class="nav-header">LA YESA LEAGUE</div>
+        <div class="nav-header">TORNEO LA YESA</div>
         <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ PARTIDOS</div>
         <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 GRUPOS</div>
         <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLES</div>
@@ -58,12 +58,12 @@
     </nav>
 
     <div id="main-container">
-        <header><div class="menu-toggle" onclick="toggleMenu()">☰</div><div style="font-size:0.75em; font-weight:bold;">LA YESA LEAGUE</div></header>
+        <header><div class="menu-toggle" onclick="toggleMenu()">☰</div><div id="top-title" style="font-size:0.7em; font-weight:bold;">TORNEO LA YESA</div></header>
         <main id="content">
             <div id="partidos"><span class="seccion-titulo">Resultados</span><div id="partidos-container"></div></div>
             <div id="grupos" class="hidden"><span class="seccion-titulo">Clasificación</span><div id="grupos-container" class="grid-grupos"></div></div>
             <div id="gol" class="hidden"><span class="seccion-titulo">Goleadores</span><div class="card"><table><thead><tr><th>JUGADOR</th><th class="col-club">CLUB</th><th class="col-pj">PJ</th><th class="col-dat">G</th></tr></thead><tbody id="body-gol"></tbody></table></div></div>
-            <div id="tar" class="hidden"><span class="seccion-titulo">Sanciones</span><div class="card"><table><thead><tr><th>JUGADOR</th><th class="col-club">CLUB</th><th class="col-pj">PJ</th><th class="col-dat">🟨</th><th style="text-align:right; padding-right:5px; width:55px;">ESTADO</th></tr></thead><tbody id="body-tar"></tbody></table></div></div>
+            <div id="tar" class="hidden"><span class="seccion-titulo">Sanciones</span><div class="card"><table><thead><tr><th>JUGADOR</th><th class="col-club">CLUB</th><th class="col-pj">PJ</th><th class="col-dat">🟨</th><th class="col-estado">ESTADO</th></tr></thead><tbody id="body-tar"></tbody></table></div></div>
         </main>
     </div>
 
@@ -105,7 +105,7 @@
             document.getElementById('partidos-container').innerHTML = data.filter(m => m.Local).map(m => `
                 <div class="card"><div class="match-row">
                     <div class="match-team" style="text-align:right;">${m.Local}</div>
-                    <div class="match-score">${isNaN(parseInt(m.GolesL)) ? '- : -' : m.GolesL + ' : ' + m.GolesV}</div>
+                    <div class="match-score">${isNaN(parseInt(m.GolesL)) ? '-:-' : m.GolesL + ':' + m.GolesV}</div>
                     <div class="match-team">${m.Visitante}</div>
                 </div></div>`).join('');
         }
@@ -120,7 +120,7 @@
             });
             container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a, b) => b.pts - a.pts);
-                return `<div class="card"><div style="padding:3px 6px; background:#f0f0f0; font-weight:bold; font-size:0.55em; color: #666;">GRUPO ${g}</div>
+                return `<div class="card"><div style="padding:2px 4px; background:#f0f0f0; font-weight:bold; font-size:0.5em; color: #666;">GRUPO ${g}</div>
                     <table><thead><tr><th>EQUIPO</th><th class="col-pj">PJ</th><th class="col-dat">PTS</th></tr></thead>
                     <tbody>${orden.map(e => `<tr><td>${e.nombre}</td><td class="col-pj">${e.pj}</td><td class="col-dat pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
             }).join('');
@@ -138,8 +138,8 @@
                 const am = parseInt(j.Amarillas) || 0, eq = j.Equipo?.trim() || '';
                 const pjJugados = stats[eq]?.pj || 0;
                 const sancion = (am > 0 && am % 3 === 0);
-                return `<tr><td>${j.Nombre}</td><td class="col-club">${eq}</td><td class="col-pj">${pjJugados}</td><td class="col-dat"><span style="background:#f1c40f; padding:1px 4px; border-radius:2px; font-weight:bold">${am}</span></td>
-                    <td style="text-align:right; font-weight:bold; color:${sancion ? 'var(--rojo)' : 'var(--verde)'}; padding-right:5px;">${sancion ? 'SANCION' : 'OK'}</td></tr>`;
+                return `<tr><td>${j.Nombre}</td><td class="col-club">${eq}</td><td class="col-pj">${pjJugados}</td><td class="col-dat"><span style="background:#f1c40f; padding:1px 3px; border-radius:2px; font-weight:bold">${am}</span></td>
+                    <td class="col-estado" style="color:${sancion ? 'var(--rojo)' : 'var(--verde)'}">${sancion ? 'SANC.' : 'OK'}</td></tr>`;
             }).join('');
         }
 
