@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>La Yesa League PRO</title>
+    <title>Torneo La Yesa</title>
     <style>
         :root { --azul-oscuro: #1b3a4b; --azul-nav: #142d3b; --verde: #27ae60; --blanco: #ffffff; --rojo: #e74c3c; }
         
@@ -54,7 +54,7 @@
     <div id="overlay" onclick="toggleMenu()"></div>
 
     <nav id="sidebar">
-        <div class="nav-header">LA YESA LEAGUE</div>
+        <div class="nav-header">TORNEO LA YESA</div>
         <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ RESULTADOS</div>
         <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 CLASIFICACIÓN</div>
         <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLEADORES</div>
@@ -64,7 +64,7 @@
     <div id="main-container">
         <header>
             <div class="menu-toggle" onclick="toggleMenu()">☰</div>
-            <div>🏆 PANEL DE CONTROL</div>
+            <div>🏆 TORNEO LA YESA</div>
         </header>
 
         <main id="content">
@@ -118,9 +118,9 @@
                 resP.forEach(p => {
                     if (!p.Local) return;
                     
-                    // Lógica para detectar el guion "-" de tu imagen
                     const valL = p.GolesL?.toString().trim();
-                    const haJugado = (valL !== "" && valL !== "-" && !isNaN(valL));
+                    // Si el valor no es nulo, ni vacío, ni un guion, es un número válido
+                    const haJugado = (valL !== undefined && valL !== "" && valL !== "-" && !isNaN(valL));
                     
                     if (haJugado) {
                         equipoPJ[p.Local] = (equipoPJ[p.Local] || 0) + 1;
@@ -159,6 +159,7 @@
             });
 
             container.innerHTML = Object.keys(grupos).map(g => {
+                // Ordenar por puntos de mayor a menor
                 const ordenados = grupos[g].sort((a, b) => (parseInt(b.Puntos) || 0) - (parseInt(a.Puntos) || 0));
                 return `
                 <div class="card">
