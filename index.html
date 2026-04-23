@@ -9,7 +9,6 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: sans-serif; margin: 0; background: var(--azul-oscuro); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar */
         #sidebar { width: 160px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
         .nav-header { padding: 10px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.8em; color: var(--verde); }
         .btn { padding: 8px 12px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.75em; }
@@ -23,38 +22,29 @@
         .seccion-titulo { color: white; font-size: 0.75em; margin: 4px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
 
         /* GRUPOS EN PAREJAS */
-        .grid-grupos { 
-            display: grid; 
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 8px; 
-        }
+        .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
 
         .card { background: var(--blanco); border-radius: 4px; margin-bottom: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); overflow: hidden; }
         
-        /* RESULTADOS COMPACTOS */
+        /* RESULTADOS */
         .match-row { padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8em; }
         .match-team { width: 40%; font-weight: bold; color: #333; }
-        .match-score { background: var(--azul-nav); color: white; padding: 2px 8px; border-radius: 3px; font-weight: bold; font-size: 0.85em; min-width: 45px; text-align: center; }
+        .match-score { background: var(--azul-nav); color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 0.8em; min-width: 40px; text-align: center; }
 
-        /* TABLAS AJUSTADAS (Columnas pegadas) */
+        /* TABLAS ULTRA COMPACTAS */
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        td, th { padding: 3px 6px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.75em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        th { background: #f9f9f9; color: #999; font-size: 0.6em; text-transform: uppercase; }
+        td, th { padding: 3px 4px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.72em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        th { background: #f9f9f9; color: #999; font-size: 0.55em; text-transform: uppercase; }
         
-        /* Forzamos que PJ y PTS sean estrechos */
+        /* Columnas Pegadas */
         .col-nombre { width: auto; }
-        .col-pj { width: 35px; text-align: center; }
-        .col-pts { width: 35px; text-align: center; }
-        
+        .col-data { width: 30px; text-align: center; }
         .pts-verde { color: var(--verde); font-weight: bold; }
 
         .hidden { display: none; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; }
 
-        @media (max-width: 550px) {
-            .grid-grupos { grid-template-columns: 1fr; }
-        }
-
+        @media (max-width: 500px) { .grid-grupos { grid-template-columns: repeat(2, 1fr); gap: 4px; } }
         @media (max-width: 768px) {
             #sidebar { position: absolute; left: -160px; height: 100%; }
             #sidebar.open { left: 0; }
@@ -82,27 +72,24 @@
                 <span class="seccion-titulo">Resultados</span>
                 <div id="partidos-container"></div>
             </div>
-
             <div id="grupos" class="hidden">
                 <span class="seccion-titulo">Clasificación</span>
                 <div id="grupos-container" class="grid-grupos"></div>
             </div>
-
             <div id="gol" class="hidden">
                 <span class="seccion-titulo">Goleadores</span>
                 <div class="card">
                     <table>
-                        <thead><tr><th>Jugador</th><th class="col-pj">PJ</th><th class="col-pts">G</th></tr></thead>
+                        <thead><tr><th>JUGADOR</th><th class="col-data">PJ</th><th class="col-data">G</th></tr></thead>
                         <tbody id="body-gol"></tbody>
                     </table>
                 </div>
             </div>
-
             <div id="tar" class="hidden">
                 <span class="seccion-titulo">Sanciones</span>
                 <div class="card">
                     <table>
-                        <thead><tr><th>Jugador</th><th class="col-pj">🟨</th><th style="text-align:right">Estado</th></tr></thead>
+                        <thead><tr><th>JUGADOR</th><th class="col-data">🟨</th><th style="text-align:right; width:60px;">ESTADO</th></tr></thead>
                         <tbody id="body-tar"></tbody>
                     </table>
                 </div>
@@ -126,17 +113,20 @@
                 const tienePend = {}; 
 
                 resP.forEach(p => {
-                    if (!p.Local) return;
+                    if (!p.Local || !p.Visitante) return;
+                    const loc = p.Local.trim();
+                    const vis = p.Visitante.trim();
                     const vL = p.GolesL?.toString().trim();
                     const vV = p.GolesV?.toString().trim();
+                    
                     const jugado = (vL !== "" && vL !== "-" && !isNaN(vL)) && (vV !== "" && vV !== "-" && !isNaN(vV));
                     
                     if (jugado) {
-                        statsPJ[p.Local] = (statsPJ[p.Local] || 0) + 1;
-                        statsPJ[p.Visitante] = (statsPJ[p.Visitante] || 0) + 1;
+                        statsPJ[loc] = (statsPJ[loc] || 0) + 1;
+                        statsPJ[vis] = (statsPJ[vis] || 0) + 1;
                     } else {
-                        tienePend[p.Local] = true; 
-                        tienePend[p.Visitante] = true;
+                        tienePend[loc] = true; 
+                        tienePend[vis] = true;
                     }
                 });
 
@@ -154,7 +144,7 @@
                     <div class="match-row">
                         <div class="match-team" style="text-align:right;">${m.Local}</div>
                         <div class="match-score">${m.GolesL}:${m.GolesV}</div>
-                        <div class="match-team" style="text-align:left;">${m.Visitante}</div>
+                        <div class="match-team">${m.Visitante}</div>
                     </div>
                 </div>`).join('');
         }
@@ -163,30 +153,24 @@
             const container = document.getElementById('grupos-container');
             const grupos = {};
             data.filter(e => e.Nombre).forEach(e => {
+                const n = e.Nombre.trim();
                 if (!grupos[e.Grupo]) grupos[e.Grupo] = [];
-                grupos[e.Grupo].push(e);
+                grupos[e.Grupo].push({...e, Nombre: n});
             });
 
             container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a, b) => (parseInt(b.Puntos) || 0) - (parseInt(a.Puntos) || 0));
                 return `
                 <div class="card">
-                    <div style="padding:3px 8px; background:#eee; font-weight:bold; font-size:0.6em;">GRUPO ${g}</div>
+                    <div style="padding:2px 5px; background:#eee; font-weight:bold; font-size:0.55em;">GRUPO ${g}</div>
                     <table>
-                        <thead>
-                            <tr>
-                                <th class="col-nombre">EQUIPO</th>
-                                <th class="col-pj">PJ</th>
-                                <th class="col-pts">PTS</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th class="col-nombre">EQ</th><th class="col-data">PJ</th><th class="col-data">PTS</th></tr></thead>
                         <tbody>
-                            ${orden.map(e => `
-                                <tr>
-                                    <td>${e.Nombre}</td>
-                                    <td class="col-pj">${stats[e.Nombre] || 0}</td>
-                                    <td class="col-pts pts-verde">${e.Puntos || 0}</td>
-                                </tr>`).join('')}
+                            ${orden.map(e => `<tr>
+                                <td class="col-nombre">${e.Nombre}</td>
+                                <td class="col-data">${stats[e.Nombre] || 0}</td>
+                                <td class="col-data pts-verde">${e.Puntos || 0}</td>
+                            </tr>`).join('')}
                         </tbody>
                     </table>
                 </div>`;
@@ -195,19 +179,22 @@
 
         function renderGoleadores(data, stats) {
             const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
-            document.getElementById("body-gol").innerHTML = orden.map(j => `
-                <tr><td><b>${j.Nombre}</b></td><td class="col-pj">${stats[j.Equipo] || 0}</td><td class="col-pts pts-verde">${j.Goles || 0}</td></tr>`).join('');
+            document.getElementById("body-gol").innerHTML = orden.map(j => {
+                const eq = j.Equipo?.trim();
+                return `<tr><td><b>${j.Nombre}</b></td><td class="col-data">${stats[eq] || 0}</td><td class="col-data pts-verde">${j.Goles || 0}</td></tr>`;
+            }).join('');
         }
 
         function renderTarjetas(data, stats, pend) {
             const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
             document.getElementById("body-tar").innerHTML = orden.map(j => {
+                const eq = j.Equipo?.trim();
                 const am = parseInt(j.Amarillas) || 0;
-                const sancion = (am > 0 && am % 3 === 0 && pend[j.Equipo]);
+                const sancion = (am > 0 && am % 3 === 0 && pend[eq]);
                 return `<tr>
                     <td>${j.Nombre}</td>
-                    <td class="col-pj"><span style="background:#f1c40f; padding:1px 4px; border-radius:2px; font-weight:bold">${am}</span></td>
-                    <td style="text-align:right; font-weight:bold; font-size:0.8em;">${sancion ? '<span style="color:var(--rojo)">SANCION</span>' : '<span style="color:var(--verde)">OK</span>'}</td>
+                    <td class="col-data"><span style="background:#f1c40f; padding:1px 3px; border-radius:2px; font-weight:bold">${am}</span></td>
+                    <td style="text-align:right; font-weight:bold;">${sancion ? '<span style="color:var(--rojo)">SANCION</span>' : '<span style="color:var(--verde)">OK</span>'}</td>
                 </tr>`;
             }).join('');
         }
