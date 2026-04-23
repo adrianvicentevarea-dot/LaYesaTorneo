@@ -9,40 +9,35 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: sans-serif; margin: 0; background: var(--azul-oscuro); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar compacto */
+        /* Sidebar */
         #sidebar { width: 160px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
-        .nav-header { padding: 12px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.8em; color: var(--verde); }
-        .btn { padding: 10px 15px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.75em; }
+        .nav-header { padding: 10px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.8em; color: var(--verde); }
+        .btn { padding: 8px 12px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.75em; }
         .btn.active { background: var(--verde); color: white; }
 
         #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        header { background: var(--azul-nav); color: white; padding: 8px 12px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        header { background: var(--azul-nav); color: white; padding: 5px 10px; display: flex; align-items: center; }
         .menu-toggle { font-size: 1.1em; cursor: pointer; margin-right: 10px; }
         
-        #content { flex: 1; padding: 5px; overflow-y: auto; width: 100%; }
-        .seccion-titulo { color: white; font-size: 0.8em; margin: 5px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
+        #content { flex: 1; padding: 4px; overflow-y: auto; width: 100%; }
+        .seccion-titulo { color: white; font-size: 0.75em; margin: 4px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
 
-        /* DISEÑO COMPACTO DE TABLAS Y TARJETAS */
-        .card { background: var(--blanco); border-radius: 4px; margin-bottom: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); overflow: hidden; }
+        /* TARJETAS ULTRA COMPACTAS (Como tus fotos) */
+        .card { background: var(--blanco); border-radius: 4px; margin-bottom: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); overflow: hidden; }
         
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        /* Reducción drástica de padding (de 12px a 4px) */
-        td, th { padding: 4px 6px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.75em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        th { background: #f8f9fa; color: #888; font-size: 0.6em; padding: 2px 6px; }
+        /* Resultados (Igual a tu imagen 3) */
+        .match-row { padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8em; }
+        .match-team { width: 40%; font-weight: bold; color: #333; }
+        .match-score { background: var(--azul-nav); color: white; padding: 2px 8px; border-radius: 3px; font-weight: bold; font-size: 0.85em; min-width: 45px; text-align: center; }
 
-        /* Columnas muy juntas */
-        .col-nom { width: 60%; }
-        .col-dat { width: 20%; text-align: center; }
+        /* Tablas (Igual a tu imagen 2) */
+        table { width: 100%; border-collapse: collapse; }
+        td, th { padding: 3px 8px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.75em; }
+        th { background: #f9f9f9; color: #999; font-size: 0.6em; text-transform: uppercase; padding: 2px 8px; }
         
-        /* Resultados compactos */
-        .match-row { padding: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 0.75em; }
-        .match-team { width: 42%; font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
-        .match-score { background: var(--azul-oscuro); color: white; padding: 2px 5px; border-radius: 3px; font-weight: bold; min-width: 35px; text-align: center; }
+        .col-dat { width: 50px; text-align: center; }
+        .pts-verde { color: var(--verde); font-weight: bold; }
 
-        .amarilla-box { background: #f1c40f; color: #000; padding: 1px 3px; border-radius: 2px; font-weight: bold; }
-        .status-sancion { color: var(--rojo); font-weight: bold; font-size: 0.7em; }
-        .status-ok { color: var(--verde); font-weight: bold; font-size: 0.7em; }
-        
         .hidden { display: none; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; }
 
@@ -62,6 +57,7 @@
         <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLES</div>
         <div id="btn-tar" class="btn" onclick="ver('tar')">🟨 SANCIONES</div>
     </nav>
+
     <div id="main-container">
         <header>
             <div class="menu-toggle" onclick="toggleMenu()">☰</div>
@@ -72,24 +68,27 @@
                 <span class="seccion-titulo">Resultados</span>
                 <div id="partidos-container"></div>
             </div>
+
             <div id="grupos" class="hidden">
                 <span class="seccion-titulo">Clasificación</span>
                 <div id="grupos-container"></div>
             </div>
+
             <div id="gol" class="hidden">
                 <span class="seccion-titulo">Goleadores</span>
                 <div class="card">
                     <table>
-                        <thead><tr><th class="col-nom">Nombre</th><th class="col-dat">PJ</th><th class="col-dat">G</th></tr></thead>
+                        <thead><tr><th>Jugador</th><th class="col-dat">PJ</th><th class="col-dat">G</th></tr></thead>
                         <tbody id="body-gol"></tbody>
                     </table>
                 </div>
             </div>
+
             <div id="tar" class="hidden">
                 <span class="seccion-titulo">Sanciones</span>
                 <div class="card">
                     <table>
-                        <thead><tr><th class="col-nom">Jugador</th><th class="col-dat">🟨</th><th style="width:25%; text-align:right;">Estado</th></tr></thead>
+                        <thead><tr><th>Jugador</th><th class="col-dat">🟨</th><th style="text-align:right">Estado</th></tr></thead>
                         <tbody id="body-tar"></tbody>
                     </table>
                 </div>
@@ -110,27 +109,27 @@
                 ]);
 
                 const statsPJ = {}; 
-                const tienePendiente = {}; 
+                const tienePend = {}; 
 
                 resP.forEach(p => {
                     if (!p.Local) return;
-                    const valL = p.GolesL?.toString().trim();
-                    const valV = p.GolesV?.toString().trim();
-                    const haJugado = (valL !== "" && valL !== "-" && !isNaN(valL)) && (valV !== "" && valV !== "-" && !isNaN(valV));
+                    const vL = p.GolesL?.toString().trim();
+                    const vV = p.GolesV?.toString().trim();
+                    const jugado = (vL !== "" && vL !== "-" && !isNaN(vL)) && (vV !== "" && vV !== "-" && !isNaN(vV));
                     
-                    if (haJugado) {
+                    if (jugado) {
                         statsPJ[p.Local] = (statsPJ[p.Local] || 0) + 1;
                         statsPJ[p.Visitante] = (statsPJ[p.Visitante] || 0) + 1;
                     } else {
-                        tienePendiente[p.Local] = true;
-                        tienePendiente[p.Visitante] = true;
+                        tienePend[p.Local] = true; 
+                        tienePend[p.Visitante] = true;
                     }
                 });
 
                 renderPartidos(resP);
                 renderClasificacion(resC, statsPJ);
                 renderGoleadores(resG, statsPJ);
-                renderTarjetas(resT, statsPJ, tienePendiente);
+                renderTarjetas(resT, statsPJ, tienePend);
 
             } catch (e) { console.error(e); }
         }
@@ -140,8 +139,8 @@
                 <div class="card">
                     <div class="match-row">
                         <div class="match-team" style="text-align:right;">${m.Local}</div>
-                        <div class="match-score">${m.GolesL} : ${m.GolesV}</div>
-                        <div class="match-team">${m.Visitante}</div>
+                        <div class="match-score">${m.GolesL}:${m.GolesV}</div>
+                        <div class="match-team" style="text-align:left;">${m.Visitante}</div>
                     </div>
                 </div>`).join('');
         }
@@ -155,33 +154,33 @@
             });
 
             container.innerHTML = Object.keys(grupos).map(g => {
-                const ordenados = grupos[g].sort((a, b) => (parseInt(b.Puntos) || 0) - (parseInt(a.Puntos) || 0));
+                const orden = grupos[g].sort((a, b) => (parseInt(b.Puntos) || 0) - (parseInt(a.Puntos) || 0));
                 return `
                 <div class="card">
-                    <div style="padding:3px 8px; background:#f1f1f1; font-weight:bold; font-size:0.6em; border-bottom:1px solid #ddd;">GRUPO ${g}</div>
+                    <div style="padding:3px 8px; background:#eee; font-weight:bold; font-size:0.6em;">GRUPO ${g}</div>
                     <table>
-                        <thead><tr><th class="col-nom">EQUIPO</th><th class="col-dat">PJ</th><th class="col-dat">PTS</th></tr></thead>
-                        <tbody>${ordenados.map(e => `<tr><td class="col-nom">${e.Nombre}</td><td class="col-dat">${stats[e.Nombre] || 0}</td><td class="col-dat" style="font-weight:bold; color:var(--verde)">${e.Puntos || 0}</td></tr>`).join('')}</tbody>
+                        <thead><tr><th>EQUIPO</th><th class="col-dat">PJ</th><th class="col-dat">PTS</th></tr></thead>
+                        <tbody>${orden.map(e => `<tr><td>${e.Nombre}</td><td class="col-dat">${stats[e.Nombre] || 0}</td><td class="col-dat pts-verde">${e.Puntos || 0}</td></tr>`).join('')}</tbody>
                     </table>
                 </div>`;
             }).join('');
         }
 
         function renderGoleadores(data, stats) {
-            const ordenados = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
-            document.getElementById("body-gol").innerHTML = ordenados.map(j => `
-                <tr><td class="col-nom"><b>${j.Nombre}</b></td><td class="col-dat">${stats[j.Equipo] || 0}</td><td class="col-dat" style="color:var(--verde); font-weight:bold;">${j.Goles || 0}</td></tr>`).join('');
+            const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
+            document.getElementById("body-gol").innerHTML = orden.map(j => `
+                <tr><td><b>${j.Nombre}</b></td><td class="col-dat">${stats[j.Equipo] || 0}</td><td class="col-dat pts-verde">${j.Goles || 0}</td></tr>`).join('');
         }
 
         function renderTarjetas(data, stats, pend) {
-            const ordenados = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
-            document.getElementById("body-tar").innerHTML = ordenados.map(j => {
+            const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
+            document.getElementById("body-tar").innerHTML = orden.map(j => {
                 const am = parseInt(j.Amarillas) || 0;
-                const sancionado = (am > 0 && am % 3 === 0 && pend[j.Equipo]);
+                const sancion = (am > 0 && am % 3 === 0 && pend[j.Equipo]);
                 return `<tr>
-                    <td class="col-nom">${j.Nombre}</td>
-                    <td class="col-dat"><span class="amarilla-box">${am}</span></td>
-                    <td style="text-align:right;">${sancionado ? '<span class="status-sancion">SANCION</span>' : '<span class="status-ok">OK</span>'}</td>
+                    <td>${j.Nombre}</td>
+                    <td class="col-dat"><span style="background:#f1c40f; padding:1px 4px; border-radius:2px; font-weight:bold">${am}</span></td>
+                    <td style="text-align:right; font-weight:bold; font-size:0.9em;">${sancion ? '<span style="color:var(--rojo)">SANCION</span>' : '<span style="color:var(--verde)">OK</span>'}</td>
                 </tr>`;
             }).join('');
         }
