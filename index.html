@@ -182,28 +182,29 @@
             const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
             document.getElementById("body-tar").innerHTML = orden.map(j => {
                 const am = parseInt(j.Amarillas) || 0, eq = j.Equipo?.trim() || '';
-                const pjEquipo = stats[eq]?.pj || 0; // Partidos totales disputados por su Club
+                const pjEquipo = stats[eq]?.pj || 0; 
                 
                 let estado = 'OK';
                 let pjJugador = pjEquipo; 
 
-                // AUTOMATIZACIÓN COMPLETA CON IF
                 if (am > 0) {
-                    // Determina cuántos partidos de sanción le corresponden (1 por cada 3 amarillas)
+                    // Calcula cuántas sanciones acumula el jugador (1 por cada ciclo de 3 tarjetas)
                     const ciclosSancion = Math.floor(am / 3); 
                     
                     if (ciclosSancion > 0) {
-                        // El castigo se aplica exactamente en el partido que empata el número de tarjetas
+                        // El partido de sanción es el siguiente al que acumuló la tercera tarjeta (es decir, partido = ciclo * 3)
                         const partidoDeCastigo = ciclosSancion * 3;
 
                         if (pjEquipo === partidoDeCastigo) {
+                            // Su equipo está disputando la jornada de suspensión justo ahora
                             estado = 'SANCIONADO';
                             pjJugador = pjEquipo - ciclosSancion; 
                         } else if (pjEquipo > partidoDeCastigo) {
-                            estado = 'OK'; // El club ya pasó ese partido, el jugador queda libre
-                            pjJugador = pjEquipo - ciclosSancion; // Mantiene el partido perdido restado
+                            // Su equipo ya avanzó y jugó otro partido: se limpia la sanción pero el partido no jugado queda restado
+                            estado = 'OK'; 
+                            pjJugador = pjEquipo - ciclosSancion; 
                         } else {
-                            // Si el club aún no llega a jugar la jornada de suspensión
+                            // El equipo todavía no ha llegado al partido de suspensión
                             estado = 'OK';
                             pjJugador = pjEquipo;
                         }
