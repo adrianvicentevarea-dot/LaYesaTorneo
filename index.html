@@ -184,28 +184,27 @@
             document.getElementById("body-tar").innerHTML = orden.map(j => {
                 const am = parseInt(j.Amarillas) || 0;
                 const eq = j.Equipo?.trim() || '';
-                const pjEquipo = stats[eq]?.pj || 0; // Partidos que lleva el club
+                const pjEquipo = stats[eq]?.pj || 0; 
                 
                 let estado = 'OK';
+                let pjJugador = pjEquipo; 
                 
-                // Calculamos cuántos ciclos completos de 3 amarillas acumuladas tiene el jugador
                 const ciclosSancion = Math.floor(am / 3);
-                
-                // Por defecto, sus partidos jugados son los mismos que su equipo
-                let pjJugador = pjEquipo;
 
                 if (ciclosSancion > 0) {
-                    // Si el equipo tiene menos de 2 partidos de ventaja sobre los partidos base menos la sanción, se queda bloqueado en el castigo
-                    // Al restarle 1 de forma inmediata, la diferencia inicial es menor que 2 y salta "SANCIONADO"
-                    let partidosBaseSancion = pjEquipo - 1;
+                    // ORDEN DE OPERACIÓN SOLICITADO:
+                    
+                    // 1. Primero se le resta un partido de forma inmediata
+                    pjJugador = pjEquipo - 1; 
 
-                    if (pjEquipo - partidosBaseSancion < 2) {
+                    // 2. Evaluamos si el equipo NO tiene dos partidos jugados más que él
+                    if (pjEquipo - pjJugador < 2) {
+                        // Mientras no tenga esa diferencia de 2, no se le suman más partidos y se queda congelado
                         estado = 'SANCIONADO';
-                        pjJugador = partidosBaseSancion; // Le resta un partido de forma inmediata y se congela
                     } else {
+                        // 3. En el momento en que su equipo tenga dos más, se le quita la sanción y se le suma un partido jugado
                         estado = 'OK';
-                        // Cuando el equipo ya tiene 2 partidos más que los partidos base congelados, se le vuelve a sumar su partido jugado
-                        pjJugador = partidosBaseSancion + 1; 
+                        pjJugador = pjJugador + 1; 
                     }
                 }
 
