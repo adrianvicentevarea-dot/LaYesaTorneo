@@ -22,9 +22,8 @@
         .seccion-titulo { color: white; font-size: 0.65em; margin: 4px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
 
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
-        .card { background: var(--blanco); border-radius: 3px; margin-bottom: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); width: 100%; position: relative; }
+        .card { background: var(--blanco); border-radius: 3px; margin-bottom: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); width: 100%; }
         
-        /* TABLAS FLEXIBLES */
         table { width: 100%; border-collapse: collapse; table-layout: auto; }
         td, th { padding: 5px 6px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.75em; white-space: nowrap; }
         th { background: #f9f9f9; color: #999; font-size: 0.55em; letter-spacing: 0.2px; text-transform: uppercase; }
@@ -35,13 +34,11 @@
         .pts-verde { color: var(--verde); font-weight: bold; }
         .badge-amarilla { background: #f1c40f; padding: 1px 4px; border-radius: 2px; font-weight: bold; color: #000; }
 
-        /* DISEÑO DE PARTIDOS */
-        .match-row { padding: 12px 10px 6px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.75em; }
+        /* DISEÑO ORIGINAL DE PARTIDOS CON HORA EN EL CENTRO */
+        .match-row { padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.72em; }
         .match-team { width: 42%; font-weight: bold; color: #333; }
-        .match-score { background: var(--azul-nav); color: white; padding: 2px 5px; border-radius: 2px; min-width: 38px; text-align: center; font-weight: bold; font-size: 0.95em; }
-        
-        /* HORA EN LA ESQUINA SUPERIOR DERECHA */
-        .match-time-tag { position: absolute; top: 2px; right: 6px; font-size: 0.52em; color: #888; font-weight: bold; }
+        .match-score { background: var(--azul-nav); color: white; padding: 2px 5px; border-radius: 2px; min-width: 45px; text-align: center; font-weight: bold; font-size: 0.9em; }
+        .match-score.hora { background: #7f8c8d; font-size: 0.85em; font-weight: 600; }
 
         .hidden { display: none; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
@@ -143,18 +140,20 @@
         function renderPartidos(data) {
             document.getElementById('partidos-container').innerHTML = data.filter(m => m.Local).map(m => {
                 const gL = parseInt(m.GolesL), gV = parseInt(m.GolesV);
-                const marcador = (!isNaN(gL) && !isNaN(gV)) ? `${gL}:${gV}` : '-:-';
-                const horaHTML = m.Hora ? `<div class="match-time-tag">🕒 ${m.Hora.trim()}</div>` : '';
-
-                return `
-                <div class="card">
-                    ${horaHTML}
-                    <div class="match-row">
-                        <div class="match-team" style="text-align:right;">${m.Local}</div>
-                        <div class="match-score">${marcador}</div>
-                        <div class="match-team">${m.Visitante}</div>
-                    </div>
-                </div>`;
+                let marcadorHTML = '';
+                
+                // Volvemos a dejar la hora en el centro tal y como estaba antes
+                if (!isNaN(gL) && !isNaN(gV)) {
+                    marcadorHTML = `<div class="match-score">${gL}:${gV}</div>`;
+                } else {
+                    const horaPartido = m.Hora ? m.Hora.trim() : '-:-';
+                    marcadorHTML = `<div class="match-score hora">${horaPartido}</div>`;
+                }
+                return `<div class="card"><div class="match-row">
+                    <div class="match-team" style="text-align:right;">${m.Local}</div>
+                    ${marcadorHTML}
+                    <div class="match-team">${m.Visitante}</div>
+                </div></div>`;
             }).join('');
         }
 
@@ -189,22 +188,16 @@
                 let estado = 'OK';
                 let pjJugador = pjEquipo; 
 
-                // LÓGICA CON IF: Manejo automático del ciclo de amarillas (3, 6, 9...)
+                // NUEVA LÓGICA DIRECTA: Si tiene 3, 6, 9... amarillas salta la sanción directamente
                 if (am > 0 && am % 3 === 0) {
-                    const partidoSancion = am; 
-                    if (pjEquipo === partidoSancion) {
-                        estado = 'SANCIONADO';
-                        pjJugador = pjEquipo - 1; // Le descuenta el partido en curso (no lo juega)
-                    } else if (pjEquipo > partidoSancion) {
-                        estado = 'OK';
-                        pjJugador = pjEquipo - 1; // Sigue limpio pero mantiene el partido cumplido descontado
-                    }
+                    estado = 'SANCIONADO';
+                    pjJugador = pjEquipo - 1; // No le cuenta el partido actual ya que no lo juega
                 }
 
                 return `<tr>
                     <td><b>${j.Nombre}</b></td>
                     <td class="txt-club">${eq}</td>
-                    <td class="txt-centro">${pjJugador}</td>
+                    <td class="txt-centro">${pjJugador < 0 ? 0 : pjJugador}</td>
                     <td class="txt-centro"><span class="badge-amarilla">${am}</span></td>
                     <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
                 </tr>`;
