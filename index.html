@@ -192,28 +192,24 @@
                 const ciclosSancion = Math.floor(am / 3);
 
                 if (ciclosSancion > 0) {
-                    // Calculamos de forma fija cuándo se originó el último ciclo de tarjetas (ej: 3, 6, 9)
-                    const limiteSancionActual = ciclosSancion * 3;
+                    // El "punto fijo" de la sanción se basa en el ciclo de tarjetas (3, 6, 9...)
+                    const puntoSancionFijo = ciclosSancion * 3;
 
-                    // ORDEN DE OPERACIÓN ESTRICTO SOLICITADO:
+                    // ORDEN DE OPERACIÓN SOLICITADO:
 
-                    // 1. Se le resta un partido inmediatamente respecto al momento del castigo
-                    let partidosCongelados = pjEquipo - 1; 
+                    // 1. Al jugador se le resta un partido inmediatamente tomando como base el punto fijo
+                    let partidosCongelados = puntoSancionFijo - 1; 
                     pjJugador = partidosCongelados;
 
-                    // 2. Por defecto se le cambia el estado a SANCIONADO
+                    // 2. Cambia automáticamente a SANCIONADO
                     estado = 'SANCIONADO';
 
-                    // 3. Evaluamos si el equipo ya tiene dos partidos MÁS jugados que los partidos congelados del jugador
+                    // 3. Evaluamos si los partidos jugados reales del equipo superan en 2 o más a los congelados
                     if (pjEquipo - partidosCongelados >= 2) {
-                        // En el momento en que se cumple la ventaja de 2 partidos, se quita el sancionado y se le suma el partido jugado
+                        // En el momento en que el equipo tiene dos más, se quita la sanción
                         estado = 'OK';
-                        pjJugador = partidosCongelados + 1; 
-                    }
-                    
-                    // Si arrastra más acumuladas del pasado (ej: va por la tarjeta 6), mantiene los partidos perdidos de ciclos anteriores
-                    if (ciclosSancion > 1 && estado === 'OK') {
-                        pjJugador = pjJugador - (ciclosSancion - 1);
+                        // Y se le suma un partido jugado automáticamente (vuelve a la normalidad del equipo)
+                        pjJugador = partidosCongelados + 1 + (pjEquipo - puntoSancionFijo); 
                     }
                 }
 
