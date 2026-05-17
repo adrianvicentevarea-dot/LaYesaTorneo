@@ -184,7 +184,7 @@
             document.getElementById("body-tar").innerHTML = orden.map(j => {
                 const am = parseInt(j.Amarillas) || 0;
                 const eq = j.Equipo?.trim() || '';
-                const pjEquipo = stats[eq]?.pj || 0; // Partidos totales jugados por el Club
+                const pjEquipo = stats[eq]?.pj || 0; 
                 
                 let estado = 'OK';
                 let pjJugador = pjEquipo; 
@@ -192,24 +192,25 @@
                 const ciclosSancion = Math.floor(am / 3);
 
                 if (ciclosSancion > 0) {
-                    // SE EJECUTA EN TU ORDEN EXACTO SEPARANDO AMARILLAS DE LOS PARTIDOS:
+                    // SE EJECUTA ESTRICTAMENTE EN EL ORDEN QUE SOLICITAS:
 
-                    // 1. Al jugador se le resta un partido inmediatamente respecto a lo que lleva su equipo
-                    pjJugador = pjEquipo - 1; 
+                    // 1. Al jugador se le resta un partido inmediatamente respecto a su equipo
+                    let partidosCongelados = pjEquipo - 1; 
+                    pjJugador = partidosCongelados;
 
-                    // 2. Evaluamos si el equipo NO tiene dos partidos jugados más que el jugador con la resta aplicada
-                    if (pjEquipo - pjJugador < 2) {
-                        // Mientras la diferencia sea menor de 2, sus partidos se quedan totalmente congelados
-                        estado = 'SANCIONADO';
-                    } else {
-                        // 3. En el momento en que su equipo tiene dos partidos más que él, se le quita la sanción y se le suma un partido jugado
+                    // 2. Cambia automáticamente a SANCIONADO por defecto mientras cumple las condiciones
+                    estado = 'SANCIONADO';
+
+                    // 3. Evaluamos si el equipo ya tiene 2 partidos MÁS que los partidos congelados del jugador
+                    if (pjEquipo - partidosCongelados >= 2) {
+                        // En el momento en que se cumple esa ventaja de 2, se le quita el sancionado y se le suma un partido jugado
                         estado = 'OK';
-                        pjJugador = pjJugador + 1; 
-                        
-                        // Si arrastra más de un ciclo acumulado en el tiempo (ej: 6 amarillas), sigue manteniendo los partidos anteriores perdidos
-                        if (ciclosSancion > 1) {
-                            pjJugador = pjJugador - (ciclosSancion - 1);
-                        }
+                        pjJugador = partidosCongelados + 1; 
+                    }
+
+                    // Ajuste técnico por si acumula más ciclos (6, 9 amarillas...) a lo largo de la liga
+                    if (ciclosSancion > 1 && estado === 'OK') {
+                        pjJugador = pjJugador - (ciclosSancion - 1);
                     }
                 }
 
