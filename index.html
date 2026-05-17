@@ -192,23 +192,26 @@
                 const ciclosSancion = Math.floor(am / 3);
 
                 if (ciclosSancion > 0) {
-                    // SE EJECUTA ESTRICTAMENTE EN EL ORDEN QUE SOLICITAS:
+                    // Calculamos de forma fija cuándo se originó el último ciclo de tarjetas (ej: 3, 6, 9)
+                    const limiteSancionActual = ciclosSancion * 3;
 
-                    // 1. Al jugador se le resta un partido inmediatamente respecto a su equipo
+                    // ORDEN DE OPERACIÓN ESTRICTO SOLICITADO:
+
+                    // 1. Se le resta un partido inmediatamente respecto al momento del castigo
                     let partidosCongelados = pjEquipo - 1; 
                     pjJugador = partidosCongelados;
 
-                    // 2. Cambia automáticamente a SANCIONADO por defecto mientras cumple las condiciones
+                    // 2. Por defecto se le cambia el estado a SANCIONADO
                     estado = 'SANCIONADO';
 
-                    // 3. Evaluamos si el equipo ya tiene 2 partidos MÁS que los partidos congelados del jugador
+                    // 3. Evaluamos si el equipo ya tiene dos partidos MÁS jugados que los partidos congelados del jugador
                     if (pjEquipo - partidosCongelados >= 2) {
-                        // En el momento en que se cumple esa ventaja de 2, se le quita el sancionado y se le suma un partido jugado
+                        // En el momento en que se cumple la ventaja de 2 partidos, se quita el sancionado y se le suma el partido jugado
                         estado = 'OK';
                         pjJugador = partidosCongelados + 1; 
                     }
-
-                    // Ajuste técnico por si acumula más ciclos (6, 9 amarillas...) a lo largo de la liga
+                    
+                    // Si arrastra más acumuladas del pasado (ej: va por la tarjeta 6), mantiene los partidos perdidos de ciclos anteriores
                     if (ciclosSancion > 1 && estado === 'OK') {
                         pjJugador = pjJugador - (ciclosSancion - 1);
                     }
