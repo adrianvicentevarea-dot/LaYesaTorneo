@@ -106,9 +106,6 @@
     <script>
         const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg';
 
-        // Objeto global para memorizar en qué jornada exacta del equipo se llegó a cada ciclo de tarjetas
-        const registroSanciones = {};
-
         async function cargarTodo() {
             try {
                 const [resP, resC, resG, resT] = await Promise.all([
@@ -185,39 +182,33 @@
             const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
             
             document.getElementById("body-tar").innerHTML = orden.map(j => {
-                const nombreJugador = j.Nombre.trim();
                 const am = parseInt(j.Amarillas) || 0;
                 const eq = j.Equipo?.trim() || '';
-                const pjEquipo = stats[eq]?.pj || 0; // Partidos totales que lleva el Club actualmente
+                const pjEquipo = stats[eq]?.pj || 0; // Partidos que lleva el club
                 
                 let estado = 'OK';
                 
-                // Calculamos cuántas sanciones totales acumuladas le corresponden por sus tarjetas
-                const totalSancionesCorrespondientes = Math.floor(am / 3);
+                // Calculamos cuántos ciclos completos de 3 amarillas acumuladas tiene el jugador
+                const ciclosSancion = Math.floor(am / 3);
+                
+                // Por defecto, sus partidos jugados son los mismos que su equipo
+                let pjJugador = pjEquipo;
 
-                if (am > 0 && am % 3 === 0) {
-                    // ID único para recordar este ciclo del jugador
-                    const idRegistro = `${nombreJugador}_${totalSancionesCorrespondientes}`;
+                if (ciclosSancion > 0) {
+                    // Si el equipo tiene menos de 2 partidos de ventaja sobre los partidos base menos la sanción, se queda bloqueado en el castigo
+                    // Al restarle 1 de forma inmediata, la diferencia inicial es menor que 2 y salta "SANCIONADO"
+                    let partidosBaseSancion = pjEquipo - 1;
 
-                    // Si es la primera vez que el código ve que llegó a este múltiplo de 3, guarda los PJ actuales de su equipo como el inicio del castigo
-                    if (registroSanciones[idRegistro] === undefined) {
-                        registroSanciones[idRegistro] = pjEquipo;
-                    }
-
-                    const jornadaActivacion = registroSanciones[idRegistro];
-
-                    // LOGICA DE CONTROL DE JORNADA
-                    if (pjEquipo === jornadaActivacion) {
-                        // Su equipo todavía está jugando la jornada donde le sacaron la 3ª, 6ª o 9ª tarjeta
+                    if (pjEquipo - partidosBaseSancion < 2) {
                         estado = 'SANCIONADO';
-                    } else if (pjEquipo > jornadaActivacion) {
-                        // El equipo ya ha jugado un partido más, la sanción expira automáticamente
+                        pjJugador = partidosBaseSancion; // Le resta un partido de forma inmediata y se congela
+                    } else {
                         estado = 'OK';
+                        // Cuando el equipo ya tiene 2 partidos más que los partidos base congelados, se le vuelve a sumar su partido jugado
+                        pjJugador = partidosBaseSancion + 1; 
                     }
                 }
 
-                // El jugador pierde exactamente tantos partidos como sanciones acumuladas tenga en total
-                let pjJugador = pjEquipo - totalSancionesCorrespondientes;
                 if (pjJugador < 0) pjJugador = 0;
 
                 return `<tr>
