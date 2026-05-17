@@ -34,7 +34,7 @@
         .pts-verde { color: var(--verde); font-weight: bold; }
         .badge-amarilla { background: #f1c40f; padding: 1px 4px; border-radius: 2px; font-weight: bold; color: #000; }
 
-        /* DISEÑO ORIGINAL DE PARTIDOS CON HORA EN EL CENTRO */
+        /* DISEÑO DE PARTIDOS CON HORA EN EL CENTRO */
         .match-row { padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.72em; }
         .match-team { width: 42%; font-weight: bold; color: #333; }
         .match-score { background: var(--azul-nav); color: white; padding: 2px 5px; border-radius: 2px; min-width: 45px; text-align: center; font-weight: bold; font-size: 0.9em; }
@@ -142,7 +142,6 @@
                 const gL = parseInt(m.GolesL), gV = parseInt(m.GolesV);
                 let marcadorHTML = '';
                 
-                // Volvemos a dejar la hora en el centro tal y como estaba antes
                 if (!isNaN(gL) && !isNaN(gV)) {
                     marcadorHTML = `<div class="match-score">${gL}:${gV}</div>`;
                 } else {
@@ -183,15 +182,32 @@
             const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
             document.getElementById("body-tar").innerHTML = orden.map(j => {
                 const am = parseInt(j.Amarillas) || 0, eq = j.Equipo?.trim() || '';
-                const pjEquipo = stats[eq]?.pj || 0;
+                const pjEquipo = stats[eq]?.pj || 0; // Partidos totales disputados por su Club
                 
                 let estado = 'OK';
                 let pjJugador = pjEquipo; 
 
-                // NUEVA LÓGICA DIRECTA: Si tiene 3, 6, 9... amarillas salta la sanción directamente
-                if (am > 0 && am % 3 === 0) {
-                    estado = 'SANCIONADO';
-                    pjJugador = pjEquipo - 1; // No le cuenta el partido actual ya que no lo juega
+                // AUTOMATIZACIÓN COMPLETA CON IF
+                if (am > 0) {
+                    // Determina cuántos partidos de sanción le corresponden (1 por cada 3 amarillas)
+                    const ciclosSancion = Math.floor(am / 3); 
+                    
+                    if (ciclosSancion > 0) {
+                        // El castigo se aplica exactamente en el partido que empata el número de tarjetas
+                        const partidoDeCastigo = ciclosSancion * 3;
+
+                        if (pjEquipo === partidoDeCastigo) {
+                            estado = 'SANCIONADO';
+                            pjJugador = pjEquipo - ciclosSancion; 
+                        } else if (pjEquipo > partidoDeCastigo) {
+                            estado = 'OK'; // El club ya pasó ese partido, el jugador queda libre
+                            pjJugador = pjEquipo - ciclosSancion; // Mantiene el partido perdido restado
+                        } else {
+                            // Si el club aún no llega a jugar la jornada de suspensión
+                            estado = 'OK';
+                            pjJugador = pjEquipo;
+                        }
+                    }
                 }
 
                 return `<tr>
