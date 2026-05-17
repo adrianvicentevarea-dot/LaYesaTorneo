@@ -106,6 +106,9 @@
     <script>
         const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg';
 
+        // Objeto global para memorizar en qué jornada exacta del equipo se llegó a cada ciclo de tarjetas
+        const registroSanciones = {};
+
         async function cargarTodo() {
             try {
                 const [resP, resC, resG, resT] = await Promise.all([
@@ -180,41 +183,47 @@
 
         function renderTarjetas(data, stats) {
             const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
+            
             document.getElementById("body-tar").innerHTML = orden.map(j => {
-                const am = parseInt(j.Amarillas) || 0, eq = j.Equipo?.trim() || '';
-                const pjEquipo = stats[eq]?.pj || 0; 
+                const nombreJugador = j.Nombre.trim();
+                const am = parseInt(j.Amarillas) || 0;
+                const eq = j.Equipo?.trim() || '';
+                const pjEquipo = stats[eq]?.pj || 0; // Partidos totales que lleva el Club actualmente
                 
                 let estado = 'OK';
-                let pjJugador = pjEquipo; 
+                
+                // Calculamos cuántas sanciones totales acumuladas le corresponden por sus tarjetas
+                const totalSancionesCorrespondientes = Math.floor(am / 3);
 
-                if (am > 0) {
-                    // Calcula cuántas sanciones acumula el jugador (1 por cada ciclo de 3 tarjetas)
-                    const ciclosSancion = Math.floor(am / 3); 
-                    
-                    if (ciclosSancion > 0) {
-                        // El partido de sanción es el siguiente al que acumuló la tercera tarjeta (es decir, partido = ciclo * 3)
-                        const partidoDeCastigo = ciclosSancion * 3;
+                if (am > 0 && am % 3 === 0) {
+                    // ID único para recordar este ciclo del jugador
+                    const idRegistro = `${nombreJugador}_${totalSancionesCorrespondientes}`;
 
-                        if (pjEquipo === partidoDeCastigo) {
-                            // Su equipo está disputando la jornada de suspensión justo ahora
-                            estado = 'SANCIONADO';
-                            pjJugador = pjEquipo - ciclosSancion; 
-                        } else if (pjEquipo > partidoDeCastigo) {
-                            // Su equipo ya avanzó y jugó otro partido: se limpia la sanción pero el partido no jugado queda restado
-                            estado = 'OK'; 
-                            pjJugador = pjEquipo - ciclosSancion; 
-                        } else {
-                            // El equipo todavía no ha llegado al partido de suspensión
-                            estado = 'OK';
-                            pjJugador = pjEquipo;
-                        }
+                    // Si es la primera vez que el código ve que llegó a este múltiplo de 3, guarda los PJ actuales de su equipo como el inicio del castigo
+                    if (registroSanciones[idRegistro] === undefined) {
+                        registroSanciones[idRegistro] = pjEquipo;
+                    }
+
+                    const jornadaActivacion = registroSanciones[idRegistro];
+
+                    // LOGICA DE CONTROL DE JORNADA
+                    if (pjEquipo === jornadaActivacion) {
+                        // Su equipo todavía está jugando la jornada donde le sacaron la 3ª, 6ª o 9ª tarjeta
+                        estado = 'SANCIONADO';
+                    } else if (pjEquipo > jornadaActivacion) {
+                        // El equipo ya ha jugado un partido más, la sanción expira automáticamente
+                        estado = 'OK';
                     }
                 }
+
+                // El jugador pierde exactamente tantos partidos como sanciones acumuladas tenga en total
+                let pjJugador = pjEquipo - totalSancionesCorrespondientes;
+                if (pjJugador < 0) pjJugador = 0;
 
                 return `<tr>
                     <td><b>${j.Nombre}</b></td>
                     <td class="txt-club">${eq}</td>
-                    <td class="txt-centro">${pjJugador < 0 ? 0 : pjJugador}</td>
+                    <td class="txt-centro">${pjJugador}</td>
                     <td class="txt-centro"><span class="badge-amarilla">${am}</span></td>
                     <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
                 </tr>`;
