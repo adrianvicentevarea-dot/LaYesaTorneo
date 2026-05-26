@@ -40,6 +40,9 @@
         .match-score { background: var(--azul-nav); color: white; padding: 2px 5px; border-radius: 2px; min-width: 45px; text-align: center; font-weight: bold; font-size: 0.9em; }
         .match-score.hora { background: #7f8c8d; font-size: 0.85em; font-weight: 600; }
 
+        /* ESTILO PARA LA IMAGEN DEL ÁRBOL DE ELIMINATORIAS */
+        .img-bracket { width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: block; margin-top: 4px; }
+
         .hidden { display: none; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
 
@@ -56,6 +59,7 @@
         <div class="nav-header">TORNEO LA YESA</div>
         <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ PARTIDOS</div>
         <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 GRUPOS</div>
+        <div id="btn-elim" class="btn" onclick="ver('elim')">🏆 PLAYOFFS</div>
         <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLES</div>
         <div id="btn-tar" class="btn" onclick="ver('tar')">🟨 SANCIONES</div>
     </nav>
@@ -66,6 +70,11 @@
             <div id="partidos"><span class="seccion-titulo">Resultados y Horarios</span><div id="partidos-container"></div></div>
             <div id="grupos" class="hidden"><span class="seccion-titulo">Clasificación</span><div id="grupos-container" class="grid-grupos"></div></div>
             
+            <div id="elim" class="hidden">
+                <span class="seccion-titulo">Fase Final - Road to Budapest</span>
+                <img src="https://i.ibb.co/image-b4d036.jpg" alt="Road to Budapest 26" class="img-bracket">
+            </div>
+
             <div id="gol" class="hidden">
                 <span class="seccion-titulo">Goleadores</span>
                 <div class="card">
@@ -186,21 +195,16 @@
                 const eq = j.Equipo?.trim() || '';
                 const pjEquipo = stats[eq]?.pj || 0; 
                 
-                // Lee lo escrito en tu nueva columna "Sanción" de tu Excel
                 const textoCelda = j.Sanción ? j.Sanción.toString().trim().toLowerCase() : '';
                 
                 let estado = 'OK';
                 let pjJugador = pjEquipo;
 
-                // SI LA CELDA CONTIENE "sancionado", "si" o un "0" -> FONDO ROJO EN EXCEL
                 if (textoCelda === 'sancionado' || textoCelda === 'si' || textoCelda === '0') {
                     estado = 'SANCIONADO';
-                    pjJugador = pjEquipo - 1; // Resta el partido automáticamente al estar castigado
+                    pjJugador = pjEquipo - 1; 
                 } else {
-                    // SI LA CELDA CONTIENE "ok" o está VACÍA -> FONDO VERDE EN EXCEL
                     estado = 'OK';
-                    
-                    // Mantiene el descuento si acumuló sanciones en el pasado para que no suban de más
                     const ciclosPasados = Math.floor(am / 3);
                     if (ciclosPasados > 0) {
                         pjJugador = pjEquipo - ciclosPasados;
@@ -220,7 +224,7 @@
         }
 
         function ver(s) {
-            ['partidos', 'grupos', 'gol', 'tar'].forEach(id => {
+            ['partidos', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
                 document.getElementById(id).classList.toggle('hidden', id !== s);
                 document.getElementById('btn-' + id).classList.toggle('active', id === s);
             });
