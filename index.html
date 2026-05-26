@@ -40,8 +40,14 @@
         .match-score { background: var(--azul-nav); color: white; padding: 2px 5px; border-radius: 2px; min-width: 45px; text-align: center; font-weight: bold; font-size: 0.9em; }
         .match-score.hora { background: #7f8c8d; font-size: 0.85em; font-weight: 600; }
 
-        /* ESTILO PARA LA IMAGEN DEL ÁRBOL DE ELIMINATORIAS */
-        .img-bracket { width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: block; margin-top: 4px; }
+        /* ESTILOS DE LA SECCIÓN EDITABLE DE PLAYOFFS */
+        .bracket-container { display: flex; flex-direction: column; gap: 10px; padding: 5px; }
+        .ronda-box { background: rgba(20, 45, 59, 0.5); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+        .ronda-titulo { color: var(--verde); font-size: 0.7em; font-weight: bold; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .partido-playoff { display: flex; align-items: center; background: white; border-radius: 3px; padding: 4px; margin-bottom: 4px; gap: 4px; }
+        .inp-equipo { flex: 1; border: none; background: #f4f6f7; padding: 6px; font-size: 0.75em; font-weight: bold; border-radius: 2px; color: #333; }
+        .inp-goles { width: 35px; text-align: center; border: 1px solid #ddd; background: var(--azul-nav); color: white; padding: 5px 2px; font-size: 0.8em; font-weight: bold; border-radius: 2px; }
+        .vs-text { font-size: 0.65em; color: #7f8c8d; font-weight: bold; padding: 0 2px; }
 
         .hidden { display: none; }
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
@@ -72,7 +78,70 @@
             
             <div id="elim" class="hidden">
                 <span class="seccion-titulo">Fase Final - Road to Budapest</span>
-                <img src="https://i.ibb.co/image-b4d036.jpg" alt="Road to Budapest 26" class="img-bracket">
+                <div class="bracket-container">
+                    
+                    <div class="ronda-box">
+                        <div class="ronda-titulo">Cuartos de Final</div>
+                        <div class="partido-playoff">
+                            <input type="text" class="inp-equipo" placeholder="Equipo 1">
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <span class="vs-text">VS</span>
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <input type="text" class="inp-equipo" placeholder="Equipo 2">
+                        </div>
+                        <div class="partido-playoff">
+                            <input type="text" class="inp-equipo" placeholder="Equipo 3">
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <span class="vs-text">VS</span>
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <input type="text" class="inp-equipo" placeholder="Equipo 4">
+                        </div>
+                        <div class="partido-playoff">
+                            <input type="text" class="inp-equipo" placeholder="Equipo 5">
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <span class="vs-text">VS</span>
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <input type="text" class="inp-equipo" placeholder="Equipo 6">
+                        </div>
+                        <div class="partido-playoff">
+                            <input type="text" class="inp-equipo" placeholder="Equipo 7">
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <span class="vs-text">VS</span>
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <input type="text" class="inp-equipo" placeholder="Equipo 8">
+                        </div>
+                    </div>
+
+                    <div class="ronda-box">
+                        <div class="ronda-titulo">Semifinales</div>
+                        <div class="partido-playoff">
+                            <input type="text" class="inp-equipo" placeholder="Ganador Q1">
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <span class="vs-text">VS</span>
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <input type="text" class="inp-equipo" placeholder="Ganador Q2">
+                        </div>
+                        <div class="partido-playoff">
+                            <input type="text" class="inp-equipo" placeholder="Ganador Q3">
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <span class="vs-text">VS</span>
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <input type="text" class="inp-equipo" placeholder="Ganador Q4">
+                        </div>
+                    </div>
+
+                    <div class="ronda-box" style="border: 1px solid var(--verde);">
+                        <div class="ronda-titulo" style="color: #f1c40f;">🏆 Gran Final - Budapest</div>
+                        <div class="partido-playoff" style="background: #fbf9f0;">
+                            <input type="text" class="inp-equipo" placeholder="Finalista 1" style="background:#f1eee1;">
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <span class="vs-text">VS</span>
+                            <input type="number" class="inp-goles" placeholder="-">
+                            <input type="text" class="inp-equipo" placeholder="Finalista 2" style="background:#f1eee1;">
+                        </div>
+                    </div>
+
+                </div>
             </div>
 
             <div id="gol" class="hidden">
