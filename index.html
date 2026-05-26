@@ -184,29 +184,26 @@
             document.getElementById("body-tar").innerHTML = orden.map(j => {
                 const am = parseInt(j.Amarillas) || 0;
                 const eq = j.Equipo?.trim() || '';
-                const pjEquipo = stats[eq]?.pj || 0; // Partidos reales que tiene el equipo en el Excel
+                const pjEquipo = stats[eq]?.pj || 0; 
+                
+                // Lee lo escrito en tu nueva columna "Sanción" de tu Excel
+                const textoCelda = j.Sanción ? j.Sanción.toString().trim().toLowerCase() : '';
                 
                 let estado = 'OK';
-                let pjJugador = pjEquipo; 
-                
-                const ciclosSancion = Math.floor(am / 3);
+                let pjJugador = pjEquipo;
 
-                if (ciclosSancion > 0) {
-                    // ORDEN DE OPERACIÓN SOLICITADO ACTUALIZADO SIN ATADURAS ESTÁTICAS:
-
-                    // 1. Al jugador se le resta el partido de castigo inmediatamente respecto a su equipo
-                    pjJugador = pjEquipo - 1; 
-
-                    // 2. Evaluamos basándonos en si el equipo ya le saca ventaja de dos partidos al jugador congelado
-                    // Si el equipo juega un nuevo partido en el Excel, la diferencia aumenta automáticamente
-                    if (pjEquipo - pjJugador < 2) {
-                        // Mientras el equipo no juegue otro partido más adelante, se bloquea aquí
-                        estado = 'SANCIONADO';
-                    } else {
-                        // 3. En el momento en que su equipo tiene dos partidos más que él, se le quita la sanción y vuelve a OK
-                        estado = 'OK';
-                        // Se le reajusta su partido restando únicamente los castigos totales acumulados en su historial
-                        pjJugador = pjEquipo - ciclosSancion; 
+                // SI LA CELDA CONTIENE "sancionado", "si" o un "0" -> FONDO ROJO EN EXCEL
+                if (textoCelda === 'sancionado' || textoCelda === 'si' || textoCelda === '0') {
+                    estado = 'SANCIONADO';
+                    pjJugador = pjEquipo - 1; // Resta el partido automáticamente al estar castigado
+                } else {
+                    // SI LA CELDA CONTIENE "ok" o está VACÍA -> FONDO VERDE EN EXCEL
+                    estado = 'OK';
+                    
+                    // Mantiene el descuento si acumuló sanciones en el pasado para que no suban de más
+                    const ciclosPasados = Math.floor(am / 3);
+                    if (ciclosPasados > 0) {
+                        pjJugador = pjEquipo - ciclosPasados;
                     }
                 }
 
