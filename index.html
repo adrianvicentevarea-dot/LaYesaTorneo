@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Torneo La Yesa - Dashboard</title>
+    <title>Torneo La Yesa - Dashboard Unificado</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root { 
-            --azul-oscuro: #0f172a; 
-            --azul-nav: #1e293b; 
-            --verde-principal: #10b981; 
-            --blanco: #ffffff; 
-            --rojo-sancion: #ef4444; 
-            --texto-claro: #f1f5f9;
-            --texto-gris: #94a3b8;
-            --fondo-gris: #f8fafc;
+            --navy-deep: #0f172a; 
+            --navy-nav: #1e293b; 
+            --brand-accent: #10b981; 
+            --white: #ffffff; 
+            --danger: #ef4444; 
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --card-bg: #ffffff;
+            --bg-body: #0f172a;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         
         body { 
-            background: var(--azul-oscuro); 
+            background: var(--bg-body); 
             display: flex; 
             height: 100vh; 
             width: 100vw;
@@ -31,11 +32,11 @@
             overflow: hidden; 
         }
 
-        /* MENÚ LATERAL (SIDEBAR) */
+        /* SIDEBAR */
         #sidebar { 
-            width: 200px; 
-            background: var(--azul-nav); 
-            color: var(--blanco); 
+            width: 220px; 
+            background: var(--navy-nav); 
+            color: var(--white); 
             display: flex; 
             flex-direction: column; 
             flex-shrink: 0; 
@@ -43,62 +44,62 @@
             border-right: 1px solid rgba(255,255,255,0.05);
         }
         .nav-header { 
-            padding: 25px 20px; 
+            padding: 30px 20px; 
             font-family: 'Outfit', sans-serif;
             font-weight: 700; 
-            font-size: 1.1em; 
-            color: var(--verde-principal); 
+            text-align: left; 
+            font-size: 1.2em; 
+            color: var(--brand-accent); 
             letter-spacing: -0.5px; 
             text-transform: uppercase;
         }
         .btn { 
-            padding: 16px 20px; 
+            padding: 18px 20px; 
             cursor: pointer; 
-            color: var(--texto-gris); 
-            font-size: 0.85em; 
+            color: var(--text-dim); 
+            font-size: 0.9em; 
             font-weight: 600; 
             display: flex;
             align-items: center;
             gap: 12px;
             transition: all 0.2s ease;
             border-left: 3px solid transparent;
-            text-decoration: none;
         }
-        .btn i { width: 18px; text-align: center; }
-        .btn:hover { background: rgba(255,255,255,0.03); color: var(--blanco); }
+        .btn i { width: 20px; text-align: center; }
+        .btn:hover { background: rgba(255,255,255,0.03); color: var(--white); }
         .btn.active { 
             background: rgba(16, 185, 129, 0.1); 
-            color: var(--verde-principal); 
-            border-left: 3px solid var(--verde-principal);
+            color: var(--brand-accent); 
+            border-left: 3px solid var(--brand-accent);
         }
 
-        /* CONTENEDOR PRINCIPAL */
+        /* MAIN CONTENT AREA */
         #main-container { 
             flex: 1; 
             display: flex; 
             flex-direction: column; 
             overflow: hidden; 
             position: relative;
-            background: var(--fondo-gris);
+            background: #f8fafc;
         }
         
         .top-bar { 
             display: flex; 
             justify-content: flex-end; 
             align-items: center;
-            padding: 15px 25px; 
-            background: var(--blanco); 
+            padding: 15px 30px; 
+            background: var(--white); 
             border-bottom: 1px solid #e2e8f0;
             z-index: 10; 
         }
         .selector-torneo { 
-            background: var(--blanco); 
-            color: var(--azul-oscuro); 
+            background: var(--white); 
+            color: var(--navy-deep); 
             border: 1px solid #cbd5e1; 
-            padding: 8px 12px; 
-            font-size: 0.85em; 
+            padding: 10px 15px; 
+            font-size: 0.9em; 
             font-weight: 600; 
-            border-radius: 6px; 
+            border-radius: 8px; 
             outline: none; 
             cursor: pointer;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
@@ -106,17 +107,17 @@
 
         #content { 
             flex: 1; 
-            padding: 30px; 
+            padding: 40px; 
             overflow-y: auto; 
         }
         .seccion-titulo { 
-            color: var(--azul-oscuro); 
+            color: var(--navy-deep); 
             font-family: 'Outfit', sans-serif;
-            font-size: 1.5em; 
-            margin-bottom: 25px; 
+            font-size: 1.8em; 
+            margin-bottom: 30px; 
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
             font-weight: 700;
         }
         .seccion-titulo::after {
@@ -126,72 +127,66 @@
             background: #e2e8f0;
         }
 
-        /* CLASIFICACIÓN Y TABLAS */
-        .grid-grupos { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        /* CARDS & TABLES */
+        .grid-grupos { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 25px; }
         .card { 
-            background: var(--blanco); 
-            border-radius: 10px; 
-            margin-bottom: 20px; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); 
+            background: var(--white); 
+            border-radius: 12px; 
+            margin-bottom: 25px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
             border: 1px solid #e2e8f0;
             overflow: hidden; 
-            width: 100%;
         }
         
         table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 14px 18px; border-bottom: 1px solid #f1f5f9; text-align: left; font-size: 0.9em; white-space: nowrap; }
+        td, th { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; text-align: left; font-size: 0.95em; }
         th { background: #f8fafc; color: #64748b; font-size: 0.75em; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; }
-        td b { color: var(--azul-oscuro); font-weight: 600; }
+        td b { color: var(--navy-deep); font-weight: 600; }
         
         .txt-centro { text-align: center; }
         .txt-derecha { text-align: right; }
         .txt-club { color: #64748b; font-style: italic; }
-        .pts-verde { color: var(--verde-principal); font-weight: 700; font-size: 1.05em; }
-        .badge-amarilla { background: #fef08a; padding: 3px 7px; border-radius: 4px; font-weight: 700; color: #854d0e; font-size: 0.8em; }
+        .pts-verde { color: var(--brand-accent); font-weight: 700; font-size: 1.1em; }
+        .badge-amarilla { background: #fef08a; padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #854d0e; font-size: 0.85em; }
 
-        /* LISTA DE PARTIDOS */
-        .match-row { padding: 20px; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
-        .match-team { flex: 1; font-weight: 700; color: var(--azul-oscuro); font-size: 1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* MATCH ROWS */
+        .match-row { padding: 25px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .match-team { flex: 1; font-weight: 700; color: var(--navy-deep); font-size: 1.1em; }
         .match-score { 
-            background: var(--azul-oscuro); 
-            color: var(--blanco); 
-            padding: 6px 14px; 
-            border-radius: 6px; 
-            min-width: 65px; 
+            background: var(--navy-deep); 
+            color: var(--white); 
+            padding: 8px 16px; 
+            border-radius: 8px; 
+            min-width: 80px; 
             text-align: center; 
             font-weight: 700; 
-            font-size: 1.1em;
+            font-size: 1.2em;
             font-family: 'Outfit', sans-serif;
         }
-        .match-score.hora { background: #f1f5f9; color: #64748b; font-size: 0.85em; border: 1px solid #e2e8f0; }
+        .match-score.hora { background: #f1f5f9; color: #64748b; font-size: 0.9em; border: 1px solid #e2e8f0; }
 
-        /* BRACKETS DE ELIMINATORIAS */
-        .bracket-wrapper { display: flex; gap: 30px; padding: 15px 0; overflow-x: auto; align-items: center; }
-        .bracket-column { display: flex; flex-direction: column; justify-content: space-around; min-width: 240px; gap: 15px; }
-        .bracket-match { background: white; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03); overflow: hidden; }
-        .bracket-title { padding: 8px; font-size: 0.7em; text-align: center; font-weight: 800; color: #94a3b8; text-transform: uppercase; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-        .bracket-team-row { display: flex; justify-content: space-between; padding: 10px 14px; align-items: center; }
-        .bracket-name { font-weight: 600; color: #334155; font-size: 0.9em; }
-        .bracket-goals { font-weight: 700; color: var(--azul-oscuro); background: #f1f5f9; padding: 3px 8px; border-radius: 4px; font-size: 0.9em; }
-        .winner { background: rgba(16, 185, 129, 0.04); }
-        .winner .bracket-name { color: var(--verde-principal); font-weight: 700; }
-        .winner .bracket-goals { background: var(--verde-principal); color: white; }
+        /* BRACKETS */
+        .bracket-wrapper { display: flex; gap: 40px; padding: 20px 0; overflow-x: auto; }
+        .bracket-column { display: flex; flex-direction: column; justify-content: space-around; min-width: 260px; gap: 20px; }
+        .bracket-match { background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .bracket-title { padding: 10px; font-size: 0.7em; text-align: center; font-weight: 800; color: #94a3b8; text-transform: uppercase; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+        .bracket-team-row { display: flex; justify-content: space-between; padding: 12px 15px; align-items: center; }
+        .bracket-name { font-weight: 600; color: #334155; }
+        .bracket-goals { font-weight: 700; color: var(--navy-deep); background: #f1f5f9; padding: 4px 10px; border-radius: 4px; }
+        .winner { background: rgba(16, 185, 129, 0.05); }
+        .winner .bracket-name { color: var(--brand-accent); }
+        .winner .bracket-goals { background: var(--brand-accent); color: white; }
 
         .hidden { display: none; }
 
-        /* ADAPTACIÓN PARA MÓVILES */
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            #sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
+            #sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; border-right: none; }
             .nav-header { display: none; }
-            .btn { flex: 1; justify-content: center; padding: 14px 8px; border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.8em; }
-            .btn.active { border-left: none; border-bottom: 3px solid var(--verde-principal); }
+            .btn { flex: 1; justify-content: center; padding: 15px 10px; border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+            .btn.active { border-left: none; border-bottom: 3px solid var(--brand-accent); }
             .grid-grupos { grid-template-columns: 1fr; }
-            #content { padding: 15px; }
-            .seccion-titulo { font-size: 1.3em; }
-            .bracket-column { min-width: 210px; }
-            .match-row { padding: 15px; }
-            .match-team { font-size: 0.9em; }
+            #content { padding: 20px; }
         }
     </style>
 </head>
@@ -201,7 +196,7 @@
         <div id="btn-partidos" class="btn active" onclick="ver('partidos')"><i class="fa-solid fa-calendar-day"></i> PARTIDOS</div>
         <div id="btn-grupos" class="btn" onclick="ver('grupos')"><i class="fa-solid fa-table-list"></i> GRUPOS</div>
         <div id="btn-elim" class="btn" onclick="ver('elim')"><i class="fa-solid fa-trophy"></i> PLAYOFFS</div>
-        <div id="btn-gol" class="btn" onclick="ver('gol')"><i class="fa-solid fa-ranking-star"></i> GOLES</div>
+        <div id="btn-gol" class="btn" onclick="ver('gol')"><i class="fa-solid fa-ranking-star"></i> GOLEADORES</div>
         <div id="btn-tar" class="btn" onclick="ver('tar')"><i class="fa-solid fa-copy"></i> SANCIONES</div>
     </nav>
 
@@ -232,11 +227,11 @@
             </div>
 
             <div id="gol" class="hidden">
-                <span class="seccion-titulo">Tabla de Goleadores</span>
+                <span class="seccion-titulo">Pichichi del Torneo</span>
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugadora / Jugador</th><th>Club / Equipo</th><th class="txt-centro">Goles</th></tr>
+                            <tr><th>Jugador</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">Goles</th></tr>
                         </thead>
                         <tbody id="body-gol"></tbody>
                     </table>
@@ -244,11 +239,11 @@
             </div>
             
             <div id="tar" class="hidden">
-                <span class="seccion-titulo">Control de Sanciones</span>
+                <span class="seccion-titulo">Disciplina y Sanciones</span>
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugadora / Jugador</th><th>Club / Equipo</th><th class="txt-centro">🟨 Amarillas</th><th class="txt-derecha">Estado</th></tr>
+                            <tr><th>Jugador</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
                         </thead>
                         <tbody id="body-tar"></tbody>
                     </table>
@@ -319,7 +314,7 @@
                 const rowsProcesadas = rowsRaw.map(r => r && r.c ? r.c.map(celda => extraerValorCelda(celda)) : []);
                 return { headers, rows: rowsProcesadas };
             } catch (error) {
-                console.error("Error cargando pestaña: " + nombrePestaña, error);
+                console.error("Error en pestaña: " + nombrePestaña, error);
                 return null;
             }
         }
@@ -334,202 +329,108 @@
                     consultarGoogleSheet('Eliminatorias')
                 ]);
 
-                if (!resP || !resC || resP.rows.length === 0) {
-                    document.getElementById('partidos-container').innerHTML = `
-                        <div style="color:#e74c3c; text-align:center; padding:30px; font-weight:bold;">
-                            ⚠️ Error de sincronización con la hoja del torneo.<br>
-                            Verifica que hayas activado 'Publicar en la web' en este documento de Google Sheets.
-                        </div>`;
-                    return;
+                const stats = {}; 
+                if (resP && resP.rows) {
+                    const h = resP.headers;
+                    const idxL = h['local'] !== undefined ? h['local'] : (h['equipolocal'] !== undefined ? h['equipolocal'] : 1);
+                    const idxV = h['visitante'] !== undefined ? h['visitante'] : (h['equipovisitante'] !== undefined ? h['equipovisitante'] : 2);
+                    const idxGL = h['golesl'] !== undefined ? h['golesl'] : 3;
+                    const idxGV = h['golesv'] !== undefined ? h['golesv'] : 4;
+                    const idxHora = h['hora'] !== undefined ? h['hora'] : 0;
+
+                    resP.rows.forEach((fila, i) => {
+                        if (i === 0 || !fila[idxL] || normalizarTexto(fila[idxL]) === 'local' || normalizarTexto(fila[idxL]) === 'equipolocal') return;
+                        const loc = fila[idxL].trim(), vis = fila[idxV].trim();
+                        if (!stats[loc]) stats[loc] = { pj: 0, pts: 0 };
+                        if (!stats[vis]) stats[vis] = { pj: 0, pts: 0 };
+                        const gL = parseInt(fila[idxGL]), gV = parseInt(fila[idxGV]);
+                        if (!isNaN(gL) && !isNaN(gV)) {
+                            stats[loc].pj++; stats[vis].pj++;
+                            if (gL > gV) stats[loc].pts += 3;
+                            else if (gV > gL) stats[vis].pts += 3;
+                            else { stats[loc].pts += 1; stats[vis].pts += 1; }
+                        }
+                    });
+                    renderPartidos(resP.rows, idxL, idxV, idxGL, idxGV, idxHora);
                 }
 
-                let idxHora = 0;
-                let idxLocal = 1;
-                let idxGolesL = 2;
-                let idxGolesV = 3;
-                let idxVisitante = 4;
-
-                renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
-                
-                if (resC) renderClasificacion(resC);
-                if (resG) renderGoleadores(resG);
-                if (resT) renderTarjetas(resT);
+                if (resC) renderClasificacion(resC, stats);
+                if (resG) renderGoleadores(resG, stats);
+                if (resT) renderTarjetas(resT, stats);
                 if (resE) renderBracket(resE);
             } catch (e) { console.error(e); }
         }
 
-        function renderPartidos(rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora) {
+        function renderPartidos(rows, idxL, idxV, idxGL, idxGV, idxH) {
             const container = document.getElementById('partidos-container');
-            if (!container) return;
-            
-            const filtrados = rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
-                const txt = normalizarTexto(fila[idxLocal]);
-                return txt !== '' && txt !== 'local' && txt !== 'equipolocal';
-            });
-            
+            const filtrados = rows.filter((f, i) => i > 0 && f[idxL] && normalizarTexto(f[idxL]) !== 'local' && normalizarTexto(f[idxL]) !== 'equipolocal');
             if (filtrados.length === 0) {
-                container.innerHTML = `<div style="text-align:center;padding:30px;color:#64748b;">No hay partidos cargados todavía.</div>`;
+                container.innerHTML = `<div style="text-align:center;padding:40px;color:#64748b;">No hay encuentros programados.</div>`;
                 return;
             }
-
-            container.innerHTML = filtrados.map(fila => {
-                const local = fila[idxLocal] || '';
-                const visitante = fila[idxVisitante] || '';
-                const gL = parseInt(fila[idxGolesL]);
-                const gV = parseInt(fila[idxGolesV]);
-                const hora = fila[idxHora] || '';
-
-                const marcador = (!isNaN(gL) && !isNaN(gV)) ? `<div class="match-score">${gL}:${gV}</div>` : `<div class="match-score hora">${hora || '-:-'}</div>`;
-                
-                return `<div class="card"><div class="match-row">
-                    <div class="match-team" style="text-align:right;">${local}</div>
-                    ${marcador}
-                    <div class="match-team">${visitante}</div>
-                </div></div>`;
+            container.innerHTML = filtrados.map(f => {
+                const gL = parseInt(f[idxGL]), gV = parseInt(f[idxGV]);
+                const score = !isNaN(gL) && !isNaN(gV) ? `<div class="match-score">${gL}:${gV}</div>` : `<div class="match-score hora">${f[idxH] || '-:-'}</div>`;
+                return `<div class="card"><div class="match-row"><div class="match-team" style="text-align:right">${f[idxL]}</div>${score}<div class="match-team">${f[idxV]}</div></div></div>`;
             }).join('');
         }
 
-        function renderClasificacion(res) {
+        function renderClasificacion(res, stats) {
             const container = document.getElementById('grupos-container');
-            if (!container) return;
-
-            const equipos = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
-                const txt = normalizarTexto(fila[0]);
-                return txt !== 'equipo' && txt !== 'nombre' && fila[0] !== '';
-            });
-
-            if (equipos.length === 0) {
-                container.innerHTML = `<div style="color:#64748b;padding:20px;grid-column:1/-1;text-align:center;">Clasificación no disponible.</div>`;
-                return;
-            }
-
+            const h = res.headers;
+            const idxN = h['nombre'] !== undefined ? h['nombre'] : (h['equipo'] !== undefined ? h['equipo'] : 0);
+            const idxG = h['grupo'] !== undefined ? h['grupo'] : 1;
+            const equipos = res.rows.filter((f, i) => i > 0 && f[idxN] && normalizarTexto(f[idxN]) !== 'nombre' && normalizarTexto(f[idxN]) !== 'equipo');
             const grupos = {};
-            equipos.forEach(fila => {
-                const nombre = fila[0];
-                const grupo = fila[1] || 'Único';
-                const dif = fila[2] || '0';
-                const pts = parseInt(fila[3]) || 0;
-                
-                if (!grupos[grupo]) grupos[grupo] = [];
-                grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif });
+            equipos.forEach(f => {
+                const grp = f[idxG] || 'Único';
+                if (!grupos[grp]) grupos[grp] = [];
+                grupos[grp].push({ nombre: f[idxN], pts: stats[f[idxN]]?.pts || 0, pj: stats[f[idxN]]?.pj || 0 });
             });
-
             container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a, b) => b.pts - a.pts);
-                return `<div class="card"><div style="padding:12px 18px; background:#f8fafc; font-weight:700; font-size:0.8em; color: #64748b; border-bottom: 1px solid #e2e8f0;">GRUPO ${g}</div>
-                    <table><thead><tr><th>EQUIPO</th><th class="txt-centro">DG</th><th class="txt-centro">PTS</th></tr></thead>
-                    <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro" style="color:#64748b">${e.dif}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
+                return `<div class="card"><div style="padding:15px;background:#f8fafc;font-weight:700;color:#64748b">GRUPO ${g}</div><table><thead><tr><th>Equipo</th><th class="txt-centro">PJ</th><th class="txt-centro">Pts</th></tr></thead><tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro">${e.pj}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
             }).join('');
         }
 
-        function renderGoleadores(res) {
-            const container = document.getElementById("body-gol");
-            if (!container) return;
-
-            const jugadores = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
-                const txt = normalizarTexto(fila[0]);
-                return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
-            });
-
-            if (jugadores.length === 0) {
-                container.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#64748b;padding:25px;">No se registran goles en este torneo.</td></tr>`;
-                return;
-            }
-
-            const ordened = jugadores.sort((a, b) => (parseInt(b[2]) || 0) - (parseInt(a[2]) || 0));
-            container.innerHTML = ordened.map(fila => `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1] || '-'}</td><td class="txt-centro pts-verde">${fila[2] || 0}</td></tr>`).join('');
+        function renderGoleadores(res, stats) {
+            const h = res.headers;
+            const idxN = h['nombre'] !== undefined ? h['nombre'] : (h['jugador'] !== undefined ? h['jugador'] : (h['jugadora'] !== undefined ? h['jugadora'] : 0));
+            const idxC = h['equipo'] !== undefined ? h['equipo'] : (h['club'] !== undefined ? h['club'] : 1);
+            const idxG = h['goles'] !== undefined ? h['goles'] : 2;
+            const orden = res.rows.filter((f, i) => i > 0 && f[idxN] && normalizarTexto(f[idxN]) !== 'jugador' && normalizarTexto(f[idxN]) !== 'jugadora').sort((a, b) => (parseInt(b[idxG]) || 0) - (parseInt(a[idxG]) || 0));
+            document.getElementById("body-gol").innerHTML = orden.map(f => `<tr><td><b>${f[idxN]}</b></td><td class="txt-club">${f[idxC] || ''}</td><td class="txt-centro">${stats[f[idxC]]?.pj || 0}</td><td class="txt-centro pts-verde">${f[idxG] || 0}</td></tr>`).join('');
         }
 
-        function renderTarjetas(res) {
-            const container = document.getElementById("body-tar");
-            if (!container) return;
-
-            const tarjetas = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
-                const txt = normalizarTexto(fila[0]);
-                return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
-            });
-
-            if (tarjetas.length === 0) {
-                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#64748b;padding:25px;">Sin amonestaciones registradas.</td></tr>`;
-                return;
-            }
-
-            container.innerHTML = tarjetas.map(fila => {
-                const nombre = fila[0], club = fila[1] || '', amarillas = fila[2] || '0', sancion = fila[3] || '';
-                let estaSancionado = false;
-                
-                if (sancion.toLowerCase() === 'sancionado' || sancion.toLowerCase() === 'sancionada' || sancion.trim() === '1' || sancion.toLowerCase() === 'si') {
-                    estaSancionado = true;
-                }
-
-                return `<tr>
-                    <td><b>${nombre}</b></td>
-                    <td class="txt-club">${club || '-'}</td>
-                    <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
-                    <td class="txt-derecha" style="font-weight:700; color:${estaSancionado ? 'var(--rojo-sancion)' : 'var(--verde-principal)'}">${estaSancionado ? 'SANCIONADO' : 'HABILITADO'}</td>
-                </tr>`;
+        function renderTarjetas(res, stats) {
+            const h = res.headers;
+            const idxN = h['nombre'] !== undefined ? h['nombre'] : (h['jugador'] !== undefined ? h['jugador'] : (h['jugadora'] !== undefined ? h['jugadora'] : 0));
+            const idxC = h['equipo'] !== undefined ? h['equipo'] : (h['club'] !== undefined ? h['club'] : 1);
+            const idxA = h['amarillas'] !== undefined ? h['amarillas'] : 2;
+            const idxS = h['sancion'] !== undefined ? h['sancion'] : 3;
+            document.getElementById("body-tar").innerHTML = res.rows.filter((f, i) => i > 0 && f[idxN] && normalizarTexto(f[idxN]) !== 'jugador' && normalizarTexto(f[idxN]) !== 'jugadora').map(f => {
+                const sancion = f[idxS]?.toLowerCase() || '';
+                const isSanc = sancion === 'si' || sancion === 'sancionado' || sancion === 'sancionada' || sancion === '1';
+                return `<tr><td><b>${f[idxN]}</b></td><td class="txt-club">${f[idxC] || ''}</td><td class="txt-centro">${stats[f[idxC]]?.pj || 0}</td><td class="txt-centro"><span class="badge-amarilla">${f[idxA] || 0}</span></td><td class="txt-derecha" style="font-weight:700;color:${isSanc ? 'var(--danger)' : 'var(--brand-accent)'}">${isSanc ? 'SANCIONADO' : 'HABILITADO'}</td></tr>`;
             }).join('');
-        }
-
-        function cardBracket(fila, titulo) {
-            if (!fila) return `
-                <div class="bracket-match">
-                    <div class="bracket-title">${titulo}</div>
-                    <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals">-</span></div>
-                    <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals">-</span></div>
-                </div>`;
-            
-            const local = fila[1], visitante = fila[4];
-            const gL = parseInt(fila[2]), gV = parseInt(fila[3]);
-            
-            const ganoL = !isNaN(gL) && !isNaN(gV) && gL > gV;
-            const ganoV = !isNaN(gL) && !isNaN(gV) && gV > gL;
-
-            return `
-                <div class="bracket-match">
-                    <div class="bracket-title">${titulo}</div>
-                    <div class="bracket-team-row ${ganoL ? 'winner' : ''}">
-                        <span class="bracket-name">${local || '—'}</span>
-                        <span class="bracket-goals">${isNaN(gL) ? '-' : gL}</span>
-                    </div>
-                    <div class="bracket-team-row ${ganoV ? 'winner' : ''}">
-                        <span class="bracket-name">${visitante || '—'}</span>
-                        <span class="bracket-goals">${isNaN(gV) ? '-' : gV}</span>
-                    </div>
-                </div>`;
         }
 
         function renderBracket(res) {
             const container = document.getElementById('bracket-container');
-            if (!container) return;
-
-            const fases = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'fase');
-            if (fases.length === 0) {
-                container.innerHTML = `<div style="color:#64748b;text-align:center;padding:20px;width:100%;">No hay eliminatorias cargadas.</div>`;
-                return;
-            }
-
-            const buscar = (nombre) => fases.find(f => normalizarTexto(f[0]) === normalizarTexto(nombre));
-
-            container.innerHTML = `
-                <div class="bracket-column">
-                    ${cardBracket(buscar('Cuartos 1'), 'Cuartos 1')}
-                    ${cardBracket(buscar('Cuartos 2'), 'Cuartos 2')}
-                    ${cardBracket(buscar('Cuartos 3'), 'Cuartos 3')}
-                    ${cardBracket(buscar('Cuartos 4'), 'Cuartos 4')}
-                </div>
-                <div class="bracket-column">
-                    ${cardBracket(buscar('Semifinal 1'), 'Semifinal 1')}
-                    ${cardBracket(buscar('Semifinal 2'), 'Semifinal 2')}
-                </div>
-                <div class="bracket-column" style="justify-content: center;">
-                    ${cardBracket(buscar('Final'), '🏆 GRAN FINAL')}
-                </div>
-            `;
+            const h = res.headers;
+            const idxF = h['fase'] !== undefined ? h['fase'] : 0;
+            const idxL = h['local'] !== undefined ? h['local'] : (h['equipolocal'] !== undefined ? h['equipolocal'] : 1);
+            const idxV = h['visitante'] !== undefined ? h['visitante'] : (h['equipovisitante'] !== undefined ? h['equipovisitante'] : 4);
+            const idxGL = h['golesl'] !== undefined ? h['golesl'] : 2;
+            const idxGV = h['golesv'] !== undefined ? h['golesv'] : 3;
+            const fases = res.rows.filter((f, i) => i > 0 && f[idxF] && normalizarTexto(f[idxF]) !== 'fase');
+            const buscar = (n) => fases.find(f => normalizarTexto(f[idxF]) === normalizarTexto(n));
+            const card = (f, t) => {
+                if (!f) return `<div class="bracket-match"><div class="bracket-title">${t}</div><div class="bracket-team-row"><span>—</span><span>-</span></div><div class="bracket-team-row"><span>—</span><span>-</span></div></div>`;
+                const gL = parseInt(f[idxGL]), gV = parseInt(f[idxGV]);
+                return `<div class="bracket-match"><div class="bracket-title">${t}</div><div class="bracket-team-row ${gL > gV ? 'winner' : ''}"><span>${f[idxL]}</span><span class="bracket-goals">${isNaN(gL) ? '-' : gL}</span></div><div class="bracket-team-row ${gV > gL ? 'winner' : ''}"><span>${f[idxV]}</span><span class="bracket-goals">${isNaN(gV) ? '-' : gV}</span></div></div>`;
+            };
+            container.innerHTML = `<div class="bracket-column">${card(buscar('Cuartos 1'), 'Cuartos 1')}${card(buscar('Cuartos 2'), 'Cuartos 2')}${card(buscar('Cuartos 3'), 'Cuartos 3')}${card(buscar('Cuartos 4'), 'Cuartos 4')}</div><div class="bracket-column">${card(buscar('Semifinal 1'), 'Semi 1')}${card(buscar('Semifinal 2'), 'Semi 2')}</div><div class="bracket-column final-col">${card(buscar('Final'), 'Gran Final')}</div>`;
         }
 
         function ver(s) {
@@ -538,7 +439,6 @@
                 document.getElementById('btn-' + id).classList.toggle('active', id === s);
             });
         }
-        
         cargarTodo();
     </script>
 </body>
