@@ -5,31 +5,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Torneo La Yesa</title>
     <style>
-        :root { --azul-oscuro: #1b3a4b; --azul-nav: #142d3b; --verde: #27ae60; --blanco: #ffffff; --rojo: #e74c3c; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
-        body { margin: 0; background: var(--azul-oscuro); display: flex; height: 100vh; overflow: hidden; }
+        :root { 
+            --azul-oscuro: #1b3a4b; 
+            --azul-nav: #142d3b; 
+            --verde: #27ae60; 
+            --blanco: #ffffff; 
+            --rojo: #e74c3c; 
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; margin: 0; padding: 0; }
+        
+        body { 
+            background: var(--azul-oscuro); 
+            display: flex; 
+            height: 100vh; 
+            width: 100vw;
+            overflow: hidden; 
+        }
 
         /* MENU LATERAL */
-        #sidebar { width: 180px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
-        .nav-header { padding: 20px 15px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1em; color: var(--verde); letter-spacing: 0.5px; }
-        .btn { padding: 15px 20px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85em; font-weight: bold; }
+        #sidebar { 
+            width: 180px; 
+            background: var(--azul-nav); 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            z-index: 1001; 
+        }
+        .nav-header { 
+            padding: 20px 15px; 
+            font-weight: bold; 
+            text-align: center; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+            font-size: 1em; 
+            color: var(--verde); 
+            letter-spacing: 0.5px; 
+        }
+        .btn { 
+            padding: 15px 20px; 
+            cursor: pointer; 
+            color: #bdc3c7; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            font-size: 0.85em; 
+            font-weight: bold; 
+            text-decoration: none;
+        }
         .btn.active { background: var(--verde); color: white; }
 
-        /* CONTENEDOR PRINCIPAL Y BARRA DEL DESPLEGABLE (ARRIBA A LA DERECHA) */
-        #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        /* CONTENEDOR PRINCIPAL DERECHO */
+        #main-container { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            position: relative; 
+        }
         
-        .top-bar { display: flex; justify-content: flex-end; padding: 15px 20px 0 20px; background: transparent; z-index: 10; }
-        .selector-torneo { background: var(--azul-nav); color: white; border: 2px solid var(--verde); padding: 8px 15px; font-size: 0.9em; font-weight: bold; border-radius: 6px; outline: none; cursor: pointer; font-family: sans-serif; }
+        /* BARRA SUPERIOR PARA EL DESPLEGABLE */
+        .top-bar { 
+            display: flex; 
+            justify-content: flex-end; 
+            padding: 15px 20px; 
+            background: rgba(0, 0, 0, 0.1); 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            z-index: 10; 
+        }
+        .selector-torneo { 
+            background: var(--azul-nav); 
+            color: white; 
+            border: 2px solid var(--verde); 
+            padding: 8px 15px; 
+            font-size: 0.9em; 
+            font-weight: bold; 
+            border-radius: 6px; 
+            outline: none; 
+            cursor: pointer; 
+        }
         .selector-torneo option { background: var(--azul-nav); color: white; }
 
-        #content { flex: 1; padding: 10px 20px 20px 20px; overflow-y: auto; }
-        .seccion-titulo { color: white; font-size: 1.2em; margin-bottom: 15px; display: block; border-left: 4px solid var(--verde); padding-left: 10px; text-transform: uppercase; font-weight: bold; }
+        /* CONTENIDO SCROLLABLE */
+        #content { 
+            flex: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+        }
+        .seccion-titulo { 
+            color: white; 
+            font-size: 1.2em; 
+            margin-bottom: 25px; 
+            display: block; 
+            border-left: 4px solid var(--verde); 
+            padding-left: 10px; 
+            text-transform: uppercase; 
+            font-weight: bold; 
+        }
 
+        /* TARJETAS Y CONTENEDORES */
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .card { background: var(--blanco); border-radius: 6px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
         
-        /* TABLAS AMPLIADAS */
-        table { width: 100%; border-collapse: collapse; table-layout: auto; }
+        /* TABLAS */
+        table { width: 100%; border-collapse: collapse; }
         td, th { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; white-space: nowrap; }
         th { background: #f9f9f9; color: #7f8c8d; font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
         td b { font-size: 1.05em; }
@@ -46,12 +122,12 @@
         .match-score { background: var(--azul-nav); color: white; padding: 5px 12px; border-radius: 4px; min-width: 60px; text-align: center; font-weight: bold; font-size: 1.1em; }
         .match-score.hora { background: #7f8c8d; font-size: 0.95em; }
 
-        /* PLAYOFFS EN ESCALERA */
+        /* PLAYOFFS */
         .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; }
         .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 550px; min-width: 220px; flex: 1; }
         .bracket-column.final-col { justify-content: center; min-width: 240px; }
         
-        .bracket-match { background: white; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; font-size: 0.95em; width: 100%; position: relative; }
+        .bracket-match { background: white; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; font-size: 0.95em; width: 100%; margin-bottom: 10px; }
         .bracket-title { background: #f4f6f7; font-size: 0.8em; font-weight: bold; text-align: center; color: #666; border-bottom: 1px solid #ddd; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
         
         .bracket-team-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; }
@@ -66,11 +142,12 @@
 
         .hidden { display: none; }
 
+        /* RESPONSIVE PARA MÓVILES */
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; }
             .nav-header { display: none; }
-            .btn { flex: 1; text-align: center; padding: 15px 10px; white-space: nowrap; }
+            .btn { flex: 1; text-align: center; padding: 15px 10px; white-space: nowrap; border-bottom: none; border-right: 1px solid rgba(255,255,255,0.05); }
             .grid-grupos { grid-template-columns: 1fr; }
             .top-bar { justify-content: center; padding: 10px; }
             .bracket-column { height: auto; gap: 15px; }
@@ -144,7 +221,7 @@
     </div>
 
     <script>
-        // IDS CORREGIDOS AL REVÉS (INTERCAMBIADOS SÉGÚN TU INDICACIÓN)
+        // IDS de las hojas de cálculo según capturas previas
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '19lxZHFj-NaSIAT6mjs_Oiqm6UEdKBat5hoHny_UFN1U',
@@ -222,6 +299,7 @@
             container.innerHTML = "";
             if (!data || data.length === 0) return;
 
+            // Búsqueda insensible a mayúsculas/minúsculas para coincidir con el Excel
             const buscarPorFase = (nombreFase) => data.find(f => f.Fase && f.Fase.toString().trim().toLowerCase() === nombreFase.toLowerCase());
 
             const c1 = buscarPorFase('Cuartos 1');
