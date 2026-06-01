@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Torneo La Yesa</title>
+    <title>Torneo Femenino</title>
     <style>
         :root { 
             --azul-oscuro: #1b3a4b; 
@@ -81,7 +81,6 @@
             outline: none; 
             cursor: pointer; 
         }
-        .selector-torneo option { background: var(--azul-nav); color: white; }
 
         /* CONTENIDO SCROLLABLE */
         #content { 
@@ -157,7 +156,7 @@
 </head>
 <body>
     <nav id="sidebar">
-        <div class="nav-header">TORNEO LA YESA</div>
+        <div class="nav-header">TORNEO FEMENINO</div>
         <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ PARTIDOS</div>
         <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 GRUPOS</div>
         <div id="btn-elim" class="btn" onclick="ver('elim')">🏆 PLAYOFFS</div>
@@ -167,10 +166,8 @@
 
     <div id="main-container">
         <div class="top-bar">
-            <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
-                <option value="masculino">⚽ Fútbol Masculino</option>
+            <select id="selectorTorneo" class="selector-torneo">
                 <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
-                <option value="ninos">🧒 Fútbol Pequeños</option>
             </select>
         </div>
 
@@ -191,7 +188,6 @@
                             <tr>
                                 <th>Jugador</th>
                                 <th>Club</th>
-                                <th class="txt-centro">PJ</th>
                                 <th class="txt-centro">G</th>
                             </tr>
                         </thead>
@@ -208,7 +204,6 @@
                             <tr>
                                 <th>Jugador</th>
                                 <th>Club</th>
-                                <th class="txt-centro">PJ</th>
                                 <th class="txt-centro">🟨</th>
                                 <th class="txt-derecha">Estado</th>
                             </tr>
@@ -221,22 +216,14 @@
     </div>
 
     <script>
-        const TORNEOS = {
-            masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
-            femenino: '19lxZHFj-NaSIAT6mjs_Oiqm6UEdKBat5hoHny_UFN1U', 
-            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
-        };
+        // Nueva ID extraída directamente de tu documento limpio "Torneo Femenino"
+        const SHEET_ID = '1KyHfl8Ajou5HlKaWOwopSjQN-NKE7SVPeYQhFmcvVbU';
 
-        let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
-        document.getElementById('selectorTorneo').value = torneoActual;
-        let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
-
-        function cambiarTorneo(nuevoTorneo) {
-            localStorage.setItem('torneo_seleccionado', nuevoTorneo);
-            location.reload();
+        function normalizarTexto(texto) {
+            if (!texto) return '';
+            return texto.toString().toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         }
 
-        // EXTRAE EL VALOR ELIMINANDO TEXTOS EXTRAÑOS DE FECHAS DE GOOGLE
         function extraerValorCelda(celda) {
             if (!celda) return '';
             if (celda.v !== null && celda.v !== undefined && typeof celda.v === 'string' && celda.v.includes('Date(')) {
@@ -262,21 +249,20 @@
                 
                 if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { headers: {}, rows: [] };
 
-                // MAPEADO DINÁMICO DE COLUMNAS (Detecta la posición por nombre en la fila 1)
                 const headers = {};
+                const rowsRaw = jsonNeto.table.rows;
+
                 if (jsonNeto.table.cols) {
                     jsonNeto.table.cols.forEach((col, idx) => {
                         if (col && col.label) {
-                            headers[col.label.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "")] = idx;
+                            headers[normalizarTexto(col.label)] = idx;
                         }
                     });
                 }
 
-                // Si Google no devolvió etiquetas en las columnas, usamos la primera fila como cabecera alternativa
-                const rowsRaw = jsonNeto.table.rows;
                 if (Object.keys(headers).length === 0 && rowsRaw.length > 0) {
                     rowsRaw[0].c.forEach((celda, idx) => {
-                        const val = extraerValorCelda(celda).toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        const val = normalizarTexto(extraerValorCelda(celda));
                         if (val) headers[val] = idx;
                     });
                 }
@@ -295,56 +281,32 @@
 
         async function cargarTodo() {
             try {
-                const [resP, resC, resG, resT, resE] = await Promise.all([
-                    consultarGoogleSheet('Partidos'),
-                    consultarGoogleSheet('Clasificacion'),
-                    consultarGoogleSheet('Goleadores'),
-                    consultarGoogleSheet('Tarjetas'),
-                    consultarGoogleSheet('Eliminatorias')
-                ]);
+                const resP = await consultarGoogleSheet('Partidos');
+                const resC = await consultarGoogleSheet('Clasificacion');
+                const resG = await consultarGoogleSheet('Goleadores');
+                const resT = await consultarGoogleSheet('Tarjetas');
+                const resE = await consultarGoogleSheet('Eliminatorias');
 
                 if (!resP || !resC || !resP.rows || !resC.rows) {
                     document.getElementById('partidos-container').innerHTML = `
                         <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
                             ⚠️ Error de sincronización con Google Sheets.<br>
-                            Verifica que las pestañas mantengan los nombres idénticos.
+                            Asegúrate de ir a 'Archivo -> Compartir -> Publicar en la web' en tu nuevo documento.
                         </div>`;
                     return;
                 }
 
-                // Buscar índices correspondientes para la pestaña PARTIDOS
                 const hP = resP.headers;
-                const idxLocal = hP['local'] !== undefined ? hP['local'] : 0;
-                const idxVisitante = hP['visitante'] !== undefined ? hP['visitante'] : 1;
-                const idxGolesL = hP['golesl'] !== undefined ? hP['golesl'] : 2;
-                const idxGolesV = hP['golesv'] !== undefined ? hP['golesv'] : 3;
-                const idxHora = hP['hora'] !== undefined ? hP['hora'] : (hP['horario'] !== undefined ? hP['horario'] : 4);
-
-                // Calcular estadísticas automáticas basándose en los índices mapeados
-                const stats = {}; 
-                resP.rows.forEach((fila, i) => {
-                    if (i === 0 || !fila[idxLocal] || fila[idxLocal].toLowerCase() === 'local') return; 
-                    const local = fila[idxLocal], visitante = fila[idxVisitante];
-                    const golesL = fila[idxGolesL], golesV = fila[idxGolesV];
-                    
-                    if (!stats[local]) stats[local] = { pj: 0, pts: 0 };
-                    if (!stats[visitante]) stats[visitante] = { pj: 0, pts: 0 };
-                    
-                    const gL = parseInt(golesL);
-                    const gV = parseInt(golesV);
-                    
-                    if (!isNaN(gL) && !isNaN(gV)) {
-                        stats[local].pj++; stats[visitante].pj++;
-                        if (gL > gV) stats[local].pts += 3;
-                        else if (gV > gL) stats[visitante].pts += 3;
-                        else { stats[local].pts += 1; stats[visitante].pts += 1; }
-                    }
-                });
+                const idxLocal = hP['local'] !== undefined ? hP['local'] : 1;
+                const idxVisitante = hP['visitante'] !== undefined ? hP['visitante'] : 2;
+                const idxGolesL = hP['golesl'] !== undefined ? hP['golesl'] : 3;
+                const idxGolesV = hP['golesv'] !== undefined ? hP['golesv'] : 4;
+                const idxHora = hP['hora'] !== undefined ? hP['hora'] : 0;
 
                 renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
-                renderClasificacion(resC, stats);
-                renderGoleadores(resG, stats);
-                renderTarjetas(resT, stats);
+                renderClasificacion(resC);
+                renderGoleadores(resG);
+                renderTarjetas(resT);
                 renderBracket(resE);
             } catch (e) { console.error(e); }
         }
@@ -353,8 +315,7 @@
             const container = document.getElementById('partidos-container');
             if (!container) return;
             
-            // Filtramos las filas que tengan un equipo local válido y que no sea la cabecera
-            const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[idxLocal] && fila[idxLocal].toLowerCase() !== 'local');
+            const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[idxLocal] && normalizarTexto(fila[idxLocal]) !== 'local');
             
             if (partidosValidos.length === 0) {
                 container.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay partidos disponibles aún.</div>`;
@@ -383,15 +344,17 @@
             }).join('');
         }
 
-        function renderClasificacion(res, stats) {
-            const container = document.getElementById('grid-grupos') || document.getElementById('grupos-container');
+        function renderClasificacion(res) {
+            const container = document.getElementById('grupos-container');
             if (!container) return;
 
             const hC = res.headers;
             const idxNombre = hC['nombre'] !== undefined ? hC['nombre'] : 0;
             const idxGrupo = hC['grupo'] !== undefined ? hC['grupo'] : 1;
+            const idxDiferencia = hC['diferencia'] !== undefined ? hC['diferencia'] : 2;
+            const idxPuntos = hC['puntos'] !== undefined ? hC['puntos'] : 3;
 
-            const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && fila[idxNombre].toLowerCase() !== 'nombre');
+            const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre');
             if (equiposValidos.length === 0) {
                 container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
                 return;
@@ -401,76 +364,70 @@
             equiposValidos.forEach(fila => {
                 const nombre = fila[idxNombre];
                 const grupo = fila[idxGrupo] || 'Único';
+                const dif = fila[idxDiferencia] || '0';
+                const pts = parseInt(fila[idxPuntos]) || 0;
+                
                 if (!grupos[grupo]) grupos[grupo] = [];
-                grupos[grupo].push({ nombre: nombre, pts: stats[nombre]?.pts || 0, pj: stats[nombre]?.pj || 0 });
+                grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif });
             });
 
             container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a, b) => b.pts - a.pts);
                 return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
-                    <table><thead><tr><th>EQUIPO</th><th class="txt-centro">PJ</th><th class="txt-centro">PTS</th></tr></thead>
-                    <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro">${e.pj}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
+                    <table><thead><tr><th>EQUIPO</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead>
+                    <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro">${e.dif}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
             }).join('');
         }
 
-        function renderGoleadores(res, stats) {
+        function renderGoleadores(res) {
             const container = document.getElementById("body-gol");
             if (!container) return;
 
             const hG = res.headers;
             const idxNombre = hG['nombre'] !== undefined ? hG['nombre'] : 0;
-            const idxEquipo = hG['equipo'] !== undefined ? hG['equipo'] : (hG['club'] !== undefined ? hG['club'] : 1);
+            const idxEquipo = hG['equipo'] !== undefined ? hG['equipo'] : 1;
             const idxGoles = hG['goles'] !== undefined ? hG['goles'] : 3;
 
-            const jugadoresValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && fila[idxNombre].toLowerCase() !== 'nombre');
+            const jugadoresValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre');
             if (jugadoresValidos.length === 0) {
-                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;">No hay goles registrados.</td></tr>`;
+                container.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
                 return;
             }
 
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[idxGoles]) || 0) - (parseInt(a[idxGoles]) || 0));
             container.innerHTML = orden.map(fila => {
                 const nombre = fila[idxNombre], equipo = fila[idxEquipo] || '-', goles = fila[idxGoles] || 0;
-                return `<tr><td><b>${nombre}</b></td><td class="txt-club">${equipo}</td><td class="txt-centro">${stats[equipo]?.pj || 0}</td><td class="txt-centro pts-verde">${goles}</td></tr>`;
+                return `<tr><td><b>${nombre}</b></td><td class="txt-club">${equipo}</td><td class="txt-centro pts-verde">${goles}</td></tr>`;
             }).join('');
         }
 
-        function renderTarjetas(res, stats) {
+        function renderTarjetas(res) {
             const container = document.getElementById("body-tar");
             if (!container) return;
 
             const hT = res.headers;
             const idxNombre = hT['nombre'] !== undefined ? hT['nombre'] : 0;
-            const idxEquipo = hT['equipo'] !== undefined ? hT['equipo'] : (hT['club'] !== undefined ? hT['club'] : 1);
-            const idxAmarillas = hT['amarillas'] !== undefined ? hT['amarillas'] : 3;
-            const idxSancion = hT['sancion'] !== undefined ? hT['sancion'] : (hT['sanción'] !== undefined ? hT['sanción'] : 4);
+            const idxEquipo = hT['equipo'] !== undefined ? hT['equipo'] : 1;
+            const idxAmarillas = hT['amarillas'] !== undefined ? hT['amarillas'] : 2;
+            const idxSancion = hT['sancion'] !== undefined ? hT['sancion'] : 3;
 
-            const tarjetasValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && fila[idxNombre].toLowerCase() !== 'nombre');
+            const tarjetasValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre');
             if (tarjetasValidas.length === 0) {
-                container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;">No hay sanciones registradas.</td></tr>`;
+                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
                 return;
             }
 
-            const orden = tarjetasValidas.sort((a, b) => (parseInt(b[idxAmarillas]) || 0) - (parseInt(a[idxAmarillas]) || 0));
-            container.innerHTML = orden.map(fila => {
-                const nombre = fila[idxNombre], equipo = fila[idxEquipo] || '', amarillas = parseInt(fila[idxAmarillas]) || 0, sancion = fila[idxSancion] || '';
-                const pjEquipo = stats[equipo]?.pj || 0;
+            container.innerHTML = tarjetasValidas.map(fila => {
+                const nombre = fila[idxNombre], equipo = fila[idxEquipo] || '', amarillas = fila[idxAmarillas] || '0', sancion = fila[idxSancion] || '';
                 
                 let estado = 'OK';
-                let pjJugador = pjEquipo;
-
-                if (sancion.toLowerCase() === 'sancionado' || sancion.toLowerCase() === 'si') {
+                if (sancion.toLowerCase() === 'sancionado' || sancion.trim() === '1' || sancion.toLowerCase() === 'si') {
                     estado = 'SANCIONADO';
-                    pjJugador = Math.max(0, pjEquipo - 1);
-                } else {
-                    const ciclos = Math.floor(amarillas / 3);
-                    if (ciclos > 0) pjJugador = Math.max(0, pjEquipo - ciclos);
                 }
 
                 return `<tr>
                     <td><b>${nombre}</b></td>
                     <td class="txt-club">${equipo || '-'}</td>
-                    <td class="txt-centro">${pjJugador}</td>
                     <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
                     <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
                 </tr>`;
@@ -510,19 +467,19 @@
             if (!container) return;
 
             const hE = res.headers;
-            const idxLocal = hE['local'] !== undefined ? hE['local'] : 0;
-            const idxVisitante = hE['visitante'] !== undefined ? hE['visitante'] : 1;
+            const idxFase = hE['fase'] !== undefined ? hE['fase'] : 0;
+            const idxLocal = hE['local'] !== undefined ? hE['local'] : 1;
             const idxGolesL = hE['golesl'] !== undefined ? hE['golesl'] : 2;
             const idxGolesV = hE['golesv'] !== undefined ? hE['golesv'] : 3;
-            const idxFase = hE['fase'] !== undefined ? hE['fase'] : 4;
+            const idxVisitante = hE['visitante'] !== undefined ? hE['visitante'] : 4;
 
-            const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxFase] && fila[idxFase].toLowerCase() !== 'fase');
+            const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxFase] && normalizarTexto(fila[idxFase]) !== 'fase');
             if (fasesValidas.length === 0) {
                 container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">No hay eliminatorias disponibles.</div>`;
                 return;
             }
 
-            const buscarFase = (nombre) => fasesValidas.find(f => f[idxFase].toLowerCase().trim() === nombre.toLowerCase().trim());
+            const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[idxFase]) === normalizarTexto(nombre));
 
             container.innerHTML = `
                 <div class="bracket-column">
