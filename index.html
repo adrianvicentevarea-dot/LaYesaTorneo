@@ -236,55 +236,16 @@
             location.reload();
         }
 
-        // SOLUCIÓN AL ERROR: Buscador inteligente de pestañas por si varía el nombre en el Excel
-        async function consultarGoogleSheetInteligente(nombrePestañaBuscada, numeroPestañaPorDefecto) {
+        // FUNCIÓN CORREGIDA: Limpia las fechas/horas nativas de Google y soluciona bloqueos de pestañas vacías
+        async function consultarGoogleSheet(nombrePestaña) {
             try {
-                // Buscamos primero la estructura de hojas disponibles para no fallar por el nombre
-                const urlEstructura = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
-                const respuestaEst = await fetch(urlEstructura);
-                const textoEst = await respuestaEst.text();
-                const inicioJsonEst = textoEst.indexOf('{');
-                const finJsonEst = textoEst.lastIndexOf('}') + 1;
-                const jsonEst = JSON.parse(textoEst.slice(inicioJsonEst, finJsonEst));
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}`;
+                const respuesta = await fetch(url);
+                const texto = await respuesta.text();
                 
-                // Intentamos encontrar el nombre real comparando sin tildes ni espacios
-                let nombreReal = nombrePestañaBuscada;
-                if (jsonEst && jsonEst.table && jsonEst.table.cols) {
-                    // Google a veces no da el listado completo directo en la raíz, usamos fallback si falla
-                }
-
-                // Hacemos la consulta directa con reintento automático si falla el nombre estándar
-                const ejecutarConsulta = async (sheetName) => {
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
-                    const respuesta = await fetch(url);
-                    const texto = await respuesta.text();
-                    if(texto.includes('sheet_not_found') || texto.includes('not_found')) throw new Error('Not found');
-                    
-                    const inicioJson = texto.indexOf('{');
-                    const finJson = texto.lastIndexOf('}') + 1;
-                    return JSON.parse(texto.slice(inicioJson, finJson));
-                };
-
-                let jsonNeto;
-                try {
-                    // Intento 1: Nombre original (ej: "Partidos")
-                    jsonNeto = await ejecutarConsulta(nombrePestañaBuscada);
-                } catch(e) {
-                    try {
-                        // Intento 2: Nombre con tilde/variaciones comunes (ej: "Clasificación")
-                        const alternativo = nombrePestañaBuscada.toLowerCase() === 'clasificacion' ? 'Clasificación' : nombrePestañaBuscada.toUpperCase();
-                        jsonNeto = await ejecutarConsulta(alternativo);
-                    } catch(e2) {
-                        // Intento 3: Si todo falla, intentamos leer por el número de índice de la pestaña usando la url por defecto antigua
-                        const urlFailsafe = `https://opensheet.elk.sh/${SHEET_ID}/${numeroPestañaPorDefecto}`;
-                        const res = await fetch(urlFailsafe).then(r => r.json());
-                        if (Array.isArray(res)) {
-                            // Adaptar formato opensheet a nuestro lector
-                            return res;
-                        }
-                        throw new Error('Total fail');
-                    }
-                }
+                const inicioJson = texto.indexOf('{');
+                const finJson = texto.lastIndexOf('}') + 1;
+                const jsonNeto = JSON.parse(texto.slice(inicioJson, finJson));
                 
                 if (!jsonNeto || !jsonNeto.table) return [];
 
@@ -294,16 +255,32 @@
                     r.c.forEach((celda, index) => {
                         const nombreCol = columnas[index];
                         if (nombreCol) {
-                            item[nombreCol] = celda ? (celda.v !== null ? celda.v : '') : '';
+                            let valor = celda ? (celda.v !== null ? celda.v : '') : '';
+                            
+                            // ARREGLO DE LA FECHA: Si Google envía Date(1899,11,30,15,25,0), extraemos la hora limpia
+                            if (valor && typeof valor === 'string' && valor.includes('Date(')) {
+                                if (celda.f) {
+                                    valor = celda.f; // Usamos el texto formateado directamente visible en el Excel (ej: "15:25")
+                                } else {
+                                    const partes = valor.match(/\d+/g);
+                                    if (partes && partes.length >= 5) {
+                                        const hora = partes[3].padStart(2, '0');
+                                        const minutos = partes[4].padStart(2, '0');
+                                        valor = `${hora}:${minutos}`;
+                                    }
+                                }
+                            }
+                            item[nombreCol] = valor;
                         }
                     });
                     return item;
                 });
             } catch (error) {
-                // Último recurso por si la API de Google se satura
+                console.error("Error cargando: " + nombrePestaña, error);
+                // Fallback por si la hoja tiene columnas vacías cruzadas
                 try {
-                    return await fetch(`https://opensheet.elk.sh/${SHEET_ID}/${numeroPestañaPorDefecto}`).then(r => r.json());
-                } catch(err) {
+                    return await fetch(`https://opensheet.elk.sh/${SHEET_ID}/${nombrePestaña}`).then(r => r.json());
+                } catch(e) {
                     return [];
                 }
             }
@@ -317,13 +294,12 @@
 
         async function cargarTodo() {
             try {
-                // Cargamos de forma inteligente usando nombres y posiciones (1, 2, 3, 4, 5) para que nunca falle
                 const [resP, resC, resG, resT, resE] = await Promise.all([
-                    consultarGoogleSheetInteligente('Partidos', 'Partidos'),
-                    consultarGoogleSheetInteligente('Clasificacion', 'Clasificacion'),
-                    consultarGoogleSheetInteligente('Goleadores', 'Goleadores'),
-                    consultarGoogleSheetInteligente('Tarjetas', 'Tarjetas'),
-                    consultarGoogleSheetInteligente('Eliminatorias', 'Eliminatorias')
+                    consultarGoogleSheet('Partidos'),
+                    consultarGoogleSheet('Clasificacion'),
+                    consultarGoogleSheet('Goleadores'),
+                    consultarGoogleSheet('Tarjetas'),
+                    consultarGoogleSheet('Eliminatorias')
                 ]);
 
                 const stats = {}; 
