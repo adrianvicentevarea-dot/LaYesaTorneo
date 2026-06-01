@@ -9,7 +9,7 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
         body { margin: 0; background: var(--azul-oscuro); display: flex; height: 100vh; overflow: hidden; }
 
-        /* MENU LATERAL - TEXTO MAS GRANDE */
+        /* MENU LATERAL */
         #sidebar { width: 180px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
         .nav-header { padding: 20px 15px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1em; color: var(--verde); letter-spacing: 0.5px; }
         .btn { padding: 15px 20px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85em; font-weight: bold; }
@@ -42,7 +42,7 @@
         .match-score { background: var(--azul-nav); color: white; padding: 5px 12px; border-radius: 4px; min-width: 60px; text-align: center; font-weight: bold; font-size: 1.1em; }
         .match-score.hora { background: #7f8c8d; font-size: 0.95em; }
 
-        /* PLAYOFFS EN ESCALERA GRANDES */
+        /* PLAYOFFS EN ESCALERA */
         .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; }
         .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 550px; min-width: 220px; flex: 1; }
         .bracket-column.final-col { justify-content: center; min-width: 240px; }
@@ -191,6 +191,7 @@
 
         function renderBracket(data) {
             const container = document.getElementById('bracket-container');
+            if (!container) return;
             if (!data || data.length === 0) return;
 
             const buscarPorFase = (nombreFase) => data.find(f => f.Fase && f.Fase.toString().trim().toLowerCase() === nombreFase.toLowerCase());
@@ -221,7 +222,9 @@
         }
 
         function renderPartidos(data) {
-            document.getElementById('partidos-container').innerHTML = data.filter(m => m.Local).map(m => {
+            const container = document.getElementById('partidos-container');
+            if (!container) return;
+            container.innerHTML = data.filter(m => m.Local).map(m => {
                 const gL = parseInt(m.GolesL), gV = parseInt(m.GolesV);
                 let marcadorHTML = '';
                 if (!isNaN(gL) && !isNaN(gV)) {
@@ -240,6 +243,7 @@
 
         function renderClasificacion(data, stats) {
             const container = document.getElementById('grupos-container');
+            if (!container) return;
             const grupos = {};
             data.filter(e => e.Nombre).forEach(e => {
                 const n = e.Nombre.trim();
@@ -255,14 +259,18 @@
         }
 
         function renderGoleadores(data, stats) {
+            const container = document.getElementById("body-gol");
+            if (!container) return;
             const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
-            document.getElementById("body-gol").innerHTML = orden.map(j => `
+            container.innerHTML = orden.map(j => `
                 <tr><td><b>${j.Nombre}</b></td><td class="txt-club">${j.Equipo || '-'}</td><td class="txt-centro">${stats[j.Equipo?.trim()]?.pj || 0}</td><td class="txt-centro pts-verde">${j.Goles || 0}</td></tr>`).join('');
         }
 
         function renderTarjetas(data, stats) {
+            const container = document.getElementById("body-tar");
+            if (!container) return;
             const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
-            document.getElementById("body-tar").innerHTML = orden.map(j => {
+            container.innerHTML = orden.map(j => {
                 const am = parseInt(j.Amarillas) || 0;
                 const eq = j.Equipo?.trim() || '';
                 const pjEquipo = stats[eq]?.pj || 0; 
@@ -294,8 +302,10 @@
 
         function ver(s) {
             ['partidos', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
-                document.getElementById(id).classList.toggle('hidden', id !== s);
-                document.getElementById('btn-' + id).classList.toggle('active', id === s);
+                const elem = document.getElementById(id);
+                const btn = document.getElementById('btn-' + id);
+                if (elem) elem.classList.toggle('hidden', id !== s);
+                if (btn) btn.classList.toggle('active', id === s);
             });
         }
         cargarTodo();
