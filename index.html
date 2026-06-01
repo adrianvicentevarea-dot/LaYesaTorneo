@@ -15,7 +15,7 @@
         .btn { padding: 15px 20px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85em; font-weight: bold; }
         .btn.active { background: var(--verde); color: white; }
 
-        /* CONTENEDOR PRINCIPAL SIN CABECERA REPETIDA */
+        /* CONTENEDOR PRINCIPAL */
         #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         
         #content { flex: 1; padding: 20px; overflow-y: auto; }
@@ -24,7 +24,7 @@
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .card { background: var(--blanco); border-radius: 6px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
         
-        /* TABLAS AMPLIADAS Y SEÑALIZADAS */
+        /* TABLAS AMPLIADAS */
         table { width: 100%; border-collapse: collapse; table-layout: auto; }
         td, th { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; white-space: nowrap; }
         th { background: #f9f9f9; color: #7f8c8d; font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
@@ -42,7 +42,7 @@
         .match-score { background: var(--azul-nav); color: white; padding: 5px 12px; border-radius: 4px; min-width: 60px; text-align: center; font-weight: bold; font-size: 1.1em; }
         .match-score.hora { background: #7f8c8d; font-size: 0.95em; }
 
-        /* --- PLAYOFFS EN ESCALERA MAS GRANDES --- */
+        /* PLAYOFFS EN ESCALERA GRANDES */
         .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; }
         .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 550px; min-width: 220px; flex: 1; }
         .bracket-column.final-col { justify-content: center; min-width: 240px; }
@@ -89,7 +89,7 @@
             <div id="grupos" class="hidden"><span class="seccion-titulo">Clasificación</span><div id="grupos-container" class="grid-grupos"></div></div>
             
             <div id="elim" class="hidden">
-                <span class="seccion-titulo">Fase Final - Road to Budapest</span>
+                <span class="seccion-titulo">Fase Final</span>
                 <div class="bracket-wrapper" id="bracket-container"></div>
             </div>
 
@@ -261,44 +261,4 @@
         }
 
         function renderTarjetas(data, stats) {
-            const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
-            document.getElementById("body-tar").innerHTML = orden.map(j => {
-                const am = parseInt(j.Amarillas) || 0;
-                const eq = j.Equipo?.trim() || '';
-                const pjEquipo = stats[eq]?.pj || 0; 
-                const textoCelda = j.Sanción ? j.Sanción.toString().trim().toLowerCase() : '';
-                
-                let estado = 'OK';
-                let pjJugador = pjEquipo;
-
-                if (textoCelda === 'sancionado' || textoCelda === 'si' || textoCelda === '0') {
-                    estado = 'SANCIONADO';
-                    pjJugador = pjEquipo - 1; 
-                } else {
-                    estado = 'OK';
-                    const ciclosPasados = Math.floor(am / 3);
-                    if (ciclosPasados > 0) pjJugador = pjEquipo - ciclosPasados;
-                }
-
-                if (pjJugador < 0) pjJugador = 0;
-
-                return `<tr>
-                    <td><b>${j.Nombre}</b></td>
-                    <td class="txt-club">${eq}</td>
-                    <td class="txt-centro">${pjJugador}</td>
-                    <td class="txt-centro"><span class="badge-amarilla">${am}</span></td>
-                    <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
-                </tr>`;
-            }).join('');
-        }
-
-        function ver(s) {
-            ['partidos', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
-                document.getElementById(id).classList.toggle('hidden', id !== s);
-                document.getElementById('btn-' + id).classList.toggle('active', id === s);
-            });
-        }
-        cargarTodo();
-    </script>
-</body>
-</html>
+            const orden = data.filter(
