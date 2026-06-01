@@ -189,7 +189,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Jugador</th>
+                                <th>Jugadora</th>
                                 <th>Club</th>
                                 <th class="txt-centro">G</th>
                             </tr>
@@ -205,7 +205,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Jugador</th>
+                                <th>Jugadora</th>
                                 <th>Club</th>
                                 <th class="txt-centro">🟨</th>
                                 <th class="txt-derecha">Estado</th>
@@ -219,7 +219,6 @@
     </div>
 
     <script>
-        // Aquí están todos los IDs juntos de nuevo, incluyendo tu nuevo archivo femenino limpio
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1KyHfl8Ajou5HlKaWOwopSjQN-NKE7SVPeYQhFmcvVbU', 
@@ -307,18 +306,21 @@
                     document.getElementById('partidos-container').innerHTML = `
                         <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
                             ⚠️ Error de sincronización con Google Sheets.<br>
-                            Asegúrate de que el torneo seleccionado esté publicado en la web (Archivo -> Compartir -> Publicar en la web).
+                            Asegúrate de haber publicado este documento en la web (Archivo -> Compartir -> Publicar en la web).
                         </div>`;
                     return;
                 }
 
-                // Búsqueda inteligente de columnas por nombre normalizado
+                // MAPEADO DINÁMICO ADAPTADO AL FEMENINO Y MASCULINO
                 const hP = resP.headers;
-                const idxLocal = hP['local'] !== undefined ? hP['local'] : (hP['equipolocal'] !== undefined ? hP['equipolocal'] : 1);
-                const idxVisitante = hP['visitante'] !== undefined ? hP['visitante'] : (hP['equipovisitante'] !== undefined ? hP['equipovisitante'] : 2);
-                const idxGolesL = hP['golesl'] !== undefined ? hP['golesl'] : 3;
-                const idxGolesV = hP['golesv'] !== undefined ? hP['golesv'] : 4;
-                const idxHora = hP['hora'] !== undefined ? hP['hora'] : (hP['horario'] !== undefined ? hP['horario'] : 0);
+                let idxLocal = hP['equipolocal'] !== undefined ? hP['equipolocal'] : hP['local'];
+                let idxVisitante = hP['equipovisitante'] !== undefined ? hP['equipovisitante'] : hP['visitante'];
+                let idxGolesL = hP['golesl'] !== undefined ? hP['golesl'] : 2;
+                let idxGolesV = hP['golesv'] !== undefined ? hP['golesv'] : 3;
+                let idxHora = hP['hora'] !== undefined ? hP['hora'] : 0;
+
+                if (idxLocal === undefined) idxLocal = 1;
+                if (idxVisitante === undefined) idxVisitante = 4;
 
                 renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
                 renderClasificacion(resC);
@@ -332,7 +334,11 @@
             const container = document.getElementById('partidos-container');
             if (!container) return;
             
-            const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[idxLocal] && normalizarTexto(fila[idxLocal]) !== 'local');
+            const partidosValidos = rows.filter((fila, idx) => {
+                if (idx === 0 || !fila) return false;
+                const celdaL = normalizarTexto(fila[idxLocal]);
+                return celdaL !== '' && celdaL !== 'local' && celdaL !== 'equipolocal';
+            });
             
             if (partidosValidos.length === 0) {
                 container.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay partidos disponibles aún.</div>`;
@@ -366,12 +372,12 @@
             if (!container) return;
 
             const hC = res.headers;
-            const idxNombre = hC['nombre'] !== undefined ? hC['nombre'] : (hC['equipo'] !== undefined ? hC['equipo'] : 0);
+            const idxNombre = hC['equipo'] !== undefined ? hC['equipo'] : (hC['nombre'] !== undefined ? hC['nombre'] : 0);
             const idxGrupo = hC['grupo'] !== undefined ? hC['grupo'] : 1;
-            const idxDiferencia = hC['diferencia'] !== undefined ? hC['diferencia'] : (hC['dg'] !== undefined ? hC['dg'] : 2);
-            const idxPuntos = hC['puntos'] !== undefined ? hC['puntos'] : (hC['pts'] !== undefined ? hC['pts'] : 3);
+            const idxDiferencia = hC['dg'] !== undefined ? hC['dg'] : (hC['diferencia'] !== undefined ? hC['diferencia'] : 2);
+            const idxPuntos = hC['pts'] !== undefined ? hC['pts'] : (hC['puntos'] !== undefined ? hC['puntos'] : 3);
 
-            const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre');
+            const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre' && normalizarTexto(fila[idxNombre]) !== 'equipo');
             if (equiposValidos.length === 0) {
                 container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
                 return;
@@ -401,11 +407,11 @@
             if (!container) return;
 
             const hG = res.headers;
-            const idxNombre = hG['nombre'] !== undefined ? hG['nombre'] : (hG['jugador'] !== undefined ? hG['jugador'] : 0);
-            const idxEquipo = hG['equipo'] !== undefined ? hG['equipo'] : (hG['club'] !== undefined ? hG['club'] : 1);
+            const idxNombre = hG['jugadora'] !== undefined ? hG['jugadora'] : (hG['jugador'] !== undefined ? hG['jugador'] : (hG['nombre'] !== undefined ? hG['nombre'] : 0));
+            const idxEquipo = hG['club'] !== undefined ? hG['club'] : (hG['equipo'] !== undefined ? hG['equipo'] : 1);
             const idxGoles = hG['goles'] !== undefined ? hG['goles'] : 2;
 
-            const jugadoresValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre' && normalizarTexto(fila[idxNombre]) !== 'jugador');
+            const jugadoresValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre' && normalizarTexto(fila[idxNombre]) !== 'jugador' && normalizarTexto(fila[idxNombre]) !== 'jugadora');
             if (jugadoresValidos.length === 0) {
                 container.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
                 return;
@@ -423,12 +429,12 @@
             if (!container) return;
 
             const hT = res.headers;
-            const idxNombre = hT['nombre'] !== undefined ? hT['nombre'] : (hT['jugador'] !== undefined ? hT['jugador'] : 0);
-            const idxEquipo = hT['equipo'] !== undefined ? hT['equipo'] : (hT['club'] !== undefined ? hT['club'] : 1);
+            const idxNombre = hT['jugadora'] !== undefined ? hT['jugadora'] : (hT['jugador'] !== undefined ? hT['jugador'] : (hT['nombre'] !== undefined ? hT['nombre'] : 0));
+            const idxEquipo = hT['club'] !== undefined ? hT['club'] : (hT['equipo'] !== undefined ? hT['equipo'] : 1);
             const idxAmarillas = hT['amarillas'] !== undefined ? hT['amarillas'] : 2;
             const idxSancion = hT['sancion'] !== undefined ? hT['sancion'] : 3;
 
-            const tarjetasValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre' && normalizarTexto(fila[idxNombre]) !== 'jugador');
+            const tarjetasValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre' && normalizarTexto(fila[idxNombre]) !== 'jugador' && normalizarTexto(fila[idxNombre]) !== 'jugadora');
             if (tarjetasValidas.length === 0) {
                 container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
                 return;
@@ -438,7 +444,7 @@
                 const nombre = fila[idxNombre], equipo = fila[idxEquipo] || '', amarillas = fila[idxAmarillas] || '0', sancion = fila[idxSancion] || '';
                 
                 let estado = 'OK';
-                if (sancion.toLowerCase() === 'sancionado' || sancion.trim() === '1' || sancion.toLowerCase() === 'si') {
+                if (sancion.toLowerCase() === 'sancionado' || sancion.trim() === '1' || sancion.toLowerCase() === 'si' || sancion.toLowerCase() === 'sancionada') {
                     estado = 'SANCIONADO';
                 }
 
@@ -485,10 +491,13 @@
 
             const hE = res.headers;
             const idxFase = hE['fase'] !== undefined ? hE['fase'] : 0;
-            const idxLocal = hE['local'] !== undefined ? hE['local'] : 1;
+            let idxLocal = hE['equipolocal'] !== undefined ? hE['equipolocal'] : hE['local'];
+            let idxVisitante = hE['equipovisitante'] !== undefined ? hE['equipovisitante'] : hE['visitante'];
             const idxGolesL = hE['golesl'] !== undefined ? hE['golesl'] : 2;
             const idxGolesV = hE['golesv'] !== undefined ? hE['golesv'] : 3;
-            const idxVisitante = hE['visitante'] !== undefined ? hE['visitante'] : 4;
+
+            if (idxLocal === undefined) idxLocal = 1;
+            if (idxVisitante === undefined) idxVisitante = 4;
 
             const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxFase] && normalizarTexto(fila[idxFase]) !== 'fase');
             if (fasesValidas.length === 0) {
