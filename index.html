@@ -221,7 +221,7 @@
     </div>
 
     <script>
-        // IDS de las hojas de cálculo según capturas previas
+        // IDs confirmados según tus capturas de pantalla de las URL de Google Sheets
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '19lxZHFj-NaSIAT6mjs_Oiqm6UEdKBat5hoHny_UFN1U',
@@ -237,30 +237,40 @@
             location.reload();
         }
 
+        // Función auxiliar para buscar propiedades sin importar mayúsculas/minúsculas
+        function obtenerPropiedad(objeto, nombreProp) {
+            if (!objeto) return '';
+            const keyEncontrada = Object.keys(objeto).find(k => k.trim().toLowerCase() === nombreProp.toLowerCase());
+            return keyEncontrada ? objeto[keyEncontrada] : '';
+        }
+
         async function cargarTodo() {
             try {
                 const [resP, resC, resG, resT, resE] = await Promise.all([
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Partidos`).then(r => r.json()),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Clasificacion`).then(r => r.json()),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`).then(r => r.json()),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json()),
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Partidos`).then(r => r.json()).catch(() => []),
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Clasificacion`).then(r => r.json()).catch(() => []),
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`).then(r => r.json()).catch(() => []),
+                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json()).catch(() => []),
                     fetch(`https://opensheet.elk.sh/${SHEET_ID}/Eliminatorias`).then(r => r.json()).catch(() => [])
                 ]);
 
                 const stats = {}; 
-                resP.forEach(p => {
-                    if (!p.Local || !p.Visitante) return;
-                    const loc = p.Local.trim(), vis = p.Visitante.trim();
-                    const gL = parseInt(p.GolesL), gV = parseInt(p.GolesV);
-                    if (!stats[loc]) stats[loc] = { pj: 0, pts: 0 };
-                    if (!stats[vis]) stats[vis] = { pj: 0, pts: 0 };
-                    if (!isNaN(gL) && !isNaN(gV)) {
-                        stats[loc].pj++; stats[vis].pj++;
-                        if (gL > gV) stats[loc].pts += 3;
-                        else if (gV > gL) stats[vis].pts += 3;
-                        else { stats[loc].pts += 1; stats[vis].pts += 1; }
-                    }
-                });
+                if (Array.isArray(resP)) {
+                    resP.forEach(p => {
+                        const local = obtenerPropiedad(p, 'Local'), visitante = obtenerPropiedad(p, 'Visitante');
+                        if (!local || !visitante) return;
+                        const loc = local.trim(), vis = visitante.trim();
+                        const gL = parseInt(obtenerPropiedad(p, 'GolesL')), gV = parseInt(obtenerPropiedad(p, 'GolesV'));
+                        if (!stats[loc]) stats[loc] = { pj: 0, pts: 0 };
+                        if (!stats[vis]) stats[vis] = { pj: 0, pts: 0 };
+                        if (!isNaN(gL) && !isNaN(gV)) {
+                            stats[loc].pj++; stats[vis].pj++;
+                            if (gL > gV) stats[loc].pts += 3;
+                            else if (gV > gL) stats[vis].pts += 3;
+                            else { stats[loc].pts += 1; stats[vis].pts += 1; }
+                        }
+                    });
+                }
 
                 renderPartidos(resP);
                 renderClasificacion(resC, stats);
@@ -271,9 +281,12 @@
         }
 
         function crearBloquePartido(p, titulo) {
-            if (!p) p = { Local: '', GolesL: '', GolesV: '', Visitante: '' };
-            const gL = p.GolesL !== undefined && p.GolesL !== '' ? parseInt(p.GolesL) : NaN;
-            const gV = p.GolesV !== undefined && p.GolesV !== '' ? parseInt(p.GolesV) : NaN;
+            if (!p) p = {};
+            const local = obtenerPropiedad(p, 'Local'), visitante = obtenerPropiedad(p, 'Visitante');
+            const golesL = obtenerPropiedad(p, 'GolesL'), golesV = obtenerPropiedad(p, 'GolesV');
+            
+            const gL = golesL !== undefined && golesL !== '' ? parseInt(golesL) : NaN;
+            const gV = golesV !== undefined && golesV !== '' ? parseInt(golesV) : NaN;
             
             const winL = !isNaN(gL) && !isNaN(gV) && gL > gV;
             const winV = !isNaN(gL) && !isNaN(gV) && gV > gL;
@@ -282,11 +295,11 @@
                 <div class="bracket-match">
                     <div class="bracket-title">${titulo}</div>
                     <div class="bracket-team-row ${winL ? 'winner' : ''}">
-                        <span class="bracket-name">${p.Local || '—'}</span>
+                        <span class="bracket-name">${local || '—'}</span>
                         <span class="bracket-goals ${isNaN(gL) ? 'empty' : ''}">${isNaN(gL) ? '-' : gL}</span>
                     </div>
                     <div class="bracket-team-row ${winV ? 'winner' : ''}">
-                        <span class="bracket-name">${p.Visitante || '—'}</span>
+                        <span class="bracket-name">${visitante || '—'}</span>
                         <span class="bracket-goals ${isNaN(gV) ? 'empty' : ''}">${isNaN(gV) ? '-' : gV}</span>
                     </div>
                 </div>
@@ -295,12 +308,13 @@
 
         function renderBracket(data) {
             const container = document.getElementById('bracket-container');
-            if (!container) return;
+            if (!container || !Array.isArray(data) || data.length === 0) return;
             container.innerHTML = "";
-            if (!data || data.length === 0) return;
 
-            // Búsqueda insensible a mayúsculas/minúsculas para coincidir con el Excel
-            const buscarPorFase = (nombreFase) => data.find(f => f.Fase && f.Fase.toString().trim().toLowerCase() === nombreFase.toLowerCase());
+            const buscarPorFase = (nombreFase) => data.find(f => {
+                const fase = obtenerPropiedad(f, 'Fase');
+                return fase && fase.toString().trim().toLowerCase() === nombreFase.toLowerCase();
+            });
 
             const c1 = buscarPorFase('Cuartos 1');
             const c2 = buscarPorFase('Cuartos 2');
@@ -330,19 +344,27 @@
         function renderPartidos(data) {
             const container = document.getElementById('partidos-container');
             if (!container) return;
-            container.innerHTML = data.filter(m => m.Local).map(m => {
-                const gL = parseInt(m.GolesL), gV = parseInt(m.GolesV);
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay partidos disponibles aún.</div>`;
+                return;
+            }
+            container.innerHTML = data.filter(m => obtenerPropiedad(m, 'Local')).map(m => {
+                const local = obtenerPropiedad(m, 'Local'), visitante = obtenerPropiedad(m, 'Visitante');
+                const golesL = obtenerPropiedad(m, 'GolesL'), golesV = obtenerPropiedad(m, 'GolesV');
+                const hora = obtenerPropiedad(m, 'Hora');
+
+                const gL = parseInt(golesL), gV = parseInt(golesV);
                 let marcadorHTML = '';
                 if (!isNaN(gL) && !isNaN(gV)) {
                     marcadorHTML = `<div class="match-score">${gL}:${gV}</div>`;
                 } else {
-                    const horaPartido = m.Hora ? m.Hora.trim() : '-:-';
+                    const horaPartido = hora ? hora.trim() : '-:-';
                     marcadorHTML = `<div class="match-score hora">${horaPartido}</div>`;
                 }
                 return `<div class="card"><div class="match-row">
-                    <div class="match-team" style="text-align:right;">${m.Local}</div>
+                    <div class="match-team" style="text-align:right;">${local}</div>
                     ${marcadorHTML}
-                    <div class="match-team">${m.Visitante}</div>
+                    <div class="match-team">${visitante}</div>
                 </div></div>`;
             }).join('');
         }
@@ -350,11 +372,16 @@
         function renderClasificacion(data, stats) {
             const container = document.getElementById('grupos-container');
             if (!container) return;
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
+                return;
+            }
             const grupos = {};
-            data.filter(e => e.Nombre).forEach(e => {
-                const n = e.Nombre.trim();
-                if (!grupos[e.Grupo]) grupos[e.Grupo] = [];
-                grupos[e.Grupo].push({ nombre: n, pts: stats[n]?.pts || 0, pj: stats[n]?.pj || 0 });
+            data.filter(e => obtenerPropiedad(e, 'Nombre')).forEach(e => {
+                const nombre = obtenerPropiedad(e, 'Nombre').trim();
+                const grupo = obtenerPropiedad(e, 'Grupo') || 'Único';
+                if (!grupos[grupo]) grupos[grupo] = [];
+                grupos[grupo].push({ nombre: nombre, pts: stats[nombre]?.pts || 0, pj: stats[nombre]?.pj || 0 });
             });
             container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a, b) => b.pts - a.pts);
@@ -367,20 +394,43 @@
         function renderGoleadores(data, stats) {
             const container = document.getElementById("body-gol");
             if (!container) return;
-            const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Goles) || 0) - (parseInt(a.Goles) || 0));
-            container.innerHTML = orden.map(j => `
-                <tr><td><b>${j.Nombre}</b></td><td class="txt-club">${j.Equipo || '-'}</td><td class="txt-centro">${stats[j.Equipo?.trim()]?.pj || 0}</td><td class="txt-centro pts-verde">${j.Goles || 0}</td></tr>`).join('');
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;">No hay goles registrados.</td></tr>`;
+                return;
+            }
+            const orden = data.filter(j => obtenerPropiedad(j, 'Nombre')).sort((a, b) => {
+                const golesB = parseInt(obtenerPropiedad(b, 'Goles')) || 0;
+                const golesA = parseInt(obtenerPropiedad(a, 'Goles')) || 0;
+                return golesB - golesA;
+            });
+            container.innerHTML = orden.map(j => {
+                const nombre = obtenerPropiedad(j, 'Nombre');
+                const equipo = obtenerPropiedad(j, 'Equipo') || obtenerPropiedad(j, 'Club') || '-';
+                const goles = obtenerPropiedad(j, 'Goles') || 0;
+                return `<tr><td><b>${nombre}</b></td><td class="txt-club">${equipo}</td><td class="txt-centro">${stats[equipo?.trim()]?.pj || 0}</td><td class="txt-centro pts-verde">${goles}</td></tr>`;
+            }).join('');
         }
 
         function renderTarjetas(data, stats) {
             const container = document.getElementById("body-tar");
             if (!container) return;
-            const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;">No hay sanciones registradas.</td></tr>`;
+                return;
+            }
+            const orden = data.filter(j => obtenerPropiedad(j, 'Nombre')).sort((a, b) => {
+                const amB = parseInt(obtenerPropiedad(b, 'Amarillas')) || 0;
+                const amA = parseInt(obtenerPropiedad(a, 'Amarillas')) || 0;
+                return amB - amA;
+            });
             container.innerHTML = orden.map(j => {
-                const am = parseInt(j.Amarillas) || 0;
-                const eq = j.Equipo?.trim() || '';
-                const pjEquipo = stats[eq]?.pj || 0; 
-                const textoCelda = j.Sanción ? j.Sanción.toString().trim().toLowerCase() : '';
+                const nombre = obtenerPropiedad(j, 'Nombre');
+                const equipo = (obtenerPropiedad(j, 'Equipo') || obtenerPropiedad(j, 'Club') || '').trim();
+                const amarillas = parseInt(obtenerPropiedad(j, 'Amarillas')) || 0;
+                const sancion = obtenerPropiedad(j, 'Sanción') || obtenerPropiedad(j, 'Sancion') || '';
+                
+                const pjEquipo = stats[equipo]?.pj || 0; 
+                const textoCelda = sancion.toString().trim().toLowerCase();
                 
                 let estado = 'OK';
                 let pjJugador = pjEquipo;
@@ -390,17 +440,17 @@
                     pjJugador = pjEquipo - 1; 
                 } else {
                     estado = 'OK';
-                    const ciclosPasados = Math.floor(am / 3);
+                    const ciclosPasados = Math.floor(amarillas / 3);
                     if (ciclosPasados > 0) pjJugador = pjEquipo - ciclosPasados;
                 }
 
                 if (pjJugador < 0) pjJugador = 0;
 
                 return `<tr>
-                    <td><b>${j.Nombre}</b></td>
-                    <td class="txt-club">${eq}</td>
+                    <td><b>${nombre}</b></td>
+                    <td class="txt-club">${equipo || '-'}</td>
                     <td class="txt-centro">${pjJugador}</td>
-                    <td class="txt-centro"><span class="badge-amarilla">${am}</span></td>
+                    <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
                     <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
                 </tr>`;
             }).join('');
