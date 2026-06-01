@@ -261,4 +261,44 @@
         }
 
         function renderTarjetas(data, stats) {
-            const orden = data.filter(
+            const orden = data.filter(j => j.Nombre).sort((a, b) => (parseInt(b.Amarillas) || 0) - (parseInt(a.Amarillas) || 0));
+            document.getElementById("body-tar").innerHTML = orden.map(j => {
+                const am = parseInt(j.Amarillas) || 0;
+                const eq = j.Equipo?.trim() || '';
+                const pjEquipo = stats[eq]?.pj || 0; 
+                const textoCelda = j.Sanción ? j.Sanción.toString().trim().toLowerCase() : '';
+                
+                let estado = 'OK';
+                let pjJugador = pjEquipo;
+
+                if (textoCelda === 'sancionado' || textoCelda === 'si' || textoCelda === '0') {
+                    estado = 'SANCIONADO';
+                    pjJugador = pjEquipo - 1; 
+                } else {
+                    estado = 'OK';
+                    const ciclosPasados = Math.floor(am / 3);
+                    if (ciclosPasados > 0) pjJugador = pjEquipo - ciclosPasados;
+                }
+
+                if (pjJugador < 0) pjJugador = 0;
+
+                return `<tr>
+                    <td><b>${j.Nombre}</b></td>
+                    <td class="txt-club">${eq}</td>
+                    <td class="txt-centro">${pjJugador}</td>
+                    <td class="txt-centro"><span class="badge-amarilla">${am}</span></td>
+                    <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function ver(s) {
+            ['partidos', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', id !== s);
+                document.getElementById('btn-' + id).classList.toggle('active', id === s);
+            });
+        }
+        cargarTodo();
+    </script>
+</body>
+</html>
