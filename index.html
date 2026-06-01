@@ -204,10 +204,11 @@
     </div>
 
     <script>
+        // IDs Reales corregidos directamente de tus capturas de pantalla
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1KyHfl8Ajou5HlKaWOwopSjQN-NKE7SVPeYQhFmcvVbU', 
-            mixto: '1rdrR11IM8bzdAoMUQMkBkzXc_xU4vPt8zeVUo_BCgqY',
+            mixto: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ',
             ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
         };
 
@@ -297,12 +298,12 @@
                     return;
                 }
 
-                // Asignación ultra estricta por orden visual exacto de columnas (idéntico a tu código original)
+                // Posiciones exactas basadas en tus imágenes de Excel
                 let idxHora = 0;
                 let idxLocal = 1;
-                let idxGolesL = 2;
-                let idxGolesV = 3;
-                let idxVisitante = 4;
+                let idxGolesL = 3;
+                let idxGolesV = 4;
+                let idxVisitante = 2;
 
                 renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
                 
@@ -400,9 +401,9 @@
                 return;
             }
 
-            const orden = jugadoresValidos.sort((a, b) => (parseInt(b[2]) || 0) - (parseInt(a[2]) || 0));
+            const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
             container.innerHTML = orden.map(fila => {
-                return `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1] || '-'}</td><td class="txt-centro pts-verde">${fila[2] || 0}</td></tr>`;
+                return `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1] || '-'}</td><td class="txt-centro pts-verde">${fila[3] || 0}</td></tr>`;
             }).join('');
         }
 
