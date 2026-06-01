@@ -1,548 +1,1021 @@
 <!DOCTYPE html>
+
 <html lang="es">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Torneo La Yesa</title>
+
+    <title>Torneo de La Yesa</title>
+
     <style>
-        :root { 
+
+        :raíz { 
+
             --azul-oscuro: #1b3a4b; 
+
             --azul-nav: #142d3b; 
+
             --verde: #27ae60; 
+
             --blanco: #ffffff; 
+
             --rojo: #e74c3c; 
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; margin: 0; padding: 0; }
-        
-        body { 
-            background: var(--azul-oscuro); 
-            display: flex; 
-            height: 100vh; 
-            width: 100vw;
-            overflow: hidden; 
+
         }
 
-        /* MENU LATERAL */
-        #sidebar { 
-            width: 180px; 
-            background: var(--azul-nav); 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; margin: 0; padding: 0; }
+
+        
+
+        cuerpo { 
+
+            background: var(--azul-oscuro); 
+
+            pantalla: flexible; 
+
+            altura: 100vh; 
+
+            ancho: 100vw;
+
+            desbordamiento: oculto; 
+
+        }
+
+
+
+        /* MENÚ LATERAL */
+
+        #barra lateral { 
+
+            ancho: 180px; 
+
+            fondo: var(--azul-nav); 
+
+            color: blanco; 
+
+            pantalla: flexible; 
+
+            flex-direction: columna; 
+
             flex-shrink: 0; 
-            z-index: 1001; 
+
+            Índice z: 1001; 
+
         }
+
         .nav-header { 
-            padding: 20px 15px; 
-            font-weight: bold; 
-            text-align: center; 
-            border-bottom: 1px solid rgba(255,255,255,0.1); 
-            font-size: 1em; 
+
+            relleno: 20px 15px; 
+
+            grosor de fuente: negrita; 
+
+            alineación de texto: centro; 
+
+            borde inferior: 1px sólido rgba(255,255,255,0.1); 
+
+            tamaño de fuente: 1em; 
+
             color: var(--verde); 
-            letter-spacing: 0.5px; 
+
+            espaciado entre letras: 0,5px; 
+
         }
+
         .btn { 
-            padding: 15px 20px; 
-            cursor: pointer; 
+
+            relleno: 15px 20px; 
+
+            cursor: puntero; 
+
             color: #bdc3c7; 
-            border-bottom: 1px solid rgba(255,255,255,0.05); 
-            font-size: 0.85em; 
-            font-weight: bold; 
-            text-decoration: none;
+
+            borde inferior: 1px sólido rgba(255,255,255,0.05); 
+
+            tamaño de fuente: 0,85em; 
+
+            grosor de fuente: negrita; 
+
+            decoración de texto: ninguna;
+
         }
+
         .btn.active { background: var(--verde); color: white; }
 
+
+
         /* CONTENEDOR PRINCIPAL DERECHO */
-        #main-container { 
+
+        #contenedor-principal { 
+
             flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-            position: relative; 
+
+            pantalla: flexible; 
+
+            flex-direction: columna; 
+
+            desbordamiento: oculto; 
+
+            posición: relativa; 
+
         }
+
         
+
         /* BARRA SUPERIOR */
-        .top-bar { 
-            display: flex; 
-            justify-content: flex-end; 
-            padding: 15px 20px; 
-            background: rgba(0, 0, 0, 0.1); 
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            z-index: 10; 
+
+        .barra-superior { 
+
+            pantalla: flexible; 
+
+            justificar-contenido: flex-end; 
+
+            relleno: 15px 20px; 
+
+            fondo: rgba(0, 0, 0, 0.1); 
+
+            borde inferior: 1px sólido rgba(255,255,255,0.05);
+
+            índice z: 10; 
+
         }
+
         .selector-torneo { 
-            background: var(--azul-nav); 
-            color: white; 
-            border: 2px solid var(--verde); 
-            padding: 8px 15px; 
-            font-size: 0.9em; 
-            font-weight: bold; 
-            border-radius: 6px; 
-            outline: none; 
-            cursor: pointer; 
+
+            fondo: var(--azul-nav); 
+
+            color: blanco; 
+
+            borde: 2px solid var(--verde); 
+
+            relleno: 8px 15px; 
+
+            tamaño de fuente: 0,9em; 
+
+            grosor de fuente: negrita; 
+
+            radio de borde: 6px; 
+
+            esquema: ninguno; 
+
+            cursor: puntero; 
+
         }
-        .selector-torneo option { background: var(--azul-nav); color: white; }
+
+        .selector-torneo opción { fondo: var(--azul-nav); color: blanco; }
+
+
 
         /* CONTENIDO SCROLLABLE */
-        #content { 
+
+        #contenido { 
+
             flex: 1; 
-            padding: 20px; 
-            overflow-y: auto; 
+
+            relleno: 20px; 
+
+            desbordamiento-y: automático; 
+
         }
+
         .seccion-titulo { 
-            color: white; 
-            font-size: 1.2em; 
-            margin-bottom: 25px; 
-            display: block; 
-            border-left: 4px solid var(--verde); 
-            padding-left: 10px; 
-            text-transform: uppercase; 
-            font-weight: bold; 
+
+            color: blanco; 
+
+            tamaño de fuente: 1.2em; 
+
+            margen inferior: 25px; 
+
+            mostrar: bloque; 
+
+            borde izquierdo: 4px solid var(--verde); 
+
+            relleno izquierdo: 10px; 
+
+            transformación de texto: mayúsculas; 
+
+            grosor de fuente: negrita; 
+
         }
+
+
 
         /* TARJETAS Y TABLAS */
+
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+
         .card { background: var(--blanco); border-radius: 6px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
+
         
-        table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; white-space: nowrap; }
+
+        tabla { ancho: 100%; colapso de borde: colapso; }
+
+        td, th { relleno: 12px 15px; borde inferior: 1px sólido #eee; alineación de texto: izquierda; tamaño de fuente: 1em; espacio en blanco: nowrap; }
+
         th { background: #f9f9f9; color: #7f8c8d; font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
+
         td b { font-size: 1.05em; }
+
         
+
         .txt-centro { text-align: center; }
+
         .txt-derecha { text-align: right; }
+
         .txt-club { color: #777; font-style: italic; }
+
         .pts-verde { color: var(--verde); font-weight: bold; font-size: 1.1em; }
+
         .badge-amarilla { background: #f1c40f; padding: 3px 8px; border-radius: 3px; font-weight: bold; color: #000; font-size: 0.95em; }
 
-        /* PARTIDOS */
+
+
+        /* FIESTAS */
+
         .match-row { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 1.1em; }
-        .match-team { width: 42%; font-weight: bold; color: #333; }
+
+        .match-team { ancho: 42%; peso de fuente: negrita; color: #333; }
+
         .match-score { background: var(--azul-nav); color: white; padding: 5px 12px; border-radius: 4px; min-width: 60px; text-align: center; font-weight: bold; font-size: 1.1em; }
+
         .match-score.hora { background: #7f8c8d; font-size: 0.95em; }
 
+
+
         /* PLAYOFFS */
+
         .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; }
+
         .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 550px; min-width: 220px; flex: 1; }
+
         .bracket-column.final-col { justify-content: center; min-width: 240px; }
+
         
+
         .bracket-match { background: white; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; font-size: 0.95em; width: 100%; margin-bottom: 10px; }
+
         .bracket-title { background: #f4f6f7; font-size: 0.8em; font-weight: bold; text-align: center; color: #666; border-bottom: 1px solid #ddd; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+
         
+
         .bracket-team-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; }
+
         .bracket-name { font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+
         .bracket-goals { background: var(--azul-nav); color: white; font-weight: bold; padding: 4px 10px; border-radius: 3px; min-width: 30px; text-align: center; font-size: 1em; }
+
         .bracket-goals.empty { background: #e0e0e0; color: #999; }
+
         
+
         .winner { background: #ebf5fb; }
-        .winner .bracket-name { color: #2980b9; }
+
+        .ganador .nombre-del-bracket { color: #2980b9; }
+
         .winner .bracket-goals { background: var(--verde); }
+
+
 
         .hidden { display: none; }
 
+
+
         @media (max-width: 768px) {
-            body { flex-direction: column; }
-            #sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; }
+
+            cuerpo { flex-direction: column; }
+
+            #sidebar { ancho: 100%; alto: automático; flex-direction: fila; overflow-x: automático; }
+
             .nav-header { display: none; }
+
             .btn { flex: 1; text-align: center; padding: 15px 10px; white-space: nowrap; border-bottom: none; border-right: 1px solid rgba(255,255,255,0.05); }
+
             .grid-grupos { grid-template-columns: 1fr; }
+
             .top-bar { justify-content: center; padding: 10px; }
-            .bracket-column { height: auto; gap: 15px; }
+
+            .bracket-column { altura: auto; espacio: 15px; }
+
             .bracket-wrapper { flex-direction: column; align-items: stretch; }
+
         }
+
     </style>
+
 </head>
-<body>
+
+<cuerpo>
+
     <nav id="sidebar">
-        <div class="nav-header">TORNEO LA YESA</div>
+
+        <div class="nav-header">TORNEO DE LA YESA</div>
+
         <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ PARTIDOS</div>
+
         <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 GRUPOS</div>
+
         <div id="btn-elim" class="btn" onclick="ver('elim')">🏆 PLAYOFFS</div>
-        <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLES</div>
+
+        <div id="btn-gol" class="btn" onclick="ver('gol')">👟 METAS</div>
+
         <div id="btn-tar" class="btn" onclick="ver('tar')">🟨 SANCIONES</div>
-    </nav>
+
+    </ninguno>
+
+
 
     <div id="main-container">
+
         <div class="top-bar">
+
             <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
+
                 <option value="masculino">⚽ Fútbol Masculino</option>
+
                 <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
+
                 <option value="ninos">🧒 Fútbol Pequeños</option>
-            </select>
+
+            </seleccionar>
+
         </div>
 
+
+
         <main id="content">
+
             <div id="partidos"><span class="seccion-titulo">Resultados y Horarios</span><div id="partidos-container"></div></div>
+
             <div id="grupos" class="hidden"><span class="seccion-titulo">Clasificación</span><div id="grupos-container" class="grid-grupos"></div></div>
+
             <div id="elim" class="hidden"><span class="seccion-titulo">Fase Final</span><div class="bracket-wrapper" id="bracket-container"></div></div>
 
+
+
             <div id="gol" class="hidden">
+
                 <span class="seccion-titulo">Goleadores</span>
+
                 <div class="card">
-                    <table>
-                        <thead>
-                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
+
+                    <tabla>
+
+                        <encabezado>
+
+                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">G</th></tr>
+
                         </thead>
+
                         <tbody id="body-gol"></tbody>
-                    </table>
+
+                    </tabla>
+
                 </div>
+
             </div>
+
             
+
             <div id="tar" class="hidden">
+
                 <span class="seccion-titulo">Sanciones</span>
+
                 <div class="card">
-                    <table>
-                        <thead>
-                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
+
+                    <tabla>
+
+                        <encabezado>
+
+                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
+
                         </thead>
+
                         <tbody id="body-tar"></tbody>
-                    </table>
+
+                    </tabla>
+
                 </div>
+
             </div>
+
         </main>
+
     </div>
 
+
+
     <script>
+
+        // Actualizado: el ID que antes era Mixto ahora es oficialmente el Femenino
+
         const TORNEOS = {
+
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
-            femenino: '1dtRR1tM1BdcnAMAQLjXMC0v_xXL4vPYBazVUo_BCgcQ', 
-            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
+
+            femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
+
+            niños: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
+
         };
 
+
+
         let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
+
+        // Si por casualidad se quedó guardado 'mixto', redirige automáticamente al femenino
+
         if (torneoActual === 'mixto') torneoActual = 'femenino';
+
         
+
         document.getElementById('selectorTorneo').value = torneoActual;
+
         let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
 
-        // Variable global para contar partidos automáticamente
-        let partidosJugadosPorEquipo = {};
+
 
         function cambiarTorneo(nuevoTorneo) {
+
             localStorage.setItem('torneo_seleccionado', nuevoTorneo);
-            location.reload();
+
+            ubicación.recargar();
+
         }
 
-        function normalizarTexto(texto) {
-            if (!texto) return '';
+
+
+        función normalizarTexto(texto) {
+
+            si (!texto) devolver '';
+
             return texto.toString().toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
         }
+
+
 
         function extraerValorCelda(celda) {
-            if (!celda) return '';
+
+            si (!celda) devolver '';
+
             if (celda.v !== null && celda.v !== undefined && typeof celda.v === 'string' && celda.v.includes('Date(')) {
+
                 const partes = celda.v.match(/\d+/g);
-                if (partes && partes.length >= 5) {
+
+                si (partes && partes.length >= 5) {
+
                     return `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}`;
+
                 }
+
             }
-            if (celda.f !== null && celda.f !== undefined) return celda.f.trim();
+
+            Si (cell.f !== null && cell.f !== undefined) devuelve cell.f.trim();
+
             if (celda.v !== null && celda.v !== undefined) return celda.v.toString().trim();
-            return '';
+
+            devolver '';
+
         }
+
+
 
         async function consultarGoogleSheet(nombrePestaña) {
-            try {
+
+            intentar {
+
                 const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}`;
+
                 const respuesta = await fetch(url);
+
                 const texto = await respuesta.text();
+
                 
+
                 const inicioJson = texto.indexOf('{');
+
                 const finJson = texto.lastIndexOf('}') + 1;
+
                 const jsonNeto = JSON.parse(texto.slice(inicioJson, finJson));
+
                 
+
                 if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { headers: {}, rows: [] };
 
-                const headers = {};
+
+
+                const encabezados = {};
+
                 const rowsRaw = jsonNeto.table.rows;
 
-                if (jsonNeto.table.cols) {
+
+
+                si (jsonNeto.table.cols) {
+
                     jsonNeto.table.cols.forEach((col, idx) => {
-                        if (col && col.label) {
-                            headers[normalizarTexto(col.label)] = idx;
+
+                        si (col && col.label) {
+
+                            encabezados[normalizarTexto(col.label)] = idx;
+
                         }
+
                     });
+
                 }
+
+
 
                 if (Object.keys(headers).length === 0 && rowsRaw.length > 0) {
-                    rowsRaw[0].c.forEach((celda, idx) => {
+
+                    filasRaw[0].c.forEach((celda, idx) => {
+
                         const val = normalizarTexto(extraerValorCelda(celda));
-                        if (val) headers[val] = idx;
+
+                        si (val) headers[val] = idx;
+
                     });
+
                 }
 
-                const rowsProcesadas = rowsRaw.map(r => {
-                    if (!r || !r.c) return [];
-                    return r.c.map(celda => extraerValorCelda(celda));
+
+
+                const filasProcesadas = filasRaw.map(r => {
+
+                    si (!r || !rc) devuelve [];
+
+                    return rcmap(celda => extraerValuorCelda(celda));
+
                 });
 
-                return { headers, rows: rowsProcesadas };
+
+
+                return { encabezados, filas: filasProcesadas };
+
             } catch (error) {
+
                 console.error("Error cargando la pestaña: " + nombrePestaña, error);
-                return null;
+
+                devolver nulo;
+
             }
+
         }
 
-        async function cargarTodo() {
-            try {
+
+
+        función asíncrona cargarTodo() {
+
+            intentar {
+
                 const resP = await consultarGoogleSheet('Partidos');
-                const resC = await consultarGoogleSheet('Clasificacion');
+
+                const resC = await queryGoogleSheet('Ranking');
+
                 const resG = await consultarGoogleSheet('Goleadores');
+
                 const resT = await consultarGoogleSheet('Tarjetas');
+
                 const resE = await consultarGoogleSheet('Eliminatorias');
 
-                if (!resP || resP.rows.length === 0) {
+
+
+                Si (!resP || !resC || resP.rows.length === 0) {
+
                     document.getElementById('partidos-container').innerHTML = `
+
                         <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
+
                             ⚠️ Error de sincronización con Google Sheets.<br>
+
                             Asegúrate de que este documento esté publicado (Archivo -> Compartir -> Publicar en la web).
+
                         </div>`;
-                    return;
+
+                    devolver;
+
                 }
 
-                let idxHora = 0;
+
+
+                // Posiciones de columnas fijas y seguras (Hora, Local, Visitante, Goles L, Goles V)
+
+                sea ​​idxHora = 0;
+
                 let idxLocal = 1;
-                let idxVisitante = 2;
-                let idxGolesL = 3;
-                let idxGolesV = 4;
 
-                // Contar los partidos en base a los resultados existentes
-                calcularPartidosJugados(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV);
+                sea ​​idxGolesL = 3;
+
+                sea ​​idxGolesV = 4;
+
+                sea ​​idxVisitante = 2;
+
+
+
                 renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
+
                 
-                if (resC) renderClasificacion(resC);
-                if (resG) renderGoleadores(resG);
-                if (resT) renderTarjetas(resT);
-                if (resE) renderBracket(resE);
+
+                si (resC) renderClassification(resC);
+
+                si (resG) renderGoleadores(resG);
+
+                si (resT) renderizarTarjetas(resT);
+
+                si (resE) renderBracket(resE);
+
             } catch (e) { console.error(e); }
+
         }
 
-        function calcularPartidosJugados(rows, idxLocal, idxVisitante, idxGolesL, idxGolesV) {
-            partidosJugadosPorEquipo = {};
-            rows.forEach((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 5) return;
-                const local = fila[idxLocal];
-                const visitante = fila[idxVisitante];
-                const golesL = parseInt(fila[idxGolesL]);
-                const golesV = parseInt(fila[idxGolesV]);
 
-                if (!isNaN(golesL) && !isNaN(golesV)) {
-                    if (local) partidosJugadosPorEquipo[local] = (partidosJugadosPorEquipo[local] || 0) + 1;
-                    if (visitante) partidosJugadosPorEquipo[visitante] = (partidosJugadosPorEquipo[visitante] || 0) + 1;
-                }
-            });
-        }
 
-        function renderPartidos(rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora) {
+        función renderPartidos(rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora) {
+
             const container = document.getElementById('partidos-container');
-            if (!container) return;
+
+            si (!contenedor) regresar;
+
             
-            const partidosValidos = rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
+
+            const validParties = rows.filter((queue, idx) => {
+
+                Si (idx === 0 || !double || double.length < 2) devolver falso;
+
                 const txtL = normalizarTexto(fila[idxLocal]);
+
                 return txtL !== '' && txtL !== 'local' && txtL !== 'equipolocal';
+
             });
+
             
+
             if (partidosValidos.length === 0) {
+
                 container.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay partidos disponibles aún.</div>`;
-                return;
+
+                devolver;
+
             }
 
-            container.innerHTML = partidosValidos.map(fila => {
+
+
+            contenedor.innerHTML = validParties.map(cola => {
+
                 const local = fila[idxLocal] || '';
+
                 const visitante = fila[idxVisitante] || '';
+
                 const golesL = fila[idxGolesL];
+
                 const golesV = fila[idxGolesV];
-                const hora = fila[idxHora] || '';
+
+                const hora = cola[idxHour] || '';
+
+
 
                 const gL = parseInt(golesL), gV = parseInt(golesV);
+
                 let marcadorHTML = '';
+
                 
-                if (!isNaN(gL) && !isNaN(gV)) {
+
+                si (!isNaN(gL) && !isNaN(gV)) {
+
                     marcadorHTML = `<div class="match-score">${gL}:${gV}</div>`;
-                } else {
+
+                } demás {
+
                     marcadorHTML = `<div class="match-score hora">${hora || '-:-'}</div>`;
+
                 }
+
                 
-                return `<div class="card"><div class="match-row">
+
+                devolver `<div class="card"><div class="match-row">
+
                     <div class="match-team" style="text-align:right;">${local}</div>
+
                     ${marcadorHTML}
+
                     <div class="match-team">${visitante}</div>
+
                 </div></div>`;
-            }).join('');
+
+            }).unirse('');
+
         }
 
-        function renderClasificacion(res) {
-            const container = document.getElementById('grid-grupos');
-            const target = container || document.getElementById('grupos-container');
-            if (!target) return;
 
-            const equiposValidos = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
+
+        función renderClasificación(res) {
+
+            const container = document.getElementById('grupos-container');
+
+            si (!contenedor) regresar;
+
+
+
+            const validEquipments = res.rows.filter((queue, idx) => {
+
+                Si (idx === 0 || !double || double.length < 2) devolver falso;
+
                 return normalizarTexto(fila[0]) !== 'equipo' && normalizarTexto(fila[0]) !== 'nombre' && fila[0] !== '';
+
             });
+
+
 
             if (equiposValidos.length === 0) {
-                target.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
-                return;
+
+                container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
+
+                devolver;
+
             }
+
+
 
             const grupos = {};
-            equiposValidos.forEach(fila => {
+
+            validEquipments.forEach(queue => {
+
                 const nombre = fila[0];
-                const grupo = fila[1] || 'Único';
+
+                const grupo = cola[1] || 'Único';
+
                 const dif = fila[2] || '0';
+
                 const pts = parseInt(fila[3]) || 0;
+
                 
+
                 if (!grupos[grupo]) grupos[grupo] = [];
+
                 grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif });
+
             });
 
-            target.innerHTML = Object.keys(grupos).map(g => {
+
+
+            contenedor.innerHTML = Object.keys(grupos).map(g => {
+
                 const orden = grupos[g].sort((a, b) => b.pts - a.pts);
+
                 return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
+
                     <table><thead><tr><th>EQUIPO</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead>
+
                     <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro">${e.dif}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
-            }).join('');
+
+            }).unirse('');
+
         }
 
-        function renderGoleadores(res) {
-            const container = document.getElementById("body-gol");
-            if (!container) return;
 
-            const jugadoresValidos = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
-                const txt = normalizarTexto(fila[0]);
+
+        función renderGoleadores(res) {
+
+            const container = document.getElementById("body-gol");
+
+            si (!contenedor) regresar;
+
+
+
+            const validPlayers = res.rows.filter((queue, idx) => {
+
+                Si (idx === 0 || !double || double.length < 2) devolver falso;
+
+                const txt = normalizeText(queue[0]);
+
                 return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
+
             });
+
+
 
             if (jugadoresValidos.length === 0) {
-                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
-                return;
+
+                container.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
+
+                devolver;
+
             }
 
-            const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
-            container.innerHTML = orden.map(fila => {
-                const nombre = fila[0];
-                const equipo = fila[1] || '-';
-                const goles = fila[3] || 0;
-                const pj = partidosJugadosPorEquipo[equipo] || 0;
 
-                return `<tr>
-                    <td><b>${nombre}</b></td>
-                    <td class="txt-club">${equipo}</td>
-                    <td class="txt-centro">${pj}</td>
-                    <td class="txt-centro pts-verde">${goles}</td>
-                </tr>`;
-            }).join('');
+
+            const order = playersValid.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
+
+            contenedor.innerHTML = orden.map(fila => {
+
+                return `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1] || '-'}</td><td class="txt-centro pts-verde">${fila[3] || 0}</td></tr>`;
+
+            }).unirse('');
+
         }
 
-        function renderTarjetas(res) {
+
+
+        función renderTarjetas(res) {
+
             const container = document.getElementById("body-tar");
-            if (!container) return;
+
+            si (!contenedor) regresar;
+
+
 
             const tarjetasValidas = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
-                const txt = normalizarTexto(fila[0]);
+
+                Si (idx === 0 || !double || double.length < 2) devolver falso;
+
+                const txt = normalizeText(queue[0]);
+
                 return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
+
             });
 
+
+
             if (tarjetasValidas.length === 0) {
-                container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
-                return;
+
+                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
+
+                devolver;
+
             }
+
+
 
             container.innerHTML = tarjetasValidas.map(fila => {
-                const nombre = fila[0];
-                const equipo = fila[1] || '-';
-                // Corrección de índices: leer correctamente de tu Excel
-                let amarillas = fila[2] !== undefined && fila[2] !== null && fila[2].trim() !== '' ? fila[2].trim() : '0'; 
-                const sancion = fila[3] || '';
-                
-                const pj = partidosJugadosPorEquipo[equipo] || 0;
+
+                const nombre = fila[0], equipo = fila[1] || '', amarillas = fila[2] || '0', sancion = fila[3] || '';
 
                 let estado = 'OK';
+
                 if (sancion.toLowerCase() === 'sancionado' || sancion.trim() === '1' || sancion.toLowerCase() === 'si' || sancion.toLowerCase() === 'sancionada') {
+
                     estado = 'SANCIONADO';
+
                 }
 
-                return `<tr>
+
+
+                devolver `<tr>
+
                     <td><b>${nombre}</b></td>
-                    <td class="txt-club">${equipo}</td>
-                    <td class="txt-centro">${pj}</td>
+
+                    <td class="txt-club">${equipo || '-'}</td>
+
                     <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
+
                     <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
+
                 </tr>`;
-            }).join('');
+
+            }).unirse('');
+
         }
 
-        function transformarPartidoBracket(filaFase, titulo) {
-            if (!filaFase) return `
+
+
+        función transformarPartidoBracket(filaFase, titulo) {
+
+            si (!filaFase) devolver `
+
                 <div class="bracket-match">
+
                     <div class="bracket-title">${titulo}</div>
+
                     <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div>
+
                     <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div>
+
                 </div>`;
+
             
-            const local = filaFase[1], visitante = filaFase[4];
+
+            const local = queuePhase[1], visitor = queuePhase[4];
+
             const gL = parseInt(filaFase[2]), gV = parseInt(filaFase[3]);
+
             
+
             const winL = !isNaN(gL) && !isNaN(gV) && gL > gV;
+
             const winV = !isNaN(gL) && !isNaN(gV) && gV > gL;
 
-            return `
+
+
+            devolver `
+
                 <div class="bracket-match">
+
                     <div class="bracket-title">${titulo}</div>
+
                     <div class="bracket-team-row ${winL ? 'winner' : ''}">
+
                         <span class="bracket-name">${local || '—'}</span>
+
                         <span class="bracket-goals ${isNaN(gL) ? 'empty' : ''}">${isNaN(gL) ? '-' : gL}</span>
+
                     </div>
+
                     <div class="bracket-team-row ${winV ? 'winner' : ''}">
+
                         <span class="bracket-name">${visitante || '—'}</span>
+
                         <span class="bracket-goals ${isNaN(gV) ? 'empty' : ''}">${isNaN(gV) ? '-' : gV}</span>
+
                     </div>
+
                 </div>`;
+
         }
 
-        function renderBracket(res) {
+
+
+        función renderBracket(res) {
+
             const container = document.getElementById('bracket-container');
-            if (!container) return;
+
+            si (!contenedor) regresar;
+
+
 
             const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'fase');
-            if (fasesValidas.length === 0) {
+
+            Si (fasesValidas.length === 0) {
+
                 container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">No hay eliminatorias disponibles.</div>`;
-                return;
+
+                devolver;
+
             }
+
+
 
             const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[0]) === normalizarTexto(nombre));
 
-            container.innerHTML = `
+
+
+            contenedor.innerHTML = `
+
                 <div class="bracket-column">
+
                     ${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}
+
                     ${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}
+
                     ${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}
+
                     ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}
+
                 </div>
+
                 <div class="bracket-column">
-                    ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}
-                    ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}
+
+                    ${transformPartyBracket(searchPhase('Semifinal 1'), 'Semifinal 1')}
+
+                    ${transformPartyBracket(searchPhase('Semifinal 2'), 'Semifinal 2')}
+
                 </div>
-                <div class="bracket-column final-col">
+
+                <div class="columna-de-bracket-column-final">
+
                     ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
+
                 </div>
+
             `;
+
         }
 
-        function ver(s) {
+
+
+        función ver(s) {
+
             ['partidos', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
+
                 const elem = document.getElementById(id);
+
                 const btn = document.getElementById('btn-' + id);
+
                 if (elem) elem.classList.toggle('hidden', id !== s);
+
                 if (btn) btn.classList.toggle('active', id === s);
+
             });
+
         }
+
         
+
         cargarTodo();
+
     </script>
+
 </body>
+
 </html>
