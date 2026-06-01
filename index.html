@@ -236,10 +236,33 @@
             location.reload();
         }
 
-        // FUNCIÓN CORREGIDA: Limpia las fechas/horas nativas de Google y soluciona bloqueos de pestañas vacías
+        // LIMPIADOR ULTRA-POTENTE: Analiza todo el JSON buscando objetos Date() corruptos sin importar la columna
+        function formatearValorCelda(celda) {
+            if (!celda) return '';
+            let v = celda.v !== null && celda.v !== undefined ? celda.v : '';
+            
+            // Si tiene formato visible nativo (ej: "15:25"), lo priorizamos directamente
+            if (celda.f) return celda.f;
+            
+            // Si viene la cadena molesta de Date(1899,11,30,15,25,0)
+            if (v && typeof v === 'string' && v.includes('Date(')) {
+                const partes = v.match(/\d+/g);
+                if (partes && partes.length >= 5) {
+                    const hora = partes[3].padStart(2, '0');
+                    const minutos = partes[4].padStart(2, '0');
+                    return `${hora}:${minutos}`;
+                }
+            }
+            return v;
+        }
+
         async function consultarGoogleSheet(nombrePestaña) {
             try {
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}`;
+                // Hacemos el intento directo con variaciones comunes por si acaso
+                let pestañaLimpia = nombrePestaña;
+                if(nombrePestaña.toLowerCase() === 'clasificacion') pestañaLimpia = 'Clasificacion';
+                
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(pestañaLimpia)}`;
                 const respuesta = await fetch(url);
                 const texto = await respuesta.text();
                 
@@ -249,40 +272,21 @@
                 
                 if (!jsonNeto || !jsonNeto.table) return [];
 
-                const columnas = jsonNeto.table.cols.map(c => c.label || '');
+                const columnas = jsonNeto.table.cols.map(c => (c.label || '').trim());
                 return jsonNeto.table.rows.map(r => {
                     const item = {};
                     r.c.forEach((celda, index) => {
                         const nombreCol = columnas[index];
                         if (nombreCol) {
-                            let valor = celda ? (celda.v !== null ? celda.v : '') : '';
-                            
-                            // ARREGLO DE LA FECHA: Si Google envía Date(1899,11,30,15,25,0), extraemos la hora limpia
-                            if (valor && typeof valor === 'string' && valor.includes('Date(')) {
-                                if (celda.f) {
-                                    valor = celda.f; // Usamos el texto formateado directamente visible en el Excel (ej: "15:25")
-                                } else {
-                                    const partes = valor.match(/\d+/g);
-                                    if (partes && partes.length >= 5) {
-                                        const hora = partes[3].padStart(2, '0');
-                                        const minutos = partes[4].padStart(2, '0');
-                                        valor = `${hora}:${minutos}`;
-                                    }
-                                }
-                            }
-                            item[nombreCol] = valor;
+                            item[nombreCol] = formatearValorCelda(celda);
                         }
                     });
                     return item;
                 });
             } catch (error) {
-                console.error("Error cargando: " + nombrePestaña, error);
-                // Fallback por si la hoja tiene columnas vacías cruzadas
-                try {
-                    return await fetch(`https://opensheet.elk.sh/${SHEET_ID}/${nombrePestaña}`).then(r => r.json());
-                } catch(e) {
-                    return [];
-                }
+                console.error("Error cargando la pestaña: " + nombrePestaña, error);
+                // Si falla o no está publicado, devolvemos un array vacío controlado para que no se congele la web
+                return [];
             }
         }
 
@@ -403,7 +407,9 @@
             container.innerHTML = data.filter(m => obtenerPropiedad(m, 'Local')).map(m => {
                 const local = obtenerPropiedad(m, 'Local'), visitante = obtenerPropiedad(m, 'Visitante');
                 const golesL = obtenerPropiedad(m, 'GolesL'), golesV = obtenerPropiedad(m, 'GolesV');
-                const hora = obtenerPropiedad(m, 'Hora');
+                
+                // Buscador de hora dinámico por si cambia el nombre de la columna en la tabla
+                const hora = obtenerPropiedad(m, 'Hora') || obtenerPropiedad(m, 'Horario') || obtenerPropiedad(m, 'Fecha') || '';
 
                 const gL = parseInt(golesL), gV = parseInt(golesV);
                 let marcadorHTML = '';
