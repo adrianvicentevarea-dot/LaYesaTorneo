@@ -9,48 +9,51 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
         body { margin: 0; background: var(--azul-oscuro); display: flex; height: 100vh; overflow: hidden; }
 
-        #sidebar { width: 140px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
-        .nav-header { padding: 10px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.7em; color: var(--verde); }
-        .btn { padding: 10px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.65em; }
+        /* MENU LATERAL - TEXTO MAS GRANDE */
+        #sidebar { width: 180px; background: var(--azul-nav); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; z-index: 1001; }
+        .nav-header { padding: 20px 15px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1em; color: var(--verde); letter-spacing: 0.5px; }
+        .btn { padding: 15px 20px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85em; font-weight: bold; }
         .btn.active { background: var(--verde); color: white; }
 
+        /* CONTENEDOR PRINCIPAL SIN CABECERA REPETIDA */
         #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        header { background: var(--azul-nav); color: white; padding: 6px 10px; display: flex; align-items: center; }
-        .menu-toggle { font-size: 1.1em; cursor: pointer; margin-right: 10px; }
         
-        #content { flex: 1; padding: 4px; overflow-y: auto; }
-        .seccion-titulo { color: white; font-size: 0.65em; margin: 4px 0; display: block; border-left: 3px solid var(--verde); padding-left: 6px; text-transform: uppercase; font-weight: bold; }
+        #content { flex: 1; padding: 20px; overflow-y: auto; }
+        .seccion-titulo { color: white; font-size: 1.2em; margin-bottom: 15px; display: block; border-left: 4px solid var(--verde); padding-left: 10px; text-transform: uppercase; font-weight: bold; }
 
-        .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
-        .card { background: var(--blanco); border-radius: 3px; margin-bottom: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); width: 100%; }
+        .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .card { background: var(--blanco); border-radius: 6px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
         
+        /* TABLAS AMPLIADAS Y SEÑALIZADAS */
         table { width: 100%; border-collapse: collapse; table-layout: auto; }
-        td, th { padding: 5px 6px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.75em; white-space: nowrap; }
-        th { background: #f9f9f9; color: #999; font-size: 0.55em; letter-spacing: 0.2px; text-transform: uppercase; }
+        td, th { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; white-space: nowrap; }
+        th { background: #f9f9f9; color: #7f8c8d; font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
+        td b { font-size: 1.05em; }
         
         .txt-centro { text-align: center; }
         .txt-derecha { text-align: right; }
         .txt-club { color: #777; font-style: italic; }
-        .pts-verde { color: var(--verde); font-weight: bold; }
-        .badge-amarilla { background: #f1c40f; padding: 1px 4px; border-radius: 2px; font-weight: bold; color: #000; }
+        .pts-verde { color: var(--verde); font-weight: bold; font-size: 1.1em; }
+        .badge-amarilla { background: #f1c40f; padding: 3px 8px; border-radius: 3px; font-weight: bold; color: #000; font-size: 0.95em; }
 
-        .match-row { padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.72em; }
+        /* PARTIDOS GENERALES */
+        .match-row { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 1.1em; }
         .match-team { width: 42%; font-weight: bold; color: #333; }
-        .match-score { background: var(--azul-nav); color: white; padding: 2px 5px; border-radius: 2px; min-width: 45px; text-align: center; font-weight: bold; font-size: 0.9em; }
-        .match-score.hora { background: #7f8c8d; font-size: 0.85em; font-weight: 600; }
+        .match-score { background: var(--azul-nav); color: white; padding: 5px 12px; border-radius: 4px; min-width: 60px; text-align: center; font-weight: bold; font-size: 1.1em; }
+        .match-score.hora { background: #7f8c8d; font-size: 0.95em; }
 
-        /* --- DISEÑO DE ÁRBOL DE ELIMINATORIAS EN ESCALERA --- */
-        .bracket-wrapper { display: flex; gap: 15px; padding: 10px 5px; overflow-x: auto; align-items: center; }
-        .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 380px; min-width: 130px; flex: 1; }
-        .bracket-column.final-col { justify-content: center; min-width: 150px; }
+        /* --- PLAYOFFS EN ESCALERA MAS GRANDES --- */
+        .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; }
+        .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 550px; min-width: 220px; flex: 1; }
+        .bracket-column.final-col { justify-content: center; min-width: 240px; }
         
-        .bracket-match { background: white; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; font-size: 0.68em; width: 100%; position: relative; }
-        .bracket-title { background: #f4f6f7; font-size: 0.75em; font-weight: bold; text-align: center; color: #666; border-bottom: 1px solid #ddd; padding: 2px 0; text-transform: uppercase; }
+        .bracket-match { background: white; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; font-size: 0.95em; width: 100%; position: relative; }
+        .bracket-title { background: #f4f6f7; font-size: 0.8em; font-weight: bold; text-align: center; color: #666; border-bottom: 1px solid #ddd; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        .bracket-team-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; border-bottom: 1px solid #eee; }
+        .bracket-team-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; }
         .bracket-team-row:last-child { border-bottom: none; }
-        .bracket-name { font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85px; }
-        .bracket-goals { background: var(--azul-nav); color: white; font-weight: bold; padding: 2px 5px; border-radius: 2px; min-width: 20px; text-align: center; }
+        .bracket-name { font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .bracket-goals { background: var(--azul-nav); color: white; font-weight: bold; padding: 4px 10px; border-radius: 3px; min-width: 30px; text-align: center; font-size: 1em; }
         .bracket-goals.empty { background: #e0e0e0; color: #999; }
         
         .winner { background: #ebf5fb; }
@@ -58,17 +61,19 @@
         .winner .bracket-goals { background: var(--verde); }
 
         .hidden { display: none; }
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
 
         @media (max-width: 768px) {
-            #sidebar { position: absolute; left: -140px; height: 100%; }
-            #sidebar.open { left: 0; }
-            #overlay.open { display: block; }
+            body { flex-direction: column; }
+            #sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; }
+            .nav-header { display: none; }
+            .btn { flex: 1; text-align: center; padding: 15px 10px; white-space: nowrap; }
+            .grid-grupos { grid-template-columns: 1fr; }
+            .bracket-column { height: auto; gap: 15px; }
+            .bracket-wrapper { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
 <body>
-    <div id="overlay" onclick="toggleMenu()"></div>
     <nav id="sidebar">
         <div class="nav-header">TORNEO LA YESA</div>
         <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ PARTIDOS</div>
@@ -79,15 +84,13 @@
     </nav>
 
     <div id="main-container">
-        <header><div class="menu-toggle" onclick="toggleMenu()">☰</div><div id="top-title" style="font-size:0.75em; font-weight:bold;">TORNEO LA YESA</div></header>
         <main id="content">
             <div id="partidos"><span class="seccion-titulo">Resultados y Horarios</span><div id="partidos-container"></div></div>
             <div id="grupos" class="hidden"><span class="seccion-titulo">Clasificación</span><div id="grupos-container" class="grid-grupos"></div></div>
             
             <div id="elim" class="hidden">
                 <span class="seccion-titulo">Fase Final - Road to Budapest</span>
-                <div class="bracket-wrapper" id="bracket-container">
-                    </div>
+                <div class="bracket-wrapper" id="bracket-container"></div>
             </div>
 
             <div id="gol" class="hidden">
@@ -187,13 +190,18 @@
         }
 
         function renderBracket(data) {
-            if (!data || data.length === 0) return;
             const container = document.getElementById('bracket-container');
+            if (!data || data.length === 0) return;
 
-            // Mapeo estructurado según las filas completadas en tu Excel
-            const c1 = data[0], c2 = data[1], c3 = data[2], c4 = data[3];
-            const s1 = data[4], s2 = data[5];
-            const f1 = data[6];
+            const buscarPorFase = (nombreFase) => data.find(f => f.Fase && f.Fase.toString().trim().toLowerCase() === nombreFase.toLowerCase());
+
+            const c1 = buscarPorFase('Cuartos 1');
+            const c2 = buscarPorFase('Cuartos 2');
+            const c3 = buscarPorFase('Cuartos 3');
+            const c4 = buscarPorFase('Cuartos 4');
+            const s1 = buscarPorFase('Semifinal 1');
+            const s2 = buscarPorFase('Semifinal 2');
+            const f1 = buscarPorFase('Final');
 
             container.innerHTML = `
                 <div class="bracket-column">
@@ -202,12 +210,10 @@
                     ${crearBloquePartido(c3, 'Cuartos 3')}
                     ${crearBloquePartido(c4, 'Cuartos 4')}
                 </div>
-                
                 <div class="bracket-column">
                     ${crearBloquePartido(s1, 'Semifinal 1')}
                     ${crearBloquePartido(s2, 'Semifinal 2')}
                 </div>
-                
                 <div class="bracket-column final-col">
                     ${crearBloquePartido(f1, '🏆 GRAN FINAL')}
                 </div>
@@ -242,9 +248,9 @@
             });
             container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a, b) => b.pts - a.pts);
-                return `<div class="card"><div style="padding:3px 6px; background:#f0f0f0; font-weight:bold; font-size:0.55em; color: #666;">GRUPO ${g}</div>
+                return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
                     <table><thead><tr><th>EQUIPO</th><th class="txt-centro">PJ</th><th class="txt-centro">PTS</th></tr></thead>
-                    <tbody>${orden.map(e => `<tr><td>${e.nombre}</td><td class="txt-centro">${e.pj}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
+                    <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro">${e.pj}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
             }).join('');
         }
 
@@ -291,12 +297,6 @@
                 document.getElementById(id).classList.toggle('hidden', id !== s);
                 document.getElementById('btn-' + id).classList.toggle('active', id === s);
             });
-            if (window.innerWidth <= 768) toggleMenu();
-        }
-
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('overlay').classList.toggle('open');
         }
         cargarTodo();
     </script>
