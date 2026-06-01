@@ -236,18 +236,15 @@
             location.reload();
         }
 
-        // PARSER SEGURO PARA FORMATOS DE CELDA EN GOOGLE SHEETS
+        // EXTRAE EL VALOR ELIMINANDO TEXTOS EXTRAÑOS DE FECHAS DE GOOGLE
         function extraerValorCelda(celda) {
             if (!celda) return '';
-            
-            // Si es un objeto de fecha formateado por la API gviz de Google
             if (celda.v !== null && celda.v !== undefined && typeof celda.v === 'string' && celda.v.includes('Date(')) {
                 const partes = celda.v.match(/\d+/g);
                 if (partes && partes.length >= 5) {
                     return `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}`;
                 }
             }
-            // Retorno estándar priorizando texto plano visible
             if (celda.f !== null && celda.f !== undefined) return celda.f.trim();
             if (celda.v !== null && celda.v !== undefined) return celda.v.toString().trim();
             return '';
@@ -255,9 +252,7 @@
 
         async function consultarGoogleSheet(nombrePestaña) {
             try {
-                // Quitamos consultas restrictivas para evitar corrupciones de indices de columnas cruzadas
                 const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}`;
-                
                 const respuesta = await fetch(url);
                 const texto = await respuesta.text();
                 
@@ -265,13 +260,33 @@
                 const finJson = texto.lastIndexOf('}') + 1;
                 const jsonNeto = JSON.parse(texto.slice(inicioJson, finJson));
                 
-                if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return [];
+                if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { headers: {}, rows: [] };
 
-                // Procesamos cada celda secuencialmente basada en su índice nativo por fila
-                return jsonNeto.table.rows.map(r => {
+                // MAPEADO DINÁMICO DE COLUMNAS (Detecta la posición por nombre en la fila 1)
+                const headers = {};
+                if (jsonNeto.table.cols) {
+                    jsonNeto.table.cols.forEach((col, idx) => {
+                        if (col && col.label) {
+                            headers[col.label.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "")] = idx;
+                        }
+                    });
+                }
+
+                // Si Google no devolvió etiquetas en las columnas, usamos la primera fila como cabecera alternativa
+                const rowsRaw = jsonNeto.table.rows;
+                if (Object.keys(headers).length === 0 && rowsRaw.length > 0) {
+                    rowsRaw[0].c.forEach((celda, idx) => {
+                        const val = extraerValorCelda(celda).toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        if (val) headers[val] = idx;
+                    });
+                }
+
+                const rowsProcesadas = rowsRaw.map(r => {
                     if (!r || !r.c) return [];
                     return r.c.map(celda => extraerValorCelda(celda));
                 });
+
+                return { headers, rows: rowsProcesadas };
             } catch (error) {
                 console.error("Error cargando la pestaña: " + nombrePestaña, error);
                 return null;
@@ -288,39 +303,45 @@
                     consultarGoogleSheet('Eliminatorias')
                 ]);
 
-                if (resP === null || resC === null) {
+                if (!resP || !resC || !resP.rows || !resC.rows) {
                     document.getElementById('partidos-container').innerHTML = `
                         <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
                             ⚠️ Error de sincronización con Google Sheets.<br>
-                            Verifica que las pestañas mantengan los nombres idénticos sin variaciones de acentos.
+                            Verifica que las pestañas mantengan los nombres idénticos.
                         </div>`;
                     return;
                 }
 
-                // Generamos estadísticas en tiempo real procesando los partidos válidos
-                const stats = {}; 
-                if (Array.isArray(resP)) {
-                    resP.forEach((fila, i) => {
-                        if (i === 0 || !fila[0]) return; // Evitar cabecera o filas vacías
-                        const local = fila[0], visitante = fila[1];
-                        const golesL = fila[2], golesV = fila[3];
-                        
-                        if (!stats[local]) stats[local] = { pj: 0, pts: 0 };
-                        if (!stats[visitante]) stats[visitante] = { pj: 0, pts: 0 };
-                        
-                        const gL = parseInt(golesL);
-                        const gV = parseInt(golesV);
-                        
-                        if (!isNaN(gL) && !isNaN(gV)) {
-                            stats[local].pj++; stats[visitante].pj++;
-                            if (gL > gV) stats[local].pts += 3;
-                            else if (gV > gL) stats[visitante].pts += 3;
-                            else { stats[local].pts += 1; stats[visitante].pts += 1; }
-                        }
-                    });
-                }
+                // Buscar índices correspondientes para la pestaña PARTIDOS
+                const hP = resP.headers;
+                const idxLocal = hP['local'] !== undefined ? hP['local'] : 0;
+                const idxVisitante = hP['visitante'] !== undefined ? hP['visitante'] : 1;
+                const idxGolesL = hP['golesl'] !== undefined ? hP['golesl'] : 2;
+                const idxGolesV = hP['golesv'] !== undefined ? hP['golesv'] : 3;
+                const idxHora = hP['hora'] !== undefined ? hP['hora'] : (hP['horario'] !== undefined ? hP['horario'] : 4);
 
-                renderPartidos(resP);
+                // Calcular estadísticas automáticas basándose en los índices mapeados
+                const stats = {}; 
+                resP.rows.forEach((fila, i) => {
+                    if (i === 0 || !fila[idxLocal] || fila[idxLocal].toLowerCase() === 'local') return; 
+                    const local = fila[idxLocal], visitante = fila[idxVisitante];
+                    const golesL = fila[idxGolesL], golesV = fila[idxGolesV];
+                    
+                    if (!stats[local]) stats[local] = { pj: 0, pts: 0 };
+                    if (!stats[visitante]) stats[visitante] = { pj: 0, pts: 0 };
+                    
+                    const gL = parseInt(golesL);
+                    const gV = parseInt(golesV);
+                    
+                    if (!isNaN(gL) && !isNaN(gV)) {
+                        stats[local].pj++; stats[visitante].pj++;
+                        if (gL > gV) stats[local].pts += 3;
+                        else if (gV > gL) stats[visitante].pts += 3;
+                        else { stats[local].pts += 1; stats[visitante].pts += 1; }
+                    }
+                });
+
+                renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
                 renderClasificacion(resC, stats);
                 renderGoleadores(resG, stats);
                 renderTarjetas(resT, stats);
@@ -328,12 +349,12 @@
             } catch (e) { console.error(e); }
         }
 
-        function renderPartidos(rows) {
+        function renderPartidos(rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora) {
             const container = document.getElementById('partidos-container');
             if (!container) return;
             
-            // Filtrar filas válidas descartando cabecera de la hoja de cálculo
-            const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[0]);
+            // Filtramos las filas que tengan un equipo local válido y que no sea la cabecera
+            const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[idxLocal] && fila[idxLocal].toLowerCase() !== 'local');
             
             if (partidosValidos.length === 0) {
                 container.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay partidos disponibles aún.</div>`;
@@ -341,9 +362,9 @@
             }
 
             container.innerHTML = partidosValidos.map(fila => {
-                const local = fila[0], visitante = fila[1];
-                const golesL = fila[2], golesV = fila[3];
-                const hora = fila[4] || '';
+                const local = fila[idxLocal], visitante = fila[idxVisitante];
+                const golesL = fila[idxGolesL], golesV = fila[idxGolesV];
+                const hora = fila[idxHora] || '';
 
                 const gL = parseInt(golesL), gV = parseInt(golesV);
                 let marcadorHTML = '';
@@ -362,11 +383,15 @@
             }).join('');
         }
 
-        function renderClasificacion(rows, stats) {
-            const container = document.getElementById('grupos-container');
+        function renderClasificacion(res, stats) {
+            const container = document.getElementById('grid-grupos') || document.getElementById('grupos-container');
             if (!container) return;
 
-            const equiposValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[0]);
+            const hC = res.headers;
+            const idxNombre = hC['nombre'] !== undefined ? hC['nombre'] : 0;
+            const idxGrupo = hC['grupo'] !== undefined ? hC['grupo'] : 1;
+
+            const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && fila[idxNombre].toLowerCase() !== 'nombre');
             if (equiposValidos.length === 0) {
                 container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
                 return;
@@ -374,8 +399,8 @@
 
             const grupos = {};
             equiposValidos.forEach(fila => {
-                const nombre = fila[0];
-                const grupo = fila[1] || 'Único';
+                const nombre = fila[idxNombre];
+                const grupo = fila[idxGrupo] || 'Único';
                 if (!grupos[grupo]) grupos[grupo] = [];
                 grupos[grupo].push({ nombre: nombre, pts: stats[nombre]?.pts || 0, pj: stats[nombre]?.pj || 0 });
             });
@@ -388,36 +413,47 @@
             }).join('');
         }
 
-        function renderGoleadores(rows, stats) {
+        function renderGoleadores(res, stats) {
             const container = document.getElementById("body-gol");
             if (!container) return;
 
-            const jugadoresValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[0]);
+            const hG = res.headers;
+            const idxNombre = hG['nombre'] !== undefined ? hG['nombre'] : 0;
+            const idxEquipo = hG['equipo'] !== undefined ? hG['equipo'] : (hG['club'] !== undefined ? hG['club'] : 1);
+            const idxGoles = hG['goles'] !== undefined ? hG['goles'] : 3;
+
+            const jugadoresValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && fila[idxNombre].toLowerCase() !== 'nombre');
             if (jugadoresValidos.length === 0) {
                 container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;">No hay goles registrados.</td></tr>`;
                 return;
             }
 
-            const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
+            const orden = jugadoresValidos.sort((a, b) => (parseInt(b[idxGoles]) || 0) - (parseInt(a[idxGoles]) || 0));
             container.innerHTML = orden.map(fila => {
-                const nombre = fila[0], equipo = fila[1] || '-', goles = fila[3] || 0;
+                const nombre = fila[idxNombre], equipo = fila[idxEquipo] || '-', goles = fila[idxGoles] || 0;
                 return `<tr><td><b>${nombre}</b></td><td class="txt-club">${equipo}</td><td class="txt-centro">${stats[equipo]?.pj || 0}</td><td class="txt-centro pts-verde">${goles}</td></tr>`;
             }).join('');
         }
 
-        function renderTarjetas(rows, stats) {
+        function renderTarjetas(res, stats) {
             const container = document.getElementById("body-tar");
             if (!container) return;
 
-            const tarjetasValidas = rows.filter((fila, idx) => idx > 0 && fila && fila[0]);
+            const hT = res.headers;
+            const idxNombre = hT['nombre'] !== undefined ? hT['nombre'] : 0;
+            const idxEquipo = hT['equipo'] !== undefined ? hT['equipo'] : (hT['club'] !== undefined ? hT['club'] : 1);
+            const idxAmarillas = hT['amarillas'] !== undefined ? hT['amarillas'] : 3;
+            const idxSancion = hT['sancion'] !== undefined ? hT['sancion'] : (hT['sanción'] !== undefined ? hT['sanción'] : 4);
+
+            const tarjetasValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && fila[idxNombre].toLowerCase() !== 'nombre');
             if (tarjetasValidas.length === 0) {
                 container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;">No hay sanciones registradas.</td></tr>`;
                 return;
             }
 
-            const orden = tarjetasValidas.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
+            const orden = tarjetasValidas.sort((a, b) => (parseInt(b[idxAmarillas]) || 0) - (parseInt(a[idxAmarillas]) || 0));
             container.innerHTML = orden.map(fila => {
-                const nombre = fila[0], equipo = fila[1] || '', amarillas = parseInt(fila[3]) || 0, sancion = fila[4] || '';
+                const nombre = fila[idxNombre], equipo = fila[idxEquipo] || '', amarillas = parseInt(fila[idxAmarillas]) || 0, sancion = fila[idxSancion] || '';
                 const pjEquipo = stats[equipo]?.pj || 0;
                 
                 let estado = 'OK';
@@ -441,7 +477,7 @@
             }).join('');
         }
 
-        function transformarPartidoBracket(filaFase, titulo) {
+        function transformarPartidoBracket(filaFase, titulo, idxL, idxV, idxGL, idxGV) {
             if (!filaFase) return `
                 <div class="bracket-match">
                     <div class="bracket-title">${titulo}</div>
@@ -449,8 +485,8 @@
                     <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div>
                 </div>`;
             
-            const local = filaFase[0], visitante = filaFase[1];
-            const gL = parseInt(filaFase[2]), gV = parseInt(filaFase[3]);
+            const local = filaFase[idxL], visitante = filaFase[idxV];
+            const gL = parseInt(filaFase[idxGL]), gV = parseInt(filaFase[idxGV]);
             
             const winL = !isNaN(gL) && !isNaN(gV) && gL > gV;
             const winV = !isNaN(gL) && !isNaN(gV) && gV > gL;
@@ -469,31 +505,38 @@
                 </div>`;
         }
 
-        function renderBracket(rows) {
+        function renderBracket(res) {
             const container = document.getElementById('bracket-container');
             if (!container) return;
 
-            const fasesValidas = rows.filter((fila, idx) => idx > 0 && fila && fila[4]);
+            const hE = res.headers;
+            const idxLocal = hE['local'] !== undefined ? hE['local'] : 0;
+            const idxVisitante = hE['visitante'] !== undefined ? hE['visitante'] : 1;
+            const idxGolesL = hE['golesl'] !== undefined ? hE['golesl'] : 2;
+            const idxGolesV = hE['golesv'] !== undefined ? hE['golesv'] : 3;
+            const idxFase = hE['fase'] !== undefined ? hE['fase'] : 4;
+
+            const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxFase] && fila[idxFase].toLowerCase() !== 'fase');
             if (fasesValidas.length === 0) {
                 container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">No hay eliminatorias disponibles.</div>`;
                 return;
             }
 
-            const buscarFase = (nombre) => fasesValidas.find(f => f[4].toLowerCase().trim() === nombre.toLowerCase().trim());
+            const buscarFase = (nombre) => fasesValidas.find(f => f[idxFase].toLowerCase().trim() === nombre.toLowerCase().trim());
 
             container.innerHTML = `
                 <div class="bracket-column">
-                    ${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}
-                    ${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}
-                    ${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}
-                    ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
                 </div>
                 <div class="bracket-column">
-                    ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}
-                    ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}
+                    ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
+                    ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
                 </div>
                 <div class="bracket-column final-col">
-                    ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
+                    ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
                 </div>
             `;
         }
@@ -507,7 +550,6 @@
             });
         }
         
-        // Ejecución inicial automática
         cargarTodo();
     </script>
 </body>
