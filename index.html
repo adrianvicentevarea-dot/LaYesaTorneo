@@ -236,33 +236,23 @@
             location.reload();
         }
 
-        // LIMPIADOR ULTRA-POTENTE: Analiza todo el JSON buscando objetos Date() corruptos sin importar la columna
-        function formatearValorCelda(celda) {
-            if (!celda) return '';
-            let v = celda.v !== null && celda.v !== undefined ? celda.v : '';
-            
-            // Si tiene formato visible nativo (ej: "15:25"), lo priorizamos directamente
-            if (celda.f) return celda.f;
-            
-            // Si viene la cadena molesta de Date(1899,11,30,15,25,0)
-            if (v && typeof v === 'string' && v.includes('Date(')) {
-                const partes = v.match(/\d+/g);
-                if (partes && partes.length >= 5) {
-                    const hora = partes[3].padStart(2, '0');
-                    const minutos = partes[4].padStart(2, '0');
-                    return `${hora}:${minutos}`;
-                }
+        // CONTROL DE QUERIES EXPLICITAS POR PESTAÑA PARA PREVENIR ERRORES DE GOOGLE SHEETS
+        function obtenerQueryParaPestaña(nombre) {
+            switch(nombre) {
+                case 'Partidos': return 'select A, B, C, D, E'; 
+                case 'Clasificacion': return 'select A, B';       
+                case 'Goleadores': return 'select A, B, C, D, E';  
+                case 'Tarjetas': return 'select A, B, C, D, E';    
+                case 'Eliminatorias': return 'select A, B, C, D, E';
+                default: return 'select *';
             }
-            return v;
         }
 
         async function consultarGoogleSheet(nombrePestaña) {
             try {
-                // Hacemos el intento directo con variaciones comunes por si acaso
-                let pestañaLimpia = nombrePestaña;
-                if(nombrePestaña.toLowerCase() === 'clasificacion') pestañaLimpia = 'Clasificacion';
+                const query = encodeURIComponent(obtenerQueryParaPestaña(nombrePestaña));
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}&tq=${query}`;
                 
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(pestañaLimpia)}`;
                 const respuesta = await fetch(url);
                 const texto = await respuesta.text();
                 
@@ -278,21 +268,35 @@
                     r.c.forEach((celda, index) => {
                         const nombreCol = columnas[index];
                         if (nombreCol) {
-                            item[nombreCol] = formatearValorCelda(celda);
+                            let valorFinal = '';
+                            if (celda) {
+                                if (celda.f !== null && celda.f !== undefined) {
+                                    valorFinal = celda.f;
+                                } else if (celda.v !== null && celda.v !== undefined) {
+                                    valorFinal = celda.v;
+                                }
+                            }
+                            
+                            if (typeof valorFinal === 'string' && valorFinal.includes('Date(')) {
+                                const partes = valorFinal.match(/\d+/g);
+                                if (partes && partes.length >= 5) {
+                                    valorFinal = `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}`;
+                                }
+                            }
+                            item[nombreCol] = valorFinal;
                         }
                     });
                     return item;
                 });
             } catch (error) {
-                console.error("Error cargando la pestaña: " + nombrePestaña, error);
-                // Si falla o no está publicado, devolvemos un array vacío controlado para que no se congele la web
-                return [];
+                console.error("Error crítico cargando la pestaña: " + nombrePestaña, error);
+                return null; // Devolvemos null para identificar fallos individuales
             }
         }
 
         function obtenerPropiedad(objeto, nombreProp) {
             if (!objeto) return '';
-            const keyEncontrada = Object.keys(objeto).find(k => k.trim().toLowerCase() === nombreProp.toLowerCase());
+            const keyEncontrada = Object.keys(objeto).find(k => k.trim().toLowerCase() === nombreProp.toLowerCase().trim());
             return keyEncontrada ? objeto[keyEncontrada] : '';
         }
 
@@ -305,6 +309,17 @@
                     consultarGoogleSheet('Tarjetas'),
                     consultarGoogleSheet('Eliminatorias')
                 ]);
+
+                // Verificación de errores en tiempo de ejecución
+                if (resP === null || resC === null) {
+                    document.getElementById('partidos-container').innerHTML = `
+                        <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
+                            ⚠️ Error de sincronización con Google Sheets.<br>
+                            Asegúrate de que el documento está "Publicado en la web" y las pestañas se llaman exactamente: 
+                            Partidos, Clasificacion, Goleadores, Tarjetas y Eliminatorias.
+                        </div>`;
+                    return;
+                }
 
                 const stats = {}; 
                 if (Array.isArray(resP)) {
@@ -407,8 +422,6 @@
             container.innerHTML = data.filter(m => obtenerPropiedad(m, 'Local')).map(m => {
                 const local = obtenerPropiedad(m, 'Local'), visitante = obtenerPropiedad(m, 'Visitante');
                 const golesL = obtenerPropiedad(m, 'GolesL'), golesV = obtenerPropiedad(m, 'GolesV');
-                
-                // Buscador de hora dinámico por si cambia el nombre de la columna en la tabla
                 const hora = obtenerPropiedad(m, 'Hora') || obtenerPropiedad(m, 'Horario') || obtenerPropiedad(m, 'Fecha') || '';
 
                 const gL = parseInt(golesL), gV = parseInt(golesV);
