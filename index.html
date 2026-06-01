@@ -181,7 +181,7 @@
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
+                            <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">Dorsal</th><th class="txt-centro">G</th></tr>
                         </thead>
                         <tbody id="body-gol"></tbody>
                     </table>
@@ -203,20 +203,17 @@
     </div>
 
     <script>
-        // Los tres IDs de tus Excels recuperados y listos
+        // IDs actualizadas basadas en tus nuevas hojas de cálculo
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
-            femenino: '1KyHfI8Ajou5HIKaWOwopSjQN-NKE7SVpEYQhFmcvVbU', 
+            femenino: '1dtRR1tM1BdcnAMAQLjXMC0v_xXL4vPYBazVUo_BCgcQ', // ID de tu Excel Femenino actual (antiguo Mixto)
             ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
         };
 
         let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
-        if (torneoActual === 'mixto') torneoActual = 'femenino';
         
         document.getElementById('selectorTorneo').value = torneoActual;
         let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
-
-        let partidosJugadosPorEquipo = {};
 
         function cambiarTorneo(nuevoTorneo) {
             localStorage.setItem('torneo_seleccionado', nuevoTorneo);
@@ -306,7 +303,6 @@
                 let idxGolesL = 3;
                 let idxGolesV = 4;
 
-                calcularPartidosJugados(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV);
                 renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
                 
                 if (resC) renderClasificacion(resC);
@@ -314,28 +310,6 @@
                 if (resT) renderTarjetas(resT);
                 if (resE) renderBracket(resE);
             } catch (e) { console.error(e); }
-        }
-
-        function calcularPartidosJugados(rows, idxLocal, idxVisitante, idxGolesL, idxGolesV) {
-            partidosJugadosPorEquipo = {};
-            
-            rows.forEach((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 5) return;
-                
-                const local = fila[idxLocal];
-                const visitante = fila[idxVisitante];
-                const golesL = parseInt(fila[idxGolesL]);
-                const golesV = parseInt(fila[idxGolesV]);
-
-                if (!isNaN(golesL) && !isNaN(golesV)) {
-                    if (local) {
-                        partidosJugadosPorEquipo[local] = (partidosJugadosPorEquipo[local] || 0) + 1;
-                    }
-                    if (visitante) {
-                        partidosJugadosPorEquipo[visitante] = (partidosJugadosPorEquipo[visitante] || 0) + 1;
-                    }
-                }
-            });
         }
 
         function renderPartidos(rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora) {
@@ -425,18 +399,19 @@
                 return;
             }
 
+            // Ordenar por Goles de mayor a menor (Columna 3 en base 0: Nombre=0, Equipo=1, Dorsal=2, Goles=3)
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
             
             container.innerHTML = orden.map(fila => {
                 const nombre = fila[0];
                 const equipo = fila[1] || '-';
+                const dorsal = fila[2] || '-';
                 const goles = fila[3] || 0;
-                const pj = partidosJugadosPorEquipo[equipo] || 0;
 
                 return `<tr>
                     <td><b>${nombre}</b></td>
                     <td class="txt-club">${equipo}</td>
-                    <td class="txt-centro">${pj}</td>
+                    <td class="txt-centro">${dorsal}</td>
                     <td class="txt-centro pts-verde">${goles}</td>
                 </tr>`;
             }).join('');
