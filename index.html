@@ -357,4 +357,200 @@
                 const local = fila[idxLocal] || '';
                 const visitante = fila[idxVisitante] || '';
                 const golesL = fila[idxGolesL];
-                const golesV = fila
+                const golesV = fila[idxGolesV];
+                const hora = fila[idxHora] || '';
+
+                const gL = parseInt(golesL), gV = parseInt(golesV);
+                let marcadorHTML = '';
+                
+                if (!isNaN(gL) && !isNaN(gV)) {
+                    marcadorHTML = `<div class="match-score">${gL}:${gV}</div>`;
+                } else {
+                    marcadorHTML = `<div class="match-score hora">${hora || '-:-'}</div>`;
+                }
+                
+                return `<div class="card"><div class="match-row">
+                    <div class="match-team" style="text-align:right;">${local}</div>
+                    ${marcadorHTML}
+                    <div class="match-team">${visitante}</div>
+                </div></div>`;
+            }).join('');
+        }
+
+        function renderClasificacion(res) {
+            const container = document.getElementById('grupos-container');
+            if (!container) return;
+
+            const equiposValidos = res.rows.filter((fila, idx) => {
+                if (idx === 0 || !fila || fila.length < 2) return false;
+                return normalizarTexto(fila[0]) !== 'nombre' && fila[0] !== '';
+            });
+
+            if (equiposValidos.length === 0) {
+                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;grid-column: 1 / -1;">No hay clasificación disponible.</div>`;
+                return;
+            }
+
+            const grupos = {};
+            equiposValidos.forEach(fila => {
+                const nombre = fila[0];
+                const grupo = fila[1] || 'Único';
+                const dif = fila[2] || '0';
+                const pts = parseInt(fila[3]) || 0;
+                
+                if (!grupos[grupo]) grupos[grupo] = [];
+                grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif });
+            });
+
+            container.innerHTML = Object.keys(grupos).map(g => {
+                const orden = grupos[g].sort((a, b) => b.pts - a.pts);
+                return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
+                    <table><thead><tr><th>EQUIPO</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead>
+                    <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro">${e.dif}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
+            }).join('');
+        }
+
+        function renderGoleadores(res) {
+            const container = document.getElementById("body-gol");
+            if (!container) return;
+
+            const jugadoresValidos = res.rows.filter((fila, idx) => {
+                if (idx === 0 || !fila || fila.length < 2) return false;
+                const txt = normalizarTexto(fila[0]);
+                return txt !== 'nombre' && txt !== '';
+            });
+
+            if (jugadoresValidos.length === 0) {
+                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
+                return;
+            }
+
+            // Ordenar por Goles (Columna 3 en tu Excel)
+            const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
+            
+            container.innerHTML = orden.map(fila => {
+                const nombre = fila[0];
+                const equipo = fila[1] || '-';
+                const goles = fila[3] || 0;
+                
+                // Vuelve a pintar el contador automático de PJ recogido de los partidos finalizados
+                const pj = partidosJugadosPorEquipo[equipo] || 0;
+
+                return `<tr>
+                    <td><b>${nombre}</b></td>
+                    <td class="txt-club">${equipo}</td>
+                    <td class="txt-centro">${pj}</td>
+                    <td class="txt-centro pts-verde">${goles}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderTarjetas(res) {
+            const container = document.getElementById("body-tar");
+            if (!container) return;
+
+            const tarjetasValidas = res.rows.filter((fila, idx) => {
+                if (idx === 0 || !fila || fila.length < 2) return false;
+                const txt = normalizarTexto(fila[0]);
+                return txt !== 'nombre' && txt !== '';
+            });
+
+            if (tarjetasValidas.length === 0) {
+                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
+                return;
+            }
+
+            container.innerHTML = tarjetasValidas.map(fila => {
+                const nombre = fila[0];
+                const equipo = fila[1] || '';
+                let amarillas = fila[2]; 
+                const sancion = fila[3] || '';
+                
+                if (amarillas === undefined || amarillas === null || amarillas.trim() === '') {
+                    amarillas = '0';
+                }
+
+                let estado = 'OK';
+                if (sancion.toLowerCase() === 'sancionado' || sancion.trim() === '1' || sancion.toLowerCase() === 'si' || sancion.toLowerCase() === 'sancionada') {
+                    estado = 'SANCIONADO';
+                }
+
+                return `<tr>
+                    <td><b>${nombre}</b></td>
+                    <td class="txt-club">${equipo || '-'}</td>
+                    <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
+                    <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function transformarPartidoBracket(filaFase, titulo) {
+            if (!filaFase) return `
+                <div class="bracket-match">
+                    <div class="bracket-title">${titulo}</div>
+                    <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div>
+                    <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div>
+                </div>`;
+            
+            const local = filaFase[1], visitante = filaFase[4];
+            const gL = parseInt(filaFase[2]), gV = parseInt(filaFase[3]);
+            
+            const winL = !isNaN(gL) && !isNaN(gV) && gL > gV;
+            const winV = !isNaN(gL) && !isNaN(gV) && gV > gL;
+
+            return `
+                <div class="bracket-match">
+                    <div class="bracket-title">${titulo}</div>
+                    <div class="bracket-team-row ${winL ? 'winner' : ''}">
+                        <span class="bracket-name">${local || '—'}</span>
+                        <span class="bracket-goals ${isNaN(gL) ? 'empty' : ''}">${isNaN(gL) ? '-' : gL}</span>
+                    </div>
+                    <div class="bracket-team-row ${winV ? 'winner' : ''}">
+                        <span class="bracket-name">${visitante || '—'}</span>
+                        <span class="bracket-goals ${isNaN(gV) ? 'empty' : ''}">${isNaN(gV) ? '-' : gV}</span>
+                    </div>
+                </div>`;
+        }
+
+        function renderBracket(res) {
+            const container = document.getElementById('bracket-container');
+            if (!container) return;
+
+            const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'fase');
+            if (fasesValidas.length === 0) {
+                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">No hay eliminatorias disponibles.</div>`;
+                return;
+            }
+
+            const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[0]) === normalizarTexto(nombre));
+
+            container.innerHTML = `
+                <div class="bracket-column">
+                    ${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}
+                </div>
+                <div class="bracket-column">
+                    ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}
+                    ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}
+                </div>
+                <div class="bracket-column final-col">
+                    ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
+                </div>
+            `;
+        }
+
+        function ver(s) {
+            ['partidos', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
+                const elem = document.getElementById(id);
+                const btn = document.getElementById('btn-' + id);
+                if (elem) elem.classList.toggle('hidden', id !== s);
+                if (btn) btn.classList.toggle('active', id === s);
+            });
+        }
+        
+        cargarTodo();
+    </script>
+</body>
+</html>
