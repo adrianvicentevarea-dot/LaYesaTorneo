@@ -181,7 +181,7 @@
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">G</th></tr>
+                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
                         </thead>
                         <tbody id="body-gol"></tbody>
                     </table>
@@ -193,7 +193,7 @@
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
+                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
                         </thead>
                         <tbody id="body-tar"></tbody>
                     </table>
@@ -203,19 +203,20 @@
     </div>
 
     <script>
-        // Actualizado: el ID que antes era Mixto ahora es oficialmente el Femenino
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
-            femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
+            femenino: '1dtRR1tM1BdcnAMAQLjXMC0v_xXL4vPYBazVUo_BCgcQ', 
             ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
         };
 
         let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
-        // Si por casualidad se quedó guardado 'mixto', redirige automáticamente al femenino
         if (torneoActual === 'mixto') torneoActual = 'femenino';
         
         document.getElementById('selectorTorneo').value = torneoActual;
         let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
+
+        // Variable global para contar partidos automáticamente
+        let partidosJugadosPorEquipo = {};
 
         function cambiarTorneo(nuevoTorneo) {
             localStorage.setItem('torneo_seleccionado', nuevoTorneo);
@@ -290,7 +291,7 @@
                 const resT = await consultarGoogleSheet('Tarjetas');
                 const resE = await consultarGoogleSheet('Eliminatorias');
 
-                if (!resP || !resC || resP.rows.length === 0) {
+                if (!resP || resP.rows.length === 0) {
                     document.getElementById('partidos-container').innerHTML = `
                         <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
                             ⚠️ Error de sincronización con Google Sheets.<br>
@@ -299,13 +300,14 @@
                     return;
                 }
 
-                // Posiciones de columnas fijas y seguras (Hora, Local, Visitante, Goles L, Goles V)
                 let idxHora = 0;
                 let idxLocal = 1;
+                let idxVisitante = 2;
                 let idxGolesL = 3;
                 let idxGolesV = 4;
-                let idxVisitante = 2;
 
+                // Contar los partidos en base a los resultados existentes
+                calcularPartidosJugados(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV);
                 renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
                 
                 if (resC) renderClasificacion(resC);
@@ -313,6 +315,22 @@
                 if (resT) renderTarjetas(resT);
                 if (resE) renderBracket(resE);
             } catch (e) { console.error(e); }
+        }
+
+        function calcularPartidosJugados(rows, idxLocal, idxVisitante, idxGolesL, idxGolesV) {
+            partidosJugadosPorEquipo = {};
+            rows.forEach((fila, idx) => {
+                if (idx === 0 || !fila || fila.length < 5) return;
+                const local = fila[idxLocal];
+                const visitante = fila[idxVisitante];
+                const golesL = parseInt(fila[idxGolesL]);
+                const golesV = parseInt(fila[idxGolesV]);
+
+                if (!isNaN(golesL) && !isNaN(golesV)) {
+                    if (local) partidosJugadosPorEquipo[local] = (partidosJugadosPorEquipo[local] || 0) + 1;
+                    if (visitante) partidosJugadosPorEquipo[visitante] = (partidosJugadosPorEquipo[visitante] || 0) + 1;
+                }
+            });
         }
 
         function renderPartidos(rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora) {
@@ -355,8 +373,9 @@
         }
 
         function renderClasificacion(res) {
-            const container = document.getElementById('grupos-container');
-            if (!container) return;
+            const container = document.getElementById('grid-grupos');
+            const target = container || document.getElementById('grupos-container');
+            if (!target) return;
 
             const equiposValidos = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length < 2) return false;
@@ -364,7 +383,7 @@
             });
 
             if (equiposValidos.length === 0) {
-                container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
+                target.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
                 return;
             }
 
@@ -379,7 +398,7 @@
                 grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif });
             });
 
-            container.innerHTML = Object.keys(grupos).map(g => {
+            target.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a, b) => b.pts - a.pts);
                 return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
                     <table><thead><tr><th>EQUIPO</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead>
@@ -398,13 +417,23 @@
             });
 
             if (jugadoresValidos.length === 0) {
-                container.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
+                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
                 return;
             }
 
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
             container.innerHTML = orden.map(fila => {
-                return `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1] || '-'}</td><td class="txt-centro pts-verde">${fila[3] || 0}</td></tr>`;
+                const nombre = fila[0];
+                const equipo = fila[1] || '-';
+                const goles = fila[3] || 0;
+                const pj = partidosJugadosPorEquipo[equipo] || 0;
+
+                return `<tr>
+                    <td><b>${nombre}</b></td>
+                    <td class="txt-club">${equipo}</td>
+                    <td class="txt-centro">${pj}</td>
+                    <td class="txt-centro pts-verde">${goles}</td>
+                </tr>`;
             }).join('');
         }
 
@@ -419,12 +448,19 @@
             });
 
             if (tarjetasValidas.length === 0) {
-                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
+                container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
                 return;
             }
 
             container.innerHTML = tarjetasValidas.map(fila => {
-                const nombre = fila[0], equipo = fila[1] || '', amarillas = fila[2] || '0', sancion = fila[3] || '';
+                const nombre = fila[0];
+                const equipo = fila[1] || '-';
+                // Corrección de índices: leer correctamente de tu Excel
+                let amarillas = fila[2] !== undefined && fila[2] !== null && fila[2].trim() !== '' ? fila[2].trim() : '0'; 
+                const sancion = fila[3] || '';
+                
+                const pj = partidosJugadosPorEquipo[equipo] || 0;
+
                 let estado = 'OK';
                 if (sancion.toLowerCase() === 'sancionado' || sancion.trim() === '1' || sancion.toLowerCase() === 'si' || sancion.toLowerCase() === 'sancionada') {
                     estado = 'SANCIONADO';
@@ -432,7 +468,8 @@
 
                 return `<tr>
                     <td><b>${nombre}</b></td>
-                    <td class="txt-club">${equipo || '-'}</td>
+                    <td class="txt-club">${equipo}</td>
+                    <td class="txt-centro">${pj}</td>
                     <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
                     <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
                 </tr>`;
