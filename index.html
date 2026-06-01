@@ -167,7 +167,6 @@
             <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
                 <option value="masculino">⚽ Fútbol Masculino</option>
                 <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
-                <option value="mixto">🤼‍♂️ Fútbol Mixto</option>
                 <option value="ninos">🧒 Fútbol Pequeños</option>
             </select>
         </div>
@@ -204,15 +203,17 @@
     </div>
 
     <script>
-        // IDs Reales corregidos directamente de tus capturas de pantalla
+        // Actualizado: el ID que antes era Mixto ahora es oficialmente el Femenino
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
-            femenino: '1KyHfl8Ajou5HlKaWOwopSjQN-NKE7SVPeYQhFmcvVbU', 
-            mixto: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ',
+            femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
             ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
         };
 
         let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
+        // Si por casualidad se quedó guardado 'mixto', redirige automáticamente al femenino
+        if (torneoActual === 'mixto') torneoActual = 'femenino';
+        
         document.getElementById('selectorTorneo').value = torneoActual;
         let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
 
@@ -298,7 +299,7 @@
                     return;
                 }
 
-                // Posiciones exactas basadas en tus imágenes de Excel
+                // Posiciones de columnas fijas y seguras (Hora, Local, Visitante, Goles L, Goles V)
                 let idxHora = 0;
                 let idxLocal = 1;
                 let idxGolesL = 3;
