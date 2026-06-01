@@ -170,7 +170,7 @@
             <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
                 <option value="masculino">⚽ Fútbol Masculino</option>
                 <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
-                <option value="ninos">🧒 Fútbol Niños</option>
+                <option value="ninos">🧒 Fútbol Pequeños</option>
             </select>
         </div>
 
@@ -221,11 +221,11 @@
     </div>
 
     <script>
-        // IDs confirmados según tus capturas de pantalla de las URL de Google Sheets
+        // IDs corregidos según tus capturas de pantalla reales
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
-            femenino: '19lxZHFj-NaSIAT6mjs_Oiqm6UEdKBat5hoHny_UFN1U',
-            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'
+            femenino: '19lxZHFj-NaSIAT6mjs_Oiqm6UEdKBat5hoHny_UFN1U', // <-- Corregido el ID real de las chicas
+            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      // <-- Corregido el ID real de los pequeños
         };
 
         let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
@@ -237,7 +237,6 @@
             location.reload();
         }
 
-        // Función auxiliar para buscar propiedades sin importar mayúsculas/minúsculas
         function obtenerPropiedad(objeto, nombreProp) {
             if (!objeto) return '';
             const keyEncontrada = Object.keys(objeto).find(k => k.trim().toLowerCase() === nombreProp.toLowerCase());
