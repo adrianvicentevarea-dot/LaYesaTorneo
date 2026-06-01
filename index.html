@@ -221,11 +221,10 @@
     </div>
 
     <script>
-        // IDs corregidos según tus capturas de pantalla reales
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
-            femenino: '19lxZHFj-NaSIAT6mjs_Oiqm6UEdKBat5hoHny_UFN1U', // <-- Corregido el ID real de las chicas
-            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      // <-- Corregido el ID real de los pequeños
+            femenino: '19lxZHFj-NaSIAT6mjs_Oiqm6UEdKBat5hoHny_UFN1U', 
+            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
         };
 
         let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
@@ -237,6 +236,35 @@
             location.reload();
         }
 
+        // Nueva función mejorada para descargar los datos directamente de Google de forma segura
+        async function consultarGoogleSheet(pestaña) {
+            try {
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(pestaña)}`;
+                const respuesta = await fetch(url);
+                const texto = await respuesta.text();
+                
+                // Limpiar el envoltorio JSON que devuelve Google de forma nativa
+                const inicioJson = texto.indexOf('{');
+                const finJson = texto.lastIndexOf('}') + 1;
+                const jsonNeto = JSON.parse(texto.slice(inicioJson, finJson));
+                
+                const columnas = jsonNeto.table.cols.map(c => c.label || '');
+                return jsonNeto.table.rows.map(r => {
+                    const item = {};
+                    r.c.forEach((celda, index) => {
+                        const nombreCol = columnas[index];
+                        if (nombreCol) {
+                            item[nombreCol] = celda ? (celda.v !== null ? celda.v : '') : '';
+                        }
+                    });
+                    return item;
+                });
+            } catch (error) {
+                console.error("Error cargando pestaña: " + pestaña, error);
+                return [];
+            }
+        }
+
         function obtenerPropiedad(objeto, nombreProp) {
             if (!objeto) return '';
             const keyEncontrada = Object.keys(objeto).find(k => k.trim().toLowerCase() === nombreProp.toLowerCase());
@@ -245,12 +273,13 @@
 
         async function cargarTodo() {
             try {
+                // Consultamos directamente a Google Sheets de manera independiente
                 const [resP, resC, resG, resT, resE] = await Promise.all([
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Partidos`).then(r => r.json()).catch(() => []),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Clasificacion`).then(r => r.json()).catch(() => []),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Goleadores`).then(r => r.json()).catch(() => []),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Tarjetas`).then(r => r.json()).catch(() => []),
-                    fetch(`https://opensheet.elk.sh/${SHEET_ID}/Eliminatorias`).then(r => r.json()).catch(() => [])
+                    consultarGoogleSheet('Partidos'),
+                    consultarGoogleSheet('Clasificacion'),
+                    consultarGoogleSheet('Goleadores'),
+                    consultarGoogleSheet('Tarjetas'),
+                    consultarGoogleSheet('Eliminatorias')
                 ]);
 
                 const stats = {}; 
@@ -258,7 +287,7 @@
                     resP.forEach(p => {
                         const local = obtenerPropiedad(p, 'Local'), visitante = obtenerPropiedad(p, 'Visitante');
                         if (!local || !visitante) return;
-                        const loc = local.trim(), vis = visitante.trim();
+                        const loc = local.toString().trim(), vis = visitante.toString().trim();
                         const gL = parseInt(obtenerPropiedad(p, 'GolesL')), gV = parseInt(obtenerPropiedad(p, 'GolesV'));
                         if (!stats[loc]) stats[loc] = { pj: 0, pts: 0 };
                         if (!stats[vis]) stats[vis] = { pj: 0, pts: 0 };
@@ -307,7 +336,11 @@
 
         function renderBracket(data) {
             const container = document.getElementById('bracket-container');
-            if (!container || !Array.isArray(data) || data.length === 0) return;
+            if (!container) return;
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">No hay eliminatorias disponibles.</div>`;
+                return;
+            }
             container.innerHTML = "";
 
             const buscarPorFase = (nombreFase) => data.find(f => {
@@ -357,7 +390,7 @@
                 if (!isNaN(gL) && !isNaN(gV)) {
                     marcadorHTML = `<div class="match-score">${gL}:${gV}</div>`;
                 } else {
-                    const horaPartido = hora ? hora.trim() : '-:-';
+                    const horaPartido = hora ? hora.toString().trim() : '-:-';
                     marcadorHTML = `<div class="match-score hora">${horaPartido}</div>`;
                 }
                 return `<div class="card"><div class="match-row">
@@ -377,7 +410,7 @@
             }
             const grupos = {};
             data.filter(e => obtenerPropiedad(e, 'Nombre')).forEach(e => {
-                const nombre = obtenerPropiedad(e, 'Nombre').trim();
+                const nombre = obtenerPropiedad(e, 'Nombre').toString().trim();
                 const grupo = obtenerPropiedad(e, 'Grupo') || 'Único';
                 if (!grupos[grupo]) grupos[grupo] = [];
                 grupos[grupo].push({ nombre: nombre, pts: stats[nombre]?.pts || 0, pj: stats[nombre]?.pj || 0 });
@@ -404,9 +437,9 @@
             });
             container.innerHTML = orden.map(j => {
                 const nombre = obtenerPropiedad(j, 'Nombre');
-                const equipo = obtenerPropiedad(j, 'Equipo') || obtenerPropiedad(j, 'Club') || '-';
+                const equipo = (obtenerPropiedad(j, 'Equipo') || obtenerPropiedad(j, 'Club') || '-').toString().trim();
                 const goles = obtenerPropiedad(j, 'Goles') || 0;
-                return `<tr><td><b>${nombre}</b></td><td class="txt-club">${equipo}</td><td class="txt-centro">${stats[equipo?.trim()]?.pj || 0}</td><td class="txt-centro pts-verde">${goles}</td></tr>`;
+                return `<tr><td><b>${nombre}</b></td><td class="txt-club">${equipo}</td><td class="txt-centro">${stats[equipo]?.pj || 0}</td><td class="txt-centro pts-verde">${goles}</td></tr>`;
             }).join('');
         }
 
@@ -424,7 +457,7 @@
             });
             container.innerHTML = orden.map(j => {
                 const nombre = obtenerPropiedad(j, 'Nombre');
-                const equipo = (obtenerPropiedad(j, 'Equipo') || obtenerPropiedad(j, 'Club') || '').trim();
+                const equipo = (obtenerPropiedad(j, 'Equipo') || obtenerPropiedad(j, 'Club') || '').toString().trim();
                 const amarillas = parseInt(obtenerPropiedad(j, 'Amarillas')) || 0;
                 const sancion = obtenerPropiedad(j, 'Sanción') || obtenerPropiedad(j, 'Sancion') || '';
                 
