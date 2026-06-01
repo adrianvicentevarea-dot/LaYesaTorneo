@@ -61,7 +61,7 @@
             position: relative; 
         }
         
-        /* BARRA SUPERIOR PARA EL DESPLEGABLE */
+        /* BARRA SUPERIOR */
         .top-bar { 
             display: flex; 
             justify-content: flex-end; 
@@ -100,11 +100,10 @@
             font-weight: bold; 
         }
 
-        /* TARJETAS Y CONTENEDORES */
+        /* TARJETAS Y TABLAS */
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .card { background: var(--blanco); border-radius: 6px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
         
-        /* TABLAS */
         table { width: 100%; border-collapse: collapse; }
         td, th { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; white-space: nowrap; }
         th { background: #f9f9f9; color: #7f8c8d; font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
@@ -116,7 +115,7 @@
         .pts-verde { color: var(--verde); font-weight: bold; font-size: 1.1em; }
         .badge-amarilla { background: #f1c40f; padding: 3px 8px; border-radius: 3px; font-weight: bold; color: #000; font-size: 0.95em; }
 
-        /* PARTIDOS GENERALES */
+        /* PARTIDOS */
         .match-row { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 1.1em; }
         .match-team { width: 42%; font-weight: bold; color: #333; }
         .match-score { background: var(--azul-nav); color: white; padding: 5px 12px; border-radius: 4px; min-width: 60px; text-align: center; font-weight: bold; font-size: 1.1em; }
@@ -131,7 +130,6 @@
         .bracket-title { background: #f4f6f7; font-size: 0.8em; font-weight: bold; text-align: center; color: #666; border-bottom: 1px solid #ddd; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
         
         .bracket-team-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; }
-        .bracket-team-row:last-child { border-bottom: none; }
         .bracket-name { font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
         .bracket-goals { background: var(--azul-nav); color: white; font-weight: bold; padding: 4px 10px; border-radius: 3px; min-width: 30px; text-align: center; font-size: 1em; }
         .bracket-goals.empty { background: #e0e0e0; color: #999; }
@@ -142,7 +140,6 @@
 
         .hidden { display: none; }
 
-        /* RESPONSIVE PARA MÓVILES */
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; }
@@ -177,22 +174,14 @@
         <main id="content">
             <div id="partidos"><span class="seccion-titulo">Resultados y Horarios</span><div id="partidos-container"></div></div>
             <div id="grupos" class="hidden"><span class="seccion-titulo">Clasificación</span><div id="grupos-container" class="grid-grupos"></div></div>
-            
-            <div id="elim" class="hidden">
-                <span class="seccion-titulo">Fase Final</span>
-                <div class="bracket-wrapper" id="bracket-container"></div>
-            </div>
+            <div id="elim" class="hidden"><span class="seccion-titulo">Fase Final</span><div class="bracket-wrapper" id="bracket-container"></div></div>
 
             <div id="gol" class="hidden">
                 <span class="seccion-titulo">Goleadores</span>
                 <div class="card">
                     <table>
                         <thead>
-                            <tr>
-                                <th>Jugadora</th>
-                                <th>Club</th>
-                                <th class="txt-centro">G</th>
-                            </tr>
+                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">G</th></tr>
                         </thead>
                         <tbody id="body-gol"></tbody>
                     </table>
@@ -204,12 +193,7 @@
                 <div class="card">
                     <table>
                         <thead>
-                            <tr>
-                                <th>Jugadora</th>
-                                <th>Club</th>
-                                <th class="txt-centro">🟨</th>
-                                <th class="txt-derecha">Estado</th>
-                            </tr>
+                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
                         </thead>
                         <tbody id="body-tar"></tbody>
                     </table>
@@ -302,31 +286,29 @@
                 const resT = await consultarGoogleSheet('Tarjetas');
                 const resE = await consultarGoogleSheet('Eliminatorias');
 
-                if (!resP || !resC || !resP.rows || !resC.rows) {
+                // Si las pestañas esenciales fallan completamente, mostramos el error crítico
+                if (!resP || !resC || resP.rows.length === 0) {
                     document.getElementById('partidos-container').innerHTML = `
                         <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
                             ⚠️ Error de sincronización con Google Sheets.<br>
-                            Asegúrate de haber publicado este documento en la web (Archivo -> Compartir -> Publicar en la web).
+                            Asegúrate de que este documento esté publicado (Archivo -> Compartir -> Publicar en la web).
                         </div>`;
                     return;
                 }
 
-                // MAPEADO DINÁMICO ADAPTADO AL FEMENINO Y MASCULINO
-                const hP = resP.headers;
-                let idxLocal = hP['equipolocal'] !== undefined ? hP['equipolocal'] : hP['local'];
-                let idxVisitante = hP['equipovisitante'] !== undefined ? hP['equipovisitante'] : hP['visitante'];
-                let idxGolesL = hP['golesl'] !== undefined ? hP['golesl'] : 2;
-                let idxGolesV = hP['golesv'] !== undefined ? hP['golesv'] : 3;
-                let idxHora = hP['hora'] !== undefined ? hP['hora'] : 0;
-
-                if (idxLocal === undefined) idxLocal = 1;
-                if (idxVisitante === undefined) idxVisitante = 4;
+                // Asignación ultra estricta basada en el orden visual de tus columnas
+                let idxHora = 0;
+                let idxLocal = 1;
+                let idxGolesL = 2;
+                let idxGolesV = 3;
+                let idxVisitante = 4;
 
                 renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
-                renderClasificacion(resC);
-                renderGoleadores(resG);
-                renderTarjetas(resT);
-                renderBracket(resE);
+                
+                if (resC) renderClasificacion(resC);
+                if (resG) renderGoleadores(resG);
+                if (resT) renderTarjetas(resT);
+                if (resE) renderBracket(resE);
             } catch (e) { console.error(e); }
         }
 
@@ -334,10 +316,11 @@
             const container = document.getElementById('partidos-container');
             if (!container) return;
             
+            // Saltamos la fila 0 (cabecera) y filtramos filas vacías
             const partidosValidos = rows.filter((fila, idx) => {
-                if (idx === 0 || !fila) return false;
-                const celdaL = normalizarTexto(fila[idxLocal]);
-                return celdaL !== '' && celdaL !== 'local' && celdaL !== 'equipolocal';
+                if (idx === 0 || !fila || fila.length < 2) return false;
+                const txtL = normalizarTexto(fila[idxLocal]);
+                return txtL !== '' && txtL !== 'local' && txtL !== 'equipolocal';
             });
             
             if (partidosValidos.length === 0) {
@@ -346,8 +329,10 @@
             }
 
             container.innerHTML = partidosValidos.map(fila => {
-                const local = fila[idxLocal], visitante = fila[idxVisitante];
-                const golesL = fila[idxGolesL], golesV = fila[idxGolesV];
+                const local = fila[idxLocal] || '';
+                const visitante = fila[idxVisitante] || '';
+                const golesL = fila[idxGolesL];
+                const golesV = fila[idxGolesV];
                 const hora = fila[idxHora] || '';
 
                 const gL = parseInt(golesL), gV = parseInt(golesV);
@@ -371,13 +356,11 @@
             const container = document.getElementById('grupos-container');
             if (!container) return;
 
-            const hC = res.headers;
-            const idxNombre = hC['equipo'] !== undefined ? hC['equipo'] : (hC['nombre'] !== undefined ? hC['nombre'] : 0);
-            const idxGrupo = hC['grupo'] !== undefined ? hC['grupo'] : 1;
-            const idxDiferencia = hC['dg'] !== undefined ? hC['dg'] : (hC['diferencia'] !== undefined ? hC['diferencia'] : 2);
-            const idxPuntos = hC['pts'] !== undefined ? hC['pts'] : (hC['puntos'] !== undefined ? hC['puntos'] : 3);
+            const equiposValidos = res.rows.filter((fila, idx) => {
+                if (idx === 0 || !fila || fila.length < 2) return false;
+                return normalizarTexto(fila[0]) !== 'equipo' && normalizarTexto(fila[0]) !== 'nombre' && fila[0] !== '';
+            });
 
-            const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre' && normalizarTexto(fila[idxNombre]) !== 'equipo');
             if (equiposValidos.length === 0) {
                 container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
                 return;
@@ -385,10 +368,10 @@
 
             const grupos = {};
             equiposValidos.forEach(fila => {
-                const nombre = fila[idxNombre];
-                const grupo = fila[idxGrupo] || 'Único';
-                const dif = fila[idxDiferencia] || '0';
-                const pts = parseInt(fila[idxPuntos]) || 0;
+                const nombre = fila[0];
+                const grupo = fila[1] || 'Único';
+                const dif = fila[2] || '0';
+                const pts = parseInt(fila[3]) || 0;
                 
                 if (!grupos[grupo]) grupos[grupo] = [];
                 grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif });
@@ -406,21 +389,20 @@
             const container = document.getElementById("body-gol");
             if (!container) return;
 
-            const hG = res.headers;
-            const idxNombre = hG['jugadora'] !== undefined ? hG['jugadora'] : (hG['jugador'] !== undefined ? hG['jugador'] : (hG['nombre'] !== undefined ? hG['nombre'] : 0));
-            const idxEquipo = hG['club'] !== undefined ? hG['club'] : (hG['equipo'] !== undefined ? hG['equipo'] : 1);
-            const idxGoles = hG['goles'] !== undefined ? hG['goles'] : 2;
+            const jugadoresValidos = res.rows.filter((fila, idx) => {
+                if (idx === 0 || !fila || fila.length < 2) return false;
+                const txt = normalizarTexto(fila[0]);
+                return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
+            });
 
-            const jugadoresValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre' && normalizarTexto(fila[idxNombre]) !== 'jugador' && normalizarTexto(fila[idxNombre]) !== 'jugadora');
             if (jugadoresValidos.length === 0) {
                 container.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
                 return;
             }
 
-            const orden = jugadoresValidos.sort((a, b) => (parseInt(b[idxGoles]) || 0) - (parseInt(a[idxGoles]) || 0));
+            const orden = jugadoresValidos.sort((a, b) => (parseInt(b[2]) || 0) - (parseInt(a[2]) || 0));
             container.innerHTML = orden.map(fila => {
-                const nombre = fila[idxNombre], equipo = fila[idxEquipo] || '-', goles = fila[idxGoles] || 0;
-                return `<tr><td><b>${nombre}</b></td><td class="txt-club">${equipo}</td><td class="txt-centro pts-verde">${goles}</td></tr>`;
+                return `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1] || '-'}</td><td class="txt-centro pts-verde">${fila[2] || 0}</td></tr>`;
             }).join('');
         }
 
@@ -428,21 +410,19 @@
             const container = document.getElementById("body-tar");
             if (!container) return;
 
-            const hT = res.headers;
-            const idxNombre = hT['jugadora'] !== undefined ? hT['jugadora'] : (hT['jugador'] !== undefined ? hT['jugador'] : (hT['nombre'] !== undefined ? hT['nombre'] : 0));
-            const idxEquipo = hT['club'] !== undefined ? hT['club'] : (hT['equipo'] !== undefined ? hT['equipo'] : 1);
-            const idxAmarillas = hT['amarillas'] !== undefined ? hT['amarillas'] : 2;
-            const idxSancion = hT['sancion'] !== undefined ? hT['sancion'] : 3;
+            const tarjetasValidas = res.rows.filter((fila, idx) => {
+                if (idx === 0 || !fila || fila.length < 2) return false;
+                const txt = normalizarTexto(fila[0]);
+                return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
+            });
 
-            const tarjetasValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxNombre] && normalizarTexto(fila[idxNombre]) !== 'nombre' && normalizarTexto(fila[idxNombre]) !== 'jugador' && normalizarTexto(fila[idxNombre]) !== 'jugadora');
             if (tarjetasValidas.length === 0) {
                 container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
                 return;
             }
 
             container.innerHTML = tarjetasValidas.map(fila => {
-                const nombre = fila[idxNombre], equipo = fila[idxEquipo] || '', amarillas = fila[idxAmarillas] || '0', sancion = fila[idxSancion] || '';
-                
+                const nombre = fila[0], equipo = fila[1] || '', amarillas = fila[2] || '0', sancion = fila[3] || '';
                 let estado = 'OK';
                 if (sancion.toLowerCase() === 'sancionado' || sancion.trim() === '1' || sancion.toLowerCase() === 'si' || sancion.toLowerCase() === 'sancionada') {
                     estado = 'SANCIONADO';
@@ -457,7 +437,7 @@
             }).join('');
         }
 
-        function transformarPartidoBracket(filaFase, titulo, idxL, idxV, idxGL, idxGV) {
+        function transformarPartidoBracket(filaFase, titulo) {
             if (!filaFase) return `
                 <div class="bracket-match">
                     <div class="bracket-title">${titulo}</div>
@@ -465,8 +445,8 @@
                     <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div>
                 </div>`;
             
-            const local = filaFase[idxL], visitante = filaFase[idxV];
-            const gL = parseInt(filaFase[idxGL]), gV = parseInt(filaFase[idxGV]);
+            const local = filaFase[1], visitante = filaFase[4];
+            const gL = parseInt(filaFase[2]), gV = parseInt(filaFase[3]);
             
             const winL = !isNaN(gL) && !isNaN(gV) && gL > gV;
             const winV = !isNaN(gL) && !isNaN(gV) && gV > gL;
@@ -489,37 +469,27 @@
             const container = document.getElementById('bracket-container');
             if (!container) return;
 
-            const hE = res.headers;
-            const idxFase = hE['fase'] !== undefined ? hE['fase'] : 0;
-            let idxLocal = hE['equipolocal'] !== undefined ? hE['equipolocal'] : hE['local'];
-            let idxVisitante = hE['equipovisitante'] !== undefined ? hE['equipovisitante'] : hE['visitante'];
-            const idxGolesL = hE['golesl'] !== undefined ? hE['golesl'] : 2;
-            const idxGolesV = hE['golesv'] !== undefined ? hE['golesv'] : 3;
-
-            if (idxLocal === undefined) idxLocal = 1;
-            if (idxVisitante === undefined) idxVisitante = 4;
-
-            const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[idxFase] && normalizarTexto(fila[idxFase]) !== 'fase');
+            const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'fase');
             if (fasesValidas.length === 0) {
                 container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">No hay eliminatorias disponibles.</div>`;
                 return;
             }
 
-            const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[idxFase]) === normalizarTexto(nombre));
+            const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[0]) === normalizarTexto(nombre));
 
             container.innerHTML = `
                 <div class="bracket-column">
-                    ${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
-                    ${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
-                    ${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
-                    ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}
                 </div>
                 <div class="bracket-column">
-                    ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
-                    ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
+                    ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}
+                    ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}
                 </div>
                 <div class="bracket-column final-col">
-                    ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL', idxLocal, idxVisitante, idxGolesL, idxGolesV)}
+                    ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
                 </div>
             `;
         }
