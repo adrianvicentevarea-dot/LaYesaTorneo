@@ -236,22 +236,27 @@
             location.reload();
         }
 
-        // CONTROL DE QUERIES EXPLICITAS POR PESTAÑA PARA PREVENIR ERRORES DE GOOGLE SHEETS
-        function obtenerQueryParaPestaña(nombre) {
-            switch(nombre) {
-                case 'Partidos': return 'select A, B, C, D, E'; 
-                case 'Clasificacion': return 'select A, B';       
-                case 'Goleadores': return 'select A, B, C, D, E';  
-                case 'Tarjetas': return 'select A, B, C, D, E';    
-                case 'Eliminatorias': return 'select A, B, C, D, E';
-                default: return 'select *';
+        // PARSER SEGURO PARA FORMATOS DE CELDA EN GOOGLE SHEETS
+        function extraerValorCelda(celda) {
+            if (!celda) return '';
+            
+            // Si es un objeto de fecha formateado por la API gviz de Google
+            if (celda.v !== null && celda.v !== undefined && typeof celda.v === 'string' && celda.v.includes('Date(')) {
+                const partes = celda.v.match(/\d+/g);
+                if (partes && partes.length >= 5) {
+                    return `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}`;
+                }
             }
+            // Retorno estándar priorizando texto plano visible
+            if (celda.f !== null && celda.f !== undefined) return celda.f.trim();
+            if (celda.v !== null && celda.v !== undefined) return celda.v.toString().trim();
+            return '';
         }
 
         async function consultarGoogleSheet(nombrePestaña) {
             try {
-                const query = encodeURIComponent(obtenerQueryParaPestaña(nombrePestaña));
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}&tq=${query}`;
+                // Quitamos consultas restrictivas para evitar corrupciones de indices de columnas cruzadas
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}`;
                 
                 const respuesta = await fetch(url);
                 const texto = await respuesta.text();
@@ -260,44 +265,17 @@
                 const finJson = texto.lastIndexOf('}') + 1;
                 const jsonNeto = JSON.parse(texto.slice(inicioJson, finJson));
                 
-                if (!jsonNeto || !jsonNeto.table) return [];
+                if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return [];
 
-                const columnas = jsonNeto.table.cols.map(c => (c.label || '').trim());
+                // Procesamos cada celda secuencialmente basada en su índice nativo por fila
                 return jsonNeto.table.rows.map(r => {
-                    const item = {};
-                    r.c.forEach((celda, index) => {
-                        const nombreCol = columnas[index];
-                        if (nombreCol) {
-                            let valorFinal = '';
-                            if (celda) {
-                                if (celda.f !== null && celda.f !== undefined) {
-                                    valorFinal = celda.f;
-                                } else if (celda.v !== null && celda.v !== undefined) {
-                                    valorFinal = celda.v;
-                                }
-                            }
-                            
-                            if (typeof valorFinal === 'string' && valorFinal.includes('Date(')) {
-                                const partes = valorFinal.match(/\d+/g);
-                                if (partes && partes.length >= 5) {
-                                    valorFinal = `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}`;
-                                }
-                            }
-                            item[nombreCol] = valorFinal;
-                        }
-                    });
-                    return item;
+                    if (!r || !r.c) return [];
+                    return r.c.map(celda => extraerValorCelda(celda));
                 });
             } catch (error) {
-                console.error("Error crítico cargando la pestaña: " + nombrePestaña, error);
-                return null; // Devolvemos null para identificar fallos individuales
+                console.error("Error cargando la pestaña: " + nombrePestaña, error);
+                return null;
             }
-        }
-
-        function obtenerPropiedad(objeto, nombreProp) {
-            if (!objeto) return '';
-            const keyEncontrada = Object.keys(objeto).find(k => k.trim().toLowerCase() === nombreProp.toLowerCase().trim());
-            return keyEncontrada ? objeto[keyEncontrada] : '';
         }
 
         async function cargarTodo() {
@@ -310,31 +288,34 @@
                     consultarGoogleSheet('Eliminatorias')
                 ]);
 
-                // Verificación de errores en tiempo de ejecución
                 if (resP === null || resC === null) {
                     document.getElementById('partidos-container').innerHTML = `
                         <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
                             ⚠️ Error de sincronización con Google Sheets.<br>
-                            Asegúrate de que el documento está "Publicado en la web" y las pestañas se llaman exactamente: 
-                            Partidos, Clasificacion, Goleadores, Tarjetas y Eliminatorias.
+                            Verifica que las pestañas mantengan los nombres idénticos sin variaciones de acentos.
                         </div>`;
                     return;
                 }
 
+                // Generamos estadísticas en tiempo real procesando los partidos válidos
                 const stats = {}; 
                 if (Array.isArray(resP)) {
-                    resP.forEach(p => {
-                        const local = obtenerPropiedad(p, 'Local'), visitante = obtenerPropiedad(p, 'Visitante');
-                        if (!local || !visitante) return;
-                        const loc = local.toString().trim(), vis = visitante.toString().trim();
-                        const gL = parseInt(obtenerPropiedad(p, 'GolesL')), gV = parseInt(obtenerPropiedad(p, 'GolesV'));
-                        if (!stats[loc]) stats[loc] = { pj: 0, pts: 0 };
-                        if (!stats[vis]) stats[vis] = { pj: 0, pts: 0 };
+                    resP.forEach((fila, i) => {
+                        if (i === 0 || !fila[0]) return; // Evitar cabecera o filas vacías
+                        const local = fila[0], visitante = fila[1];
+                        const golesL = fila[2], golesV = fila[3];
+                        
+                        if (!stats[local]) stats[local] = { pj: 0, pts: 0 };
+                        if (!stats[visitante]) stats[visitante] = { pj: 0, pts: 0 };
+                        
+                        const gL = parseInt(golesL);
+                        const gV = parseInt(golesV);
+                        
                         if (!isNaN(gL) && !isNaN(gV)) {
-                            stats[loc].pj++; stats[vis].pj++;
-                            if (gL > gV) stats[loc].pts += 3;
-                            else if (gV > gL) stats[vis].pts += 3;
-                            else { stats[loc].pts += 1; stats[vis].pts += 1; }
+                            stats[local].pj++; stats[visitante].pj++;
+                            if (gL > gV) stats[local].pts += 3;
+                            else if (gV > gL) stats[visitante].pts += 3;
+                            else { stats[local].pts += 1; stats[visitante].pts += 1; }
                         }
                     });
                 }
@@ -347,13 +328,129 @@
             } catch (e) { console.error(e); }
         }
 
-        function crearBloquePartido(p, titulo) {
-            if (!p) p = {};
-            const local = obtenerPropiedad(p, 'Local'), visitante = obtenerPropiedad(p, 'Visitante');
-            const golesL = obtenerPropiedad(p, 'GolesL'), golesV = obtenerPropiedad(p, 'GolesV');
+        function renderPartidos(rows) {
+            const container = document.getElementById('partidos-container');
+            if (!container) return;
             
-            const gL = golesL !== undefined && golesL !== '' ? parseInt(golesL) : NaN;
-            const gV = golesV !== undefined && golesV !== '' ? parseInt(golesV) : NaN;
+            // Filtrar filas válidas descartando cabecera de la hoja de cálculo
+            const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[0]);
+            
+            if (partidosValidos.length === 0) {
+                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay partidos disponibles aún.</div>`;
+                return;
+            }
+
+            container.innerHTML = partidosValidos.map(fila => {
+                const local = fila[0], visitante = fila[1];
+                const golesL = fila[2], golesV = fila[3];
+                const hora = fila[4] || '';
+
+                const gL = parseInt(golesL), gV = parseInt(golesV);
+                let marcadorHTML = '';
+                
+                if (!isNaN(gL) && !isNaN(gV)) {
+                    marcadorHTML = `<div class="match-score">${gL}:${gV}</div>`;
+                } else {
+                    marcadorHTML = `<div class="match-score hora">${hora || '-:-'}</div>`;
+                }
+                
+                return `<div class="card"><div class="match-row">
+                    <div class="match-team" style="text-align:right;">${local}</div>
+                    ${marcadorHTML}
+                    <div class="match-team">${visitante}</div>
+                </div></div>`;
+            }).join('');
+        }
+
+        function renderClasificacion(rows, stats) {
+            const container = document.getElementById('grupos-container');
+            if (!container) return;
+
+            const equiposValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[0]);
+            if (equiposValidos.length === 0) {
+                container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
+                return;
+            }
+
+            const grupos = {};
+            equiposValidos.forEach(fila => {
+                const nombre = fila[0];
+                const grupo = fila[1] || 'Único';
+                if (!grupos[grupo]) grupos[grupo] = [];
+                grupos[grupo].push({ nombre: nombre, pts: stats[nombre]?.pts || 0, pj: stats[nombre]?.pj || 0 });
+            });
+
+            container.innerHTML = Object.keys(grupos).map(g => {
+                const orden = grupos[g].sort((a, b) => b.pts - a.pts);
+                return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
+                    <table><thead><tr><th>EQUIPO</th><th class="txt-centro">PJ</th><th class="txt-centro">PTS</th></tr></thead>
+                    <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro">${e.pj}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
+            }).join('');
+        }
+
+        function renderGoleadores(rows, stats) {
+            const container = document.getElementById("body-gol");
+            if (!container) return;
+
+            const jugadoresValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[0]);
+            if (jugadoresValidos.length === 0) {
+                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;">No hay goles registrados.</td></tr>`;
+                return;
+            }
+
+            const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
+            container.innerHTML = orden.map(fila => {
+                const nombre = fila[0], equipo = fila[1] || '-', goles = fila[3] || 0;
+                return `<tr><td><b>${nombre}</b></td><td class="txt-club">${equipo}</td><td class="txt-centro">${stats[equipo]?.pj || 0}</td><td class="txt-centro pts-verde">${goles}</td></tr>`;
+            }).join('');
+        }
+
+        function renderTarjetas(rows, stats) {
+            const container = document.getElementById("body-tar");
+            if (!container) return;
+
+            const tarjetasValidas = rows.filter((fila, idx) => idx > 0 && fila && fila[0]);
+            if (tarjetasValidas.length === 0) {
+                container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;">No hay sanciones registradas.</td></tr>`;
+                return;
+            }
+
+            const orden = tarjetasValidas.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
+            container.innerHTML = orden.map(fila => {
+                const nombre = fila[0], equipo = fila[1] || '', amarillas = parseInt(fila[3]) || 0, sancion = fila[4] || '';
+                const pjEquipo = stats[equipo]?.pj || 0;
+                
+                let estado = 'OK';
+                let pjJugador = pjEquipo;
+
+                if (sancion.toLowerCase() === 'sancionado' || sancion.toLowerCase() === 'si') {
+                    estado = 'SANCIONADO';
+                    pjJugador = Math.max(0, pjEquipo - 1);
+                } else {
+                    const ciclos = Math.floor(amarillas / 3);
+                    if (ciclos > 0) pjJugador = Math.max(0, pjEquipo - ciclos);
+                }
+
+                return `<tr>
+                    <td><b>${nombre}</b></td>
+                    <td class="txt-club">${equipo || '-'}</td>
+                    <td class="txt-centro">${pjJugador}</td>
+                    <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
+                    <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function transformarPartidoBracket(filaFase, titulo) {
+            if (!filaFase) return `
+                <div class="bracket-match">
+                    <div class="bracket-title">${titulo}</div>
+                    <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div>
+                    <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div>
+                </div>`;
+            
+            const local = filaFase[0], visitante = filaFase[1];
+            const gL = parseInt(filaFase[2]), gV = parseInt(filaFase[3]);
             
             const winL = !isNaN(gL) && !isNaN(gV) && gL > gV;
             const winV = !isNaN(gL) && !isNaN(gV) && gV > gL;
@@ -369,162 +466,36 @@
                         <span class="bracket-name">${visitante || '—'}</span>
                         <span class="bracket-goals ${isNaN(gV) ? 'empty' : ''}">${isNaN(gV) ? '-' : gV}</span>
                     </div>
-                </div>
-            `;
+                </div>`;
         }
 
-        function renderBracket(data) {
+        function renderBracket(rows) {
             const container = document.getElementById('bracket-container');
             if (!container) return;
-            if (!Array.isArray(data) || data.length === 0) {
+
+            const fasesValidas = rows.filter((fila, idx) => idx > 0 && fila && fila[4]);
+            if (fasesValidas.length === 0) {
                 container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">No hay eliminatorias disponibles.</div>`;
                 return;
             }
-            container.innerHTML = "";
 
-            const buscarPorFase = (nombreFase) => data.find(f => {
-                const fase = obtenerPropiedad(f, 'Fase');
-                return fase && fase.toString().trim().toLowerCase() === nombreFase.toLowerCase();
-            });
-
-            const c1 = buscarPorFase('Cuartos 1');
-            const c2 = buscarPorFase('Cuartos 2');
-            const c3 = buscarPorFase('Cuartos 3');
-            const c4 = buscarPorFase('Cuartos 4');
-            const s1 = buscarPorFase('Semifinal 1');
-            const s2 = buscarPorFase('Semifinal 2');
-            const f1 = buscarPorFase('Final');
+            const buscarFase = (nombre) => fasesValidas.find(f => f[4].toLowerCase().trim() === nombre.toLowerCase().trim());
 
             container.innerHTML = `
                 <div class="bracket-column">
-                    ${crearBloquePartido(c1, 'Cuartos 1')}
-                    ${crearBloquePartido(c2, 'Cuartos 2')}
-                    ${crearBloquePartido(c3, 'Cuartos 3')}
-                    ${crearBloquePartido(c4, 'Cuartos 4')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}
                 </div>
                 <div class="bracket-column">
-                    ${crearBloquePartido(s1, 'Semifinal 1')}
-                    ${crearBloquePartido(s2, 'Semifinal 2')}
+                    ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}
+                    ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}
                 </div>
                 <div class="bracket-column final-col">
-                    ${crearBloquePartido(f1, '🏆 GRAN FINAL')}
+                    ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
                 </div>
             `;
-        }
-
-        function renderPartidos(data) {
-            const container = document.getElementById('partidos-container');
-            if (!container) return;
-            if (!Array.isArray(data) || data.length === 0) {
-                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay partidos disponibles aún.</div>`;
-                return;
-            }
-            container.innerHTML = data.filter(m => obtenerPropiedad(m, 'Local')).map(m => {
-                const local = obtenerPropiedad(m, 'Local'), visitante = obtenerPropiedad(m, 'Visitante');
-                const golesL = obtenerPropiedad(m, 'GolesL'), golesV = obtenerPropiedad(m, 'GolesV');
-                const hora = obtenerPropiedad(m, 'Hora') || obtenerPropiedad(m, 'Horario') || obtenerPropiedad(m, 'Fecha') || '';
-
-                const gL = parseInt(golesL), gV = parseInt(golesV);
-                let marcadorHTML = '';
-                if (!isNaN(gL) && !isNaN(gV)) {
-                    marcadorHTML = `<div class="match-score">${gL}:${gV}</div>`;
-                } else {
-                    const horaPartido = hora ? hora.toString().trim() : '-:-';
-                    marcadorHTML = `<div class="match-score hora">${horaPartido}</div>`;
-                }
-                return `<div class="card"><div class="match-row">
-                    <div class="match-team" style="text-align:right;">${local}</div>
-                    ${marcadorHTML}
-                    <div class="match-team">${visitante}</div>
-                </div></div>`;
-            }).join('');
-        }
-
-        function renderClasificacion(data, stats) {
-            const container = document.getElementById('grupos-container');
-            if (!container) return;
-            if (!Array.isArray(data) || data.length === 0) {
-                container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
-                return;
-            }
-            const grupos = {};
-            data.filter(e => obtenerPropiedad(e, 'Nombre')).forEach(e => {
-                const nombre = obtenerPropiedad(e, 'Nombre').toString().trim();
-                const grupo = obtenerPropiedad(e, 'Grupo') || 'Único';
-                if (!grupos[grupo]) grupos[grupo] = [];
-                grupos[grupo].push({ nombre: nombre, pts: stats[nombre]?.pts || 0, pj: stats[nombre]?.pj || 0 });
-            });
-            container.innerHTML = Object.keys(grupos).map(g => {
-                const orden = grupos[g].sort((a, b) => b.pts - a.pts);
-                return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
-                    <table><thead><tr><th>EQUIPO</th><th class="txt-centro">PJ</th><th class="txt-centro">PTS</th></tr></thead>
-                    <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro">${e.pj}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
-            }).join('');
-        }
-
-        function renderGoleadores(data, stats) {
-            const container = document.getElementById("body-gol");
-            if (!container) return;
-            if (!Array.isArray(data) || data.length === 0) {
-                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;">No hay goles registrados.</td></tr>`;
-                return;
-            }
-            const orden = data.filter(j => obtenerPropiedad(j, 'Nombre')).sort((a, b) => {
-                const golesB = parseInt(obtenerPropiedad(b, 'Goles')) || 0;
-                const golesA = parseInt(obtenerPropiedad(a, 'Goles')) || 0;
-                return golesB - golesA;
-            });
-            container.innerHTML = orden.map(j => {
-                const nombre = obtenerPropiedad(j, 'Nombre');
-                const equipo = (obtenerPropiedad(j, 'Equipo') || obtenerPropiedad(j, 'Club') || '-').toString().trim();
-                const goles = obtenerPropiedad(j, 'Goles') || 0;
-                return `<tr><td><b>${nombre}</b></td><td class="txt-club">${equipo}</td><td class="txt-centro">${stats[equipo]?.pj || 0}</td><td class="txt-centro pts-verde">${goles}</td></tr>`;
-            }).join('');
-        }
-
-        function renderTarjetas(data, stats) {
-            const container = document.getElementById("body-tar");
-            if (!container) return;
-            if (!Array.isArray(data) || data.length === 0) {
-                container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;">No hay sanciones registradas.</td></tr>`;
-                return;
-            }
-            const orden = data.filter(j => obtenerPropiedad(j, 'Nombre')).sort((a, b) => {
-                const amB = parseInt(obtenerPropiedad(b, 'Amarillas')) || 0;
-                const amA = parseInt(obtenerPropiedad(a, 'Amarillas')) || 0;
-                return amB - amA;
-            });
-            container.innerHTML = orden.map(j => {
-                const nombre = obtenerPropiedad(j, 'Nombre');
-                const equipo = (obtenerPropiedad(j, 'Equipo') || obtenerPropiedad(j, 'Club') || '').toString().trim();
-                const amarillas = parseInt(obtenerPropiedad(j, 'Amarillas')) || 0;
-                const sancion = obtenerPropiedad(j, 'Sanción') || obtenerPropiedad(j, 'Sancion') || '';
-                
-                const pjEquipo = stats[equipo]?.pj || 0; 
-                const textoCelda = sancion.toString().trim().toLowerCase();
-                
-                let estado = 'OK';
-                let pjJugador = pjEquipo;
-
-                if (textoCelda === 'sancionado' || textoCelda === 'si' || textoCelda === '0') {
-                    estado = 'SANCIONADO';
-                    pjJugador = pjEquipo - 1; 
-                } else {
-                    estado = 'OK';
-                    const ciclosPasados = Math.floor(amarillas / 3);
-                    if (ciclosPasados > 0) pjJugador = pjEquipo - ciclosPasados;
-                }
-
-                if (pjJugador < 0) pjJugador = 0;
-
-                return `<tr>
-                    <td><b>${nombre}</b></td>
-                    <td class="txt-club">${equipo || '-'}</td>
-                    <td class="txt-centro">${pjJugador}</td>
-                    <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
-                    <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
-                </tr>`;
-            }).join('');
         }
 
         function ver(s) {
@@ -535,6 +506,8 @@
                 if (btn) btn.classList.toggle('active', id === s);
             });
         }
+        
+        // Ejecución inicial automática
         cargarTodo();
     </script>
 </body>
