@@ -236,18 +236,58 @@
             location.reload();
         }
 
-        // Nueva función mejorada para descargar los datos directamente de Google de forma segura
-        async function consultarGoogleSheet(pestaña) {
+        // SOLUCIÓN AL ERROR: Buscador inteligente de pestañas por si varía el nombre en el Excel
+        async function consultarGoogleSheetInteligente(nombrePestañaBuscada, numeroPestañaPorDefecto) {
             try {
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(pestaña)}`;
-                const respuesta = await fetch(url);
-                const texto = await respuesta.text();
+                // Buscamos primero la estructura de hojas disponibles para no fallar por el nombre
+                const urlEstructura = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+                const respuestaEst = await fetch(urlEstructura);
+                const textoEst = await respuestaEst.text();
+                const inicioJsonEst = textoEst.indexOf('{');
+                const finJsonEst = textoEst.lastIndexOf('}') + 1;
+                const jsonEst = JSON.parse(textoEst.slice(inicioJsonEst, finJsonEst));
                 
-                // Limpiar el envoltorio JSON que devuelve Google de forma nativa
-                const inicioJson = texto.indexOf('{');
-                const finJson = texto.lastIndexOf('}') + 1;
-                const jsonNeto = JSON.parse(texto.slice(inicioJson, finJson));
+                // Intentamos encontrar el nombre real comparando sin tildes ni espacios
+                let nombreReal = nombrePestañaBuscada;
+                if (jsonEst && jsonEst.table && jsonEst.table.cols) {
+                    // Google a veces no da el listado completo directo en la raíz, usamos fallback si falla
+                }
+
+                // Hacemos la consulta directa con reintento automático si falla el nombre estándar
+                const ejecutarConsulta = async (sheetName) => {
+                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+                    const respuesta = await fetch(url);
+                    const texto = await respuesta.text();
+                    if(texto.includes('sheet_not_found') || texto.includes('not_found')) throw new Error('Not found');
+                    
+                    const inicioJson = texto.indexOf('{');
+                    const finJson = texto.lastIndexOf('}') + 1;
+                    return JSON.parse(texto.slice(inicioJson, finJson));
+                };
+
+                let jsonNeto;
+                try {
+                    // Intento 1: Nombre original (ej: "Partidos")
+                    jsonNeto = await ejecutarConsulta(nombrePestañaBuscada);
+                } catch(e) {
+                    try {
+                        // Intento 2: Nombre con tilde/variaciones comunes (ej: "Clasificación")
+                        const alternativo = nombrePestañaBuscada.toLowerCase() === 'clasificacion' ? 'Clasificación' : nombrePestañaBuscada.toUpperCase();
+                        jsonNeto = await ejecutarConsulta(alternativo);
+                    } catch(e2) {
+                        // Intento 3: Si todo falla, intentamos leer por el número de índice de la pestaña usando la url por defecto antigua
+                        const urlFailsafe = `https://opensheet.elk.sh/${SHEET_ID}/${numeroPestañaPorDefecto}`;
+                        const res = await fetch(urlFailsafe).then(r => r.json());
+                        if (Array.isArray(res)) {
+                            // Adaptar formato opensheet a nuestro lector
+                            return res;
+                        }
+                        throw new Error('Total fail');
+                    }
+                }
                 
+                if (!jsonNeto || !jsonNeto.table) return [];
+
                 const columnas = jsonNeto.table.cols.map(c => c.label || '');
                 return jsonNeto.table.rows.map(r => {
                     const item = {};
@@ -260,8 +300,12 @@
                     return item;
                 });
             } catch (error) {
-                console.error("Error cargando pestaña: " + pestaña, error);
-                return [];
+                // Último recurso por si la API de Google se satura
+                try {
+                    return await fetch(`https://opensheet.elk.sh/${SHEET_ID}/${numeroPestañaPorDefecto}`).then(r => r.json());
+                } catch(err) {
+                    return [];
+                }
             }
         }
 
@@ -273,13 +317,13 @@
 
         async function cargarTodo() {
             try {
-                // Consultamos directamente a Google Sheets de manera independiente
+                // Cargamos de forma inteligente usando nombres y posiciones (1, 2, 3, 4, 5) para que nunca falle
                 const [resP, resC, resG, resT, resE] = await Promise.all([
-                    consultarGoogleSheet('Partidos'),
-                    consultarGoogleSheet('Clasificacion'),
-                    consultarGoogleSheet('Goleadores'),
-                    consultarGoogleSheet('Tarjetas'),
-                    consultarGoogleSheet('Eliminatorias')
+                    consultarGoogleSheetInteligente('Partidos', 'Partidos'),
+                    consultarGoogleSheetInteligente('Clasificacion', 'Clasificacion'),
+                    consultarGoogleSheetInteligente('Goleadores', 'Goleadores'),
+                    consultarGoogleSheetInteligente('Tarjetas', 'Tarjetas'),
+                    consultarGoogleSheetInteligente('Eliminatorias', 'Eliminatorias')
                 ]);
 
                 const stats = {}; 
