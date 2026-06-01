@@ -165,8 +165,9 @@
     <div id="main-container">
         <div class="top-bar">
             <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
+                <option value="masculino">⚽ Fútbol Masculino</option>
                 <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
-                <option value="mixto">🎦 Fútbol Mixto</option>
+                <option value="ninos">🧒 Fútbol Pequeños</option>
             </select>
         </div>
 
@@ -202,16 +203,18 @@
     </div>
 
     <script>
-        // Actualizado con los IDs vigentes que aparecen en tus capturas de pantalla
+        // Los tres IDs de tus Excels recuperados y listos
         const TORNEOS = {
+            masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1KyHfI8Ajou5HIKaWOwopSjQN-NKE7SVpEYQhFmcvVbU', 
-            mixto: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ'      
+            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
         };
 
-        let torneoActual = localStorage.getItem('torneo_seleccionado') || 'femenino';
+        let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
+        if (torneoActual === 'mixto') torneoActual = 'femenino';
         
         document.getElementById('selectorTorneo').value = torneoActual;
-        let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.femenino;
+        let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
 
         let partidosJugadosPorEquipo = {};
 
@@ -375,9 +378,8 @@
         }
 
         function renderClasificacion(res) {
-            const container = document.getElementById('grid-grupos');
-            const mainContainer = document.getElementById('grupos-container');
-            if (!mainContainer) return;
+            const container = document.getElementById('grupos-container');
+            if (!container) return;
 
             const equiposValidos = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length < 2) return false;
@@ -385,7 +387,7 @@
             });
 
             if (equiposValidos.length === 0) {
-                mainContainer.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
+                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;grid-column: 1 / -1;">No hay clasificación disponible.</div>`;
                 return;
             }
 
@@ -400,7 +402,7 @@
                 grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif });
             });
 
-            mainContainer.innerHTML = Object.keys(grupos).map(g => {
+            container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a, b) => b.pts - a.pts);
                 return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
                     <table><thead><tr><th>EQUIPO</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead>
@@ -423,15 +425,12 @@
                 return;
             }
 
-            // Ordenamos por la columna D (Goles) indice 3
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
             
             container.innerHTML = orden.map(fila => {
                 const nombre = fila[0];
                 const equipo = fila[1] || '-';
                 const goles = fila[3] || 0;
-                
-                // Agarra automáticamente los partidos contados en la pestaña "Partidos"
                 const pj = partidosJugadosPorEquipo[equipo] || 0;
 
                 return `<tr>
@@ -464,7 +463,6 @@
                 let amarillas = fila[2]; 
                 const sancion = fila[3] || '';
                 
-                // Muestra un 0 limpio si no hay ninguna sanción o la celda está vacía
                 if (amarillas === undefined || amarillas === null || amarillas.trim() === '') {
                     amarillas = '0';
                 }
