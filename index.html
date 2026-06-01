@@ -15,10 +15,14 @@
         .btn { padding: 15px 20px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85em; font-weight: bold; }
         .btn.active { background: var(--verde); color: white; }
 
-        /* CONTENEDOR PRINCIPAL */
-        #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        /* CONTENEDOR PRINCIPAL Y BARRA DEL DESPLEGABLE (ARRIBA A LA DERECHA) */
+        #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
-        #content { flex: 1; padding: 20px; overflow-y: auto; }
+        .top-bar { display: flex; justify-content: flex-end; padding: 15px 20px 0 20px; background: transparent; z-index: 10; }
+        .selector-torneo { background: var(--azul-nav); color: white; border: 2px solid var(--verde); padding: 8px 15px; font-size: 0.9em; font-weight: bold; border-radius: 6px; outline: none; cursor: pointer; font-family: sans-serif; }
+        .selector-torneo option { background: var(--azul-nav); color: white; }
+
+        #content { flex: 1; padding: 10px 20px 20px 20px; overflow-y: auto; }
         .seccion-titulo { color: white; font-size: 1.2em; margin-bottom: 15px; display: block; border-left: 4px solid var(--verde); padding-left: 10px; text-transform: uppercase; font-weight: bold; }
 
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
@@ -68,6 +72,7 @@
             .nav-header { display: none; }
             .btn { flex: 1; text-align: center; padding: 15px 10px; white-space: nowrap; }
             .grid-grupos { grid-template-columns: 1fr; }
+            .top-bar { justify-content: center; padding: 10px; }
             .bracket-column { height: auto; gap: 15px; }
             .bracket-wrapper { flex-direction: column; align-items: stretch; }
         }
@@ -84,6 +89,14 @@
     </nav>
 
     <div id="main-container">
+        <div class="top-bar">
+            <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
+                <option value="masculino">⚽ Fútbol Masculino</option>
+                <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
+                <option value="ninos">🧒 Fútbol Niños</option>
+            </select>
+        </div>
+
         <main id="content">
             <div id="partidos"><span class="seccion-titulo">Resultados y Horarios</span><div id="partidos-container"></div></div>
             <div id="grupos" class="hidden"><span class="seccion-titulo">Clasificación</span><div id="grupos-container" class="grid-grupos"></div></div>
@@ -131,7 +144,21 @@
     </div>
 
     <script>
-        const SHEET_ID = '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg';
+        // IDS CORREGIDOS AL REVÉS (INTERCAMBIADOS SÉGÚN TU INDICACIÓN)
+        const TORNEOS = {
+            masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
+            femenino: '19lxZHFj-NaSIAT6mjs_Oiqm6UEdKBat5hoHny_UFN1U',
+            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'
+        };
+
+        let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
+        document.getElementById('selectorTorneo').value = torneoActual;
+        let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
+
+        function cambiarTorneo(nuevoTorneo) {
+            localStorage.setItem('torneo_seleccionado', nuevoTorneo);
+            location.reload();
+        }
 
         async function cargarTodo() {
             try {
@@ -192,6 +219,7 @@
         function renderBracket(data) {
             const container = document.getElementById('bracket-container');
             if (!container) return;
+            container.innerHTML = "";
             if (!data || data.length === 0) return;
 
             const buscarPorFase = (nombreFase) => data.find(f => f.Fase && f.Fase.toString().trim().toLowerCase() === nombreFase.toLowerCase());
