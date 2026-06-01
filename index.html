@@ -165,9 +165,8 @@
     <div id="main-container">
         <div class="top-bar">
             <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
-                <option value="masculino">⚽ Fútbol Masculino</option>
                 <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
-                <option value="ninos">🧒 Fútbol Pequeños</option>
+                <option value="mixto">🎦 Fútbol Mixto</option>
             </select>
         </div>
 
@@ -181,7 +180,7 @@
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
+                            <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
                         </thead>
                         <tbody id="body-gol"></tbody>
                     </table>
@@ -193,7 +192,7 @@
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
+                            <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
                         </thead>
                         <tbody id="body-tar"></tbody>
                     </table>
@@ -203,19 +202,17 @@
     </div>
 
     <script>
+        // Actualizado con los IDs vigentes que aparecen en tus capturas de pantalla
         const TORNEOS = {
-            masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
-            femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
-            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
+            femenino: '1KyHfI8Ajou5HIKaWOwopSjQN-NKE7SVpEYQhFmcvVbU', 
+            mixto: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ'      
         };
 
-        let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
-        if (torneoActual === 'mixto') torneoActual = 'femenino';
+        let torneoActual = localStorage.getItem('torneo_seleccionado') || 'femenino';
         
         document.getElementById('selectorTorneo').value = torneoActual;
-        let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
+        let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.femenino;
 
-        // Variable global para almacenar los partidos jugados por cada equipo
         let partidosJugadosPorEquipo = {};
 
         function cambiarTorneo(nuevoTorneo) {
@@ -291,7 +288,7 @@
                 const resT = await consultarGoogleSheet('Tarjetas');
                 const resE = await consultarGoogleSheet('Eliminatorias');
 
-                if (!resP || !resP.rows.length === 0) {
+                if (!resP || resP.rows.length === 0) {
                     document.getElementById('partidos-container').innerHTML = `
                         <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
                             ⚠️ Error de sincronización con Google Sheets.<br>
@@ -302,14 +299,11 @@
 
                 let idxHora = 0;
                 let idxLocal = 1;
+                let idxVisitante = 2;
                 let idxGolesL = 3;
                 let idxGolesV = 4;
-                let idxVisitante = 2;
 
-                // 1. Procesar partidos calculando los PJ automáticos por equipo
                 calcularPartidosJugados(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV);
-                
-                // 2. Renderizar todas las vistas
                 renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
                 
                 if (resC) renderClasificacion(resC);
@@ -330,7 +324,6 @@
                 const golesL = parseInt(fila[idxGolesL]);
                 const golesV = parseInt(fila[idxGolesV]);
 
-                // Si hay un marcador válido (números), significa que el partido ya se ha jugado
                 if (!isNaN(golesL) && !isNaN(golesV)) {
                     if (local) {
                         partidosJugadosPorEquipo[local] = (partidosJugadosPorEquipo[local] || 0) + 1;
@@ -349,7 +342,7 @@
             const partidosValidos = rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length < 2) return false;
                 const txtL = normalizarTexto(fila[idxLocal]);
-                return txtL !== '' && txtL !== 'local' && txtL !== 'equipolocal';
+                return txtL !== '' && txtL !== 'local';
             });
             
             if (partidosValidos.length === 0) {
@@ -382,16 +375,17 @@
         }
 
         function renderClasificacion(res) {
-            const container = document.getElementById('grupos-container');
-            if (!container) return;
+            const container = document.getElementById('grid-grupos');
+            const mainContainer = document.getElementById('grupos-container');
+            if (!mainContainer) return;
 
             const equiposValidos = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length < 2) return false;
-                return normalizarTexto(fila[0]) !== 'equipo' && normalizarTexto(fila[0]) !== 'nombre' && fila[0] !== '';
+                return normalizarTexto(fila[0]) !== 'nombre' && fila[0] !== '';
             });
 
             if (equiposValidos.length === 0) {
-                container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
+                mainContainer.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
                 return;
             }
 
@@ -406,7 +400,7 @@
                 grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif });
             });
 
-            container.innerHTML = Object.keys(grupos).map(g => {
+            mainContainer.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a, b) => b.pts - a.pts);
                 return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
                     <table><thead><tr><th>EQUIPO</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead>
@@ -421,7 +415,7 @@
             const jugadoresValidos = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length < 2) return false;
                 const txt = normalizarTexto(fila[0]);
-                return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
+                return txt !== 'nombre' && txt !== '';
             });
 
             if (jugadoresValidos.length === 0) {
@@ -429,7 +423,7 @@
                 return;
             }
 
-            // Columna 3 (índice 3) contiene los Goles en tu tabla
+            // Ordenamos por la columna D (Goles) indice 3
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
             
             container.innerHTML = orden.map(fila => {
@@ -437,7 +431,7 @@
                 const equipo = fila[1] || '-';
                 const goles = fila[3] || 0;
                 
-                // Extraer de forma automática los partidos jugados por su equipo
+                // Agarra automáticamente los partidos contados en la pestaña "Partidos"
                 const pj = partidosJugadosPorEquipo[equipo] || 0;
 
                 return `<tr>
@@ -456,7 +450,7 @@
             const tarjetasValidas = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length < 2) return false;
                 const txt = normalizarTexto(fila[0]);
-                return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
+                return txt !== 'nombre' && txt !== '';
             });
 
             if (tarjetasValidas.length === 0) {
@@ -470,7 +464,7 @@
                 let amarillas = fila[2]; 
                 const sancion = fila[3] || '';
                 
-                // Forzar a que muestre 0 si la celda de amarillas está vacía o no es un número
+                // Muestra un 0 limpio si no hay ninguna sanción o la celda está vacía
                 if (amarillas === undefined || amarillas === null || amarillas.trim() === '') {
                     amarillas = '0';
                 }
@@ -528,3 +522,34 @@
             }
 
             const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[0]) === normalizarTexto(nombre));
+
+            container.innerHTML = `
+                <div class="bracket-column">
+                    ${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}
+                    ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}
+                </div>
+                <div class="bracket-column">
+                    ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}
+                    ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}
+                </div>
+                <div class="bracket-column final-col">
+                    ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
+                </div>
+            `;
+        }
+
+        function ver(s) {
+            ['partidos', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
+                const elem = document.getElementById(id);
+                const btn = document.getElementById('btn-' + id);
+                if (elem) elem.classList.toggle('hidden', id !== s);
+                if (btn) btn.classList.toggle('active', id === s);
+            });
+        }
+        
+        cargarTodo();
+    </script>
+</body>
+</html>
