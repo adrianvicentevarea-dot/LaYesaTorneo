@@ -207,7 +207,6 @@
     </div>
 
     <script>
-        // IDs de tus documentos de Google Sheets compartido
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
@@ -272,7 +271,7 @@
                 const resP = await consultarGoogleSheet('Partidos');
                 const resC = await consultarGoogleSheet('Clasificacion');
                 const resG = await consultarGoogleSheet('Goleadores');
-                const resS = await consultarGoogleSheet('Sanciones'); 
+                const resS = await consultarGoogleSheet('Tarjetas'); // ¡CORREGIDO AQUÍ! Cambiado 'Sanciones' por 'Tarjetas'
                 const resE = await consultarGoogleSheet('Eliminatorias');
 
                 if (!resP || resP.rows.length === 0) {
@@ -287,7 +286,7 @@
                 if (resC) renderClasificacion(resC);
                 renderPartidos(resP.rows);
                 if (resG) renderGoleadores(resG);
-                if (resS) renderSancionesCorrido(resS);
+                if (resS) renderTarjetasReal(resS);
                 if (resE) renderBracket(resE);
             } catch (e) { console.error(e); }
         }
@@ -374,14 +373,13 @@
                 return;
             }
 
-            // Columna D (Índice 3) corresponde a los Goles reales en tu pestaña Goleadores
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
             
             container.innerHTML = orden.map(fila => {
                 const nombre = fila[0].trim();
                 const club = fila[1] ? fila[1].trim() : '-';
                 const goles = fila[3] || '0';
-                const pj = fila[4] || '0'; // Lee la columna E (Partidos Jugados) de la pestaña Goleadores
+                const pj = fila[4] || '0'; 
                 
                 return `<tr>
                     <td><b>${nombre}</b></td>
@@ -392,27 +390,28 @@
             }).join('');
         }
 
-        function renderSancionesCorrido(res) {
+        function renderTarjetasReal(res) {
             const container = document.getElementById("body-tar");
             if (!container) return;
 
-            const filasSanciones = res.rows.filter((fila, idx) => {
+            const filasTarjetas = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length === 0) return false;
                 return fila[0] !== '' && normalizarTexto(fila[0]) !== 'nombre' && normalizarTexto(fila[0]) !== 'jugador' && normalizarTexto(fila[0]) !== 'jugadora';
             });
 
-            if (filasSanciones.length === 0) {
-                container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
+            if (filasTarjetas.length === 0) {
+                container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;padding:20px;">No hay datos en la pestaña Tarjetas.</td></tr>`;
                 return;
             }
 
-            container.innerHTML = filasSanciones.map(fila => {
+            container.innerHTML = filasTarjetas.map(fila => {
                 const nombre = fila[0].trim();
                 const equipo = fila[1] ? fila[1].trim() : '-';
-                const amarillas = fila[2] || '0'; // Columna C (Amarillas)
-                const sancionCol = fila[3] ? fila[3].toString().trim() : '0'; // Columna D (Sanción)
-                const pj = fila[4] || '0'; // Columna E (Partidos jugados en la pestaña de Sanciones)
+                const amarillas = fila[2] || '0'; 
+                const sancionCol = fila[3] ? fila[3].toString().trim() : '0'; 
+                const pj = fila[4] || '0'; 
 
+                // LÓGICA SOLICITADA: 0 -> OK, 1 -> SANCIONADO
                 let estadoHTML = `<span class="badge-ok">OK</span>`;
                 if (sancionCol === '1') {
                     estadoHTML = `<span class="badge-sancion">SANCIONADO</span>`;
