@@ -207,7 +207,7 @@
     </div>
 
     <script>
-        // Mapeo de IDs de tus hojas de cálculo de Google Drive
+        // IDs reales de tus documentos compartidos
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
@@ -257,12 +257,12 @@
                 if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { rows: [] };
 
                 const rowsRaw = jsonNeto.table.rows;
-                const rowsProcesadas = rowsRaw.map(r => {
-                    if (!r || !r.c) return [];
-                    return r.c.map(celda => extraerValorCelda(celda));
-                });
-
-                return { rows: rowsProcesadas };
+                return {
+                    rows: rowsRaw.map(r => {
+                        if (!r || !r.c) return [];
+                        return r.c.map(celda => extraerValorCelda(celda));
+                    })
+                };
             } catch (error) {
                 console.error("Error cargando: " + nombrePestaña, error);
                 return null;
@@ -400,7 +400,7 @@
             const container = document.getElementById("body-tar");
             if (!container) return;
 
-            // Filtramos las filas basándonos exactamente en tu estructura (A: Nombre, B: Equipo)
+            // Filtramos SOLO las filas reales que contengan un jugador válido escrito en tu Sheets
             const filasSanciones = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length === 0) return false;
                 return fila[0] !== '' && normalizarTexto(fila[0]) !== 'nombre' && normalizarTexto(fila[0]) !== 'jugador' && normalizarTexto(fila[0]) !== 'jugadora';
@@ -417,12 +417,12 @@
                 const amarillas = fila[2] || '0';
                 const sancionCol = fila[3] ? fila[3].toString().trim() : '0';
                 
-                // Leemos los partidos jugados directamente de la columna E de la fila si existe, si no, del mapa general
-                const pjCelda = fila[4] || partidosJugadosPorClub[equipo.toLowerCase()] || '0';
+                // Si la columna E de partidos jugados está vacía, lee del mapa general de clasificación
+                const pjCelda = (fila[4] && fila[4] !== '') ? fila[4] : (partidosJugadosPorClub[equipo.toLowerCase()] || '0');
 
-                // LÓGICA DEFECTO AUTOMÁTICA: 1 = Sancionado, 0 = OK
+                // COMPROBACIÓN REAL: 1 = SANCIONADO, 0 (u otro valor) = OK
                 let estadoHTML = `<span class="badge-ok">OK</span>`;
-                if (sancionCol === '1' || normalizarTexto(sancionCol) === 'sancionado') {
+                if (sancionCol === '1') {
                     estadoHTML = `<span class="badge-sancion">SANCIONADO</span>`;
                 }
 
