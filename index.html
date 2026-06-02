@@ -207,7 +207,7 @@
     </div>
 
     <script>
-        // IDs reales de tus documentos compartidos
+        // IDs de tus documentos de Google Sheets compartido
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
@@ -218,8 +218,6 @@
         let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
         document.getElementById('selectorTorneo').value = torneoActual;
         let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
-
-        let partidosJugadosPorClub = {};
 
         function cambiarTorneo(nuevoTorneo) {
             localStorage.setItem('torneo_seleccionado', nuevoTorneo);
@@ -342,7 +340,6 @@
             });
 
             const grupos = {};
-            partidosJugadosPorClub = {}; 
 
             equiposValidos.forEach(fila => {
                 const nombre = fila[0].trim();
@@ -350,8 +347,6 @@
                 const dif = fila[2] || '0';
                 const pts = parseInt(fila[3]) || 0;
                 const pj = fila[4] || '0'; 
-
-                partidosJugadosPorClub[nombre.toLowerCase()] = pj;
                 
                 if (!grupos[grupo]) grupos[grupo] = [];
                 grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif, pj: pj });
@@ -371,7 +366,7 @@
 
             const jugadoresValidos = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length === 0) return false;
-                return fila[0] !== '' && normalizarTexto(fila[0]) !== 'jugador' && normalizarTexto(fila[0]) !== 'jugadora';
+                return fila[0] !== '' && normalizarTexto(fila[0]) !== 'jugador' && normalizarTexto(fila[0]) !== 'jugadora' && normalizarTexto(fila[0]) !== 'nombre';
             });
 
             if (jugadoresValidos.length === 0) {
@@ -379,18 +374,19 @@
                 return;
             }
 
+            // Columna D (Índice 3) corresponde a los Goles reales en tu pestaña Goleadores
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
             
             container.innerHTML = orden.map(fila => {
                 const nombre = fila[0].trim();
                 const club = fila[1] ? fila[1].trim() : '-';
                 const goles = fila[3] || '0';
-                const pjSincronizado = partidosJugadosPorClub[club.toLowerCase()] || '0';
+                const pj = fila[4] || '0'; // Lee la columna E (Partidos Jugados) de la pestaña Goleadores
                 
                 return `<tr>
                     <td><b>${nombre}</b></td>
                     <td class="txt-club">${club}</td>
-                    <td class="txt-centro pj-gris">${pjSincronizado}</td>
+                    <td class="txt-centro pj-gris">${pj}</td>
                     <td class="txt-centro pts-verde">${goles}</td>
                 </tr>`;
             }).join('');
@@ -400,7 +396,6 @@
             const container = document.getElementById("body-tar");
             if (!container) return;
 
-            // Filtramos SOLO las filas reales que contengan un jugador válido escrito en tu Sheets
             const filasSanciones = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length === 0) return false;
                 return fila[0] !== '' && normalizarTexto(fila[0]) !== 'nombre' && normalizarTexto(fila[0]) !== 'jugador' && normalizarTexto(fila[0]) !== 'jugadora';
@@ -414,13 +409,10 @@
             container.innerHTML = filasSanciones.map(fila => {
                 const nombre = fila[0].trim();
                 const equipo = fila[1] ? fila[1].trim() : '-';
-                const amarillas = fila[2] || '0';
-                const sancionCol = fila[3] ? fila[3].toString().trim() : '0';
-                
-                // Si la columna E de partidos jugados está vacía, lee del mapa general de clasificación
-                const pjCelda = (fila[4] && fila[4] !== '') ? fila[4] : (partidosJugadosPorClub[equipo.toLowerCase()] || '0');
+                const amarillas = fila[2] || '0'; // Columna C (Amarillas)
+                const sancionCol = fila[3] ? fila[3].toString().trim() : '0'; // Columna D (Sanción)
+                const pj = fila[4] || '0'; // Columna E (Partidos jugados en la pestaña de Sanciones)
 
-                // COMPROBACIÓN REAL: 1 = SANCIONADO, 0 (u otro valor) = OK
                 let estadoHTML = `<span class="badge-ok">OK</span>`;
                 if (sancionCol === '1') {
                     estadoHTML = `<span class="badge-sancion">SANCIONADO</span>`;
@@ -429,7 +421,7 @@
                 return `<tr>
                     <td><b>${nombre}</b></td>
                     <td class="txt-club">${equipo}</td>
-                    <td class="txt-centro pj-gris">${pjCelda}</td>
+                    <td class="txt-centro pj-gris">${pj}</td>
                     <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
                     <td class="txt-derecha">${estadoHTML}</td>
                 </tr>`;
