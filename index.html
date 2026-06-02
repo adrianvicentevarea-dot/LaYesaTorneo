@@ -113,6 +113,7 @@
         .txt-derecha { text-align: right; }
         .txt-club { color: #777; font-style: italic; }
         .pts-verde { color: var(--verde); font-weight: bold; font-size: 1.1em; }
+        .pj-gris { color: #7f8c8d; font-weight: bold; font-size: 1em; }
         .badge-amarilla { background: #f1c40f; padding: 3px 8px; border-radius: 3px; font-weight: bold; color: #000; font-size: 0.95em; }
 
         /* PARTIDOS */
@@ -181,7 +182,7 @@
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">G</th></tr>
+                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
                         </thead>
                         <tbody id="body-gol"></tbody>
                     </table>
@@ -193,7 +194,7 @@
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
+                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
                         </thead>
                         <tbody id="body-tar"></tbody>
                     </table>
@@ -203,7 +204,6 @@
     </div>
 
     <script>
-        // Actualizado: el ID que antes era Mixto ahora es oficialmente el Femenino
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
@@ -211,7 +211,6 @@
         };
 
         let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
-        // Si por casualidad se quedó guardado 'mixto', redirige automáticamente al femenino
         if (torneoActual === 'mixto') torneoActual = 'femenino';
         
         document.getElementById('selectorTorneo').value = torneoActual;
@@ -299,7 +298,6 @@
                     return;
                 }
 
-                // Posiciones de columnas fijas y seguras (Hora, Local, Visitante, Goles L, Goles V)
                 let idxHora = 0;
                 let idxLocal = 1;
                 let idxGolesL = 3;
@@ -349,7 +347,7 @@
                 return `<div class="card"><div class="match-row">
                     <div class="match-team" style="text-align:right;">${local}</div>
                     ${marcadorHTML}
-                    <div class="match-team">${visitante}</div>
+                    <div class="match-team">${visitor || visitante}</div>
                 </div></div>`;
             }).join('');
         }
@@ -392,19 +390,27 @@
             if (!container) return;
 
             const jugadoresValidos = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
+                if (idx === 0 || !fila || fila.length === 0) return false;
                 const txt = normalizarTexto(fila[0]);
                 return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
             });
 
             if (jugadoresValidos.length === 0) {
-                container.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
+                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
                 return;
             }
 
+            // Ordena de manera descendente por goles (asumiendo que los goles están en la columna 3 (índice 3))
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
             container.innerHTML = orden.map(fila => {
-                return `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1] || '-'}</td><td class="txt-centro pts-verde">${fila[3] || 0}</td></tr>`;
+                const pj = fila[2] || '0'; // Lee partidos jugados de la columna 2 (índice 2)
+                const goles = fila[3] || '0';
+                return `<tr>
+                    <td><b>${fila[0]}</b></td>
+                    <td class="txt-club">${fila[1] || '-'}</td>
+                    <td class="txt-centro pj-gris">${pj}</td>
+                    <td class="txt-centro pts-verde">${goles}</td>
+                </tr>`;
             }).join('');
         }
 
@@ -413,18 +419,23 @@
             if (!container) return;
 
             const tarjetasValidas = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
+                if (idx === 0 || !fila || fila.length === 0) return false;
                 const txt = normalizarTexto(fila[0]);
                 return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
             });
 
             if (tarjetasValidas.length === 0) {
-                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
+                container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
                 return;
             }
 
             container.innerHTML = tarjetasValidas.map(fila => {
-                const nombre = fila[0], equipo = fila[1] || '', amarillas = fila[2] || '0', sancion = fila[3] || '';
+                const nombre = fila[0];
+                const equipo = fila[1] || '-';
+                const pj = fila[2] || '0';       // Lee partidos jugados de la columna 2 (índice 2)
+                const amarillas = fila[3] || '0'; // Lee amarillas de la columna 3 (índice 3)
+                const sancion = fila[4] || '';    // Lee estado de la columna 4 (índice 4)
+                
                 let estado = 'OK';
                 if (sancion.toLowerCase() === 'sancionado' || sancion.trim() === '1' || sancion.toLowerCase() === 'si' || sancion.toLowerCase() === 'sancionada') {
                     estado = 'SANCIONADO';
@@ -432,7 +443,8 @@
 
                 return `<tr>
                     <td><b>${nombre}</b></td>
-                    <td class="txt-club">${equipo || '-'}</td>
+                    <td class="txt-club">${equipo}</td>
+                    <td class="txt-centro pj-gris">${pj}</td>
                     <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
                     <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
                 </tr>`;
