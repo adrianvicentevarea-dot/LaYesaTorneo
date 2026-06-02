@@ -204,7 +204,6 @@
     </div>
 
     <script>
-        // CORRECCIÓN IMPORTANTE: Reemplaza estos IDs ficticios por los IDs reales de tus Google Sheets
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
@@ -216,6 +215,9 @@
         
         document.getElementById('selectorTorneo').value = torneoActual;
         let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
+
+        // Diccionario global para almacenar los partidos jugados por cada club
+        let partidosJugadosPorClub = {};
 
         function cambiarTorneo(nuevoTorneo) {
             localStorage.setItem('torneo_seleccionado', nuevoTorneo);
@@ -307,6 +309,7 @@
 
                 renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
                 
+                // NOTA: Renderizamos clasificación primero para mapear los PJ de los equipos
                 if (resC) renderClasificacion(resC);
                 if (resG) renderGoleadores(resG);
                 if (resT) renderTarjetas(resT);
@@ -368,21 +371,29 @@
             }
 
             const grupos = {};
+            partidosJugadosPorClub = {}; // Resetear diccionario
+
             equiposValidos.forEach(fila => {
-                const nombre = fila[0];
+                const nombre = fila[0].trim();
                 const grupo = fila[1] || 'Único';
                 const dif = fila[2] || '0';
                 const pts = parseInt(fila[3]) || 0;
                 
+                // Si la columna 4 no existe, calculamos 0 por defecto para partidos jugados
+                const pj = fila[4] || '0'; 
+
+                // Guardamos los partidos del equipo en el mapa global indexado por su nombre
+                partidosJugadosPorClub[nombre.toLowerCase()] = pj;
+                
                 if (!grupos[grupo]) grupos[grupo] = [];
-                grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif });
+                grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif, pj: pj });
             });
 
             container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a, b) => b.pts - a.pts);
                 return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
-                    <table><thead><tr><th>EQUIPO</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead>
-                    <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro">${e.dif}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
+                    <table><thead><tr><th>EQUIPO</th><th class="txt-centro">PJ</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead>
+                    <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro pj-gris">${e.pj}</td><td class="txt-centro">${e.dif}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
             }).join('');
         }
 
@@ -403,12 +414,16 @@
 
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
             container.innerHTML = orden.map(fila => {
-                const pj = fila[2] || '0'; 
+                const club = fila[1] ? fila[1].trim() : '-';
+                
+                // CORRECCIÓN AUTOMÁTICA: Tomamos los partidos del club calculados en la Clasificación
+                const pjAsignado = partidosJugadosPorClub[club.toLowerCase()] || '0';
                 const goles = fila[3] || '0';
+                
                 return `<tr>
                     <td><b>${fila[0]}</b></td>
-                    <td class="txt-club">${fila[1] || '-'}</td>
-                    <td class="txt-centro pj-gris">${pj}</td>
+                    <td class="txt-club">${club}</td>
+                    <td class="txt-centro pj-gris">${pjAsignado}</td>
                     <td class="txt-centro pts-verde">${goles}</td>
                 </tr>`;
             }).join('');
@@ -431,13 +446,17 @@
 
             container.innerHTML = tarjetasValidas.map(fila => {
                 const nombre = fila[0];
-                const equipo = fila[1] || '-';
-                const pj = fila[2] || '0';       
+                const equipo = fila[1] ? fila[1].trim() : '-';
+                
+                // Vinculamos opcionalmente también aquí los partidos jugados exactos del equipo
+                const pj = partidosJugadosPorClub[equipo.toLowerCase()] || fila[2] || '0';       
                 const amarillas = fila[3] || '0'; 
                 const sancion = fila[4] || '';    
                 
+                // CORRECCIÓN DE SANCIONES: Control completo de strings vacíos o estados
                 let estado = 'OK';
-                if (sancion.toLowerCase() === 'sancionado' || sancion.trim() === '1' || sancion.toLowerCase() === 'si' || sancion.toLowerCase() === 'sancionada') {
+                let txtNormalizado = normalizarTexto(sancion);
+                if (txtNormalizado === 'sancionado' || txtNormalizado === '1' || txtNormalizado === 'si' || txtNormalizado === 'sancionada') {
                     estado = 'SANCIONADO';
                 }
 
