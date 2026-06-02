@@ -358,7 +358,8 @@
                 const nombreNorm = normalizarTexto(nombre);
                 const pjAutomatico = partidosJugadosPorClub[nombreNorm] || 0;
                 
-                if (!groups[grupo]) grupos[grupo] = [];
+                // ERROR CORREGIDO AQUÍ: 'grupos' en vez de 'groups'
+                if (!grupos[grupo]) grupos[grupo] = [];
                 grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif, pj: pjAutomatico });
             });
 
@@ -403,12 +404,10 @@
             }).join('');
         }
 
-        // AQUÍ ESTÁ EL ARREGLO ABSOLUTO PARA EVITAR EL BLOQUEO DE FILAS DE GOOGLE
         function renderTarjetasReal(res) {
             const container = document.getElementById("body-tar");
             if (!container) return;
 
-            // Filtro inmediato: saltamos la cabecera y nos quedamos con filas que tengan nombre válido en la columna 0
             const filasTarjetas = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length === 0) return false;
                 return fila[0] !== undefined && fila[0] !== null && fila[0].toString().trim() !== '' && normalizarTexto(fila[0]) !== 'nombre' && normalizarTexto(fila[0]) !== 'jugador';
@@ -423,14 +422,12 @@
                 const nombre = fila[0].toString().trim();
                 const equipo = fila[1] ? fila[1].toString().trim() : '-';
                 
-                // Forzamos valores por si Google rompe el envío de la celda
                 let amarillas = fila[2] ? fila[2].toString().trim() : '0';
                 let sancionCol = fila[3] ? fila[3].toString().trim() : '';
 
                 const clubNorm = normalizarTexto(equipo);
                 const pjAutomatico = partidosJugadosPorClub[clubNorm] || 0;
 
-                // Comprobación inteligente de la sanción (acepta el número 1, la palabra Sancionado, Si, etc.)
                 let estadoHTML = `<span class="badge-ok">OK</span>`;
                 let tSancion = normalizarTexto(sancionCol);
                 if (sancionCol === '1' || tSancion === 'sancionado' || tSancion === 'si' || tSancion === 'sancionada') {
