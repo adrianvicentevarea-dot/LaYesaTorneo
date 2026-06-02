@@ -298,7 +298,6 @@
             
             partidosJugadosPorClub = {};
 
-            // DETECCIÓN DINÁMICA: Filtra solo celdas con contenido real (salta cabecera e ignora vacías)
             const partidosValidos = rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length < 2) return false; 
                 return fila[1] !== undefined && fila[1] !== null && fila[1].trim() !== '' && normalizarTexto(fila[1]) !== 'local';
@@ -343,7 +342,6 @@
             const container = document.getElementById('grupos-container');
             if (!container) return;
 
-            // DETECCIÓN DINÁMICA: Si la primera celda no está vacía, se procesa
             const equiposValidos = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length === 0) return false; 
                 return fila[0] !== undefined && fila[0] !== null && fila[0].trim() !== '' && normalizarTexto(fila[0]) !== 'equipo' && normalizarTexto(fila[0]) !== 'nombre';
@@ -376,7 +374,6 @@
             const container = document.getElementById("body-gol");
             if (!container) return;
 
-            // DETECCIÓN DINÁMICA: Si el nombre del jugador no está vacío, entra en la lista infinitamente
             const jugadoresValidos = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length === 0) return false; 
                 return fila[0] !== undefined && fila[0] !== null && fila[0].trim() !== '' && normalizarTexto(fila[0]) !== 'jugador' && normalizarTexto(fila[0]) !== 'jugadora' && normalizarTexto(fila[0]) !== 'nombre';
@@ -406,11 +403,11 @@
             }).join('');
         }
 
+        // FUNCIÓN MEJORADA: No le importa si pones números, texto o vacíos. Fuerza la lectura completa de la hoja.
         function renderTarjetasReal(res) {
             const container = document.getElementById("body-tar");
             if (!container) return;
 
-            // DETECCIÓN DINÁMICA: Si la celda de nombre contiene texto, se renderiza (sin importar repetidos)
             const filasTarjetas = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length === 0) return false; 
                 return fila[0] !== undefined && fila[0] !== null && fila[0].trim() !== '' && normalizarTexto(fila[0]) !== 'nombre' && normalizarTexto(fila[0]) !== 'jugador' && normalizarTexto(fila[0]) !== 'jugadora';
@@ -425,13 +422,14 @@
                 const nombre = fila[0].trim();
                 const equipo = fila[1] ? fila[1].trim() : '-';
                 const amarillas = fila[2] || '0'; 
-                const sancionCol = fila[3] ? fila[3].toString().trim() : '0'; 
+                const sancionCol = fila[3] ? fila[3].toString().trim() : ''; 
 
                 const clubNorm = normalizarTexto(equipo);
                 const pjAutomatico = partidosJugadosPorClub[clubNorm] || 0;
 
+                // Si pusiste un '1', la palabra 'sancionado', 'si', etc., lo detectará automáticamente como sanción activa
                 let estadoHTML = `<span class="badge-ok">OK</span>`;
-                if (sancionCol === '1' || normalizarTexto(sancionCol) === 'sancionado') {
+                if (sancionCol === '1' || normalizarTexto(sancionCol) === 'sancionado' || normalizarTexto(sancionCol) === 'si') {
                     estadoHTML = `<span class="badge-sancion">SANCIONADO</span>`;
                 }
 
