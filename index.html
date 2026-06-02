@@ -115,6 +115,8 @@
         .pts-verde { color: var(--verde); font-weight: bold; font-size: 1.1em; }
         .pj-gris { color: #7f8c8d; font-weight: bold; font-size: 1em; }
         .badge-amarilla { background: #f1c40f; padding: 3px 8px; border-radius: 3px; font-weight: bold; color: #000; font-size: 0.95em; }
+        .badge-sancion { background: var(--rojo); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
+        .badge-ok { background: var(--verde); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
 
         /* PARTIDOS */
         .match-row { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 1.1em; }
@@ -169,6 +171,7 @@
                 <option value="masculino">⚽ Fútbol Masculino</option>
                 <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
                 <option value="ninos">🧒 Fútbol Pequeños</option>
+                <option value="mixto">🚻 Fútbol Mixto</option>
             </select>
         </div>
 
@@ -204,19 +207,19 @@
     </div>
 
     <script>
+        // Mapeo de IDs de tus hojas de cálculo de Google Drive
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
-            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'      
+            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o',
+            mixto: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ' // Apunta al ID que corresponda a tu torneo mixto
         };
 
         let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
-        if (torneoActual === 'mixto') torneoActual = 'femenino';
-        
         document.getElementById('selectorTorneo').value = torneoActual;
         let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
 
-        // Diccionario global para almacenar los partidos jugados por cada club
+        // Diccionario global clave para guardar los partidos de cada club y sincronizarlos
         let partidosJugadosPorClub = {};
 
         function cambiarTorneo(nuevoTorneo) {
@@ -252,34 +255,17 @@
                 const finJson = texto.lastIndexOf('}') + 1;
                 const jsonNeto = JSON.parse(texto.slice(inicioJson, finJson));
                 
-                if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { headers: {}, rows: [] };
+                if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { rows: [] };
 
-                const headers = {};
                 const rowsRaw = jsonNeto.table.rows;
-
-                if (jsonNeto.table.cols) {
-                    jsonNeto.table.cols.forEach((col, idx) => {
-                        if (col && col.label) {
-                            headers[normalizarTexto(col.label)] = idx;
-                        }
-                    });
-                }
-
-                if (Object.keys(headers).length === 0 && rowsRaw.length > 0) {
-                    rowsRaw[0].c.forEach((celda, idx) => {
-                        const val = normalizarTexto(extraerValorCelda(celda));
-                        if (val) headers[val] = idx;
-                    });
-                }
-
                 const rowsProcesadas = rowsRaw.map(r => {
                     if (!r || !r.c) return [];
                     return r.c.map(celda => extraerValorCelda(celda));
                 });
 
-                return { headers, rows: rowsProcesadas };
+                return { rows: rowsProcesadas };
             } catch (error) {
-                console.error("Error cargando la pestaña: " + nombrePestaña, error);
+                console.error("Error cargando: " + nombrePestaña, error);
                 return null;
             }
         }
@@ -289,10 +275,10 @@
                 const resP = await consultarGoogleSheet('Partidos');
                 const resC = await consultarGoogleSheet('Clasificacion');
                 const resG = await consultarGoogleSheet('Goleadores');
-                const resT = await consultarGoogleSheet('Tarjetas');
+                const resS = await consultarGoogleSheet('Sanciones'); // Pestaña corregida según tu captura
                 const resE = await consultarGoogleSheet('Eliminatorias');
 
-                if (!resP || !resC || resP.rows.length === 0) {
+                if (!resP || resP.rows.length === 0) {
                     document.getElementById('partidos-container').innerHTML = `
                         <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
                             ⚠️ Error de sincronización con Google Sheets.<br>
@@ -301,43 +287,35 @@
                     return;
                 }
 
-                let idxHora = 0;
-                let idxLocal = 1;
-                let idxGolesL = 3;
-                let idxGolesV = 4;
-                let idxVisitante = 2;
-
-                renderPartidos(resP.rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora);
-                
-                // NOTA: Renderizamos clasificación primero para mapear los PJ de los equipos
+                // Renderizamos la clasificación primero para guardar los PJ de los clubes
                 if (resC) renderClasificacion(resC);
+                renderPartidos(resP.rows);
                 if (resG) renderGoleadores(resG);
-                if (resT) renderTarjetas(resT);
+                if (resS) renderSancionesCorrido(resS);
                 if (resE) renderBracket(resE);
             } catch (e) { console.error(e); }
         }
 
-        function renderPartidos(rows, idxLocal, idxVisitante, idxGolesL, idxGolesV, idxHora) {
+        function renderPartidos(rows) {
             const container = document.getElementById('partidos-container');
             if (!container) return;
             
             const partidosValidos = rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length < 2) return false;
-                const txtL = normalizarTexto(fila[idxLocal]);
-                return txtL !== '' && txtL !== 'local' && txtL !== 'equipolocal';
+                return fila[1] !== '' && normalizarTexto(fila[1]) !== 'local';
             });
             
             if (partidosValidos.length === 0) {
-                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay partidos disponibles aún.</div>`;
+                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay partidos disponibles.</div>`;
                 return;
             }
 
             container.innerHTML = partidosValidos.map(fila => {
-                const local = fila[idxLocal] || '';
-                const visitante = fila[idxVisitante] || '';
-                const golesL = fila[idxGolesL];
-                const golesV = fila[idxGolesV];
-                const hora = fila[idxHora] || '';
+                const hora = fila[0] || '';
+                const local = fila[1] || '';
+                const visitante = fila[2] || '';
+                const golesL = fila[3];
+                const golesV = fila[4];
 
                 const gL = parseInt(golesL), gV = parseInt(golesV);
                 let marcadorHTML = '';
@@ -361,28 +339,21 @@
             if (!container) return;
 
             const equiposValidos = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false;
-                return normalizarTexto(fila[0]) !== 'equipo' && normalizarTexto(fila[0]) !== 'nombre' && fila[0] !== '';
+                if (idx === 0 || !fila || fila.length === 0) return false;
+                return fila[0] !== '' && normalizarTexto(fila[0]) !== 'equipo' && normalizarTexto(fila[0]) !== 'nombre';
             });
 
-            if (equiposValidos.length === 0) {
-                container.innerHTML = `<div style="color:white;grid-column:1/-1;text-align:center;padding:20px;">No hay clasificación disponible.</div>`;
-                return;
-            }
-
             const grupos = {};
-            partidosJugadosPorClub = {}; // Resetear diccionario
+            partidosJugadosPorClub = {}; // Limpiar mapa
 
             equiposValidos.forEach(fila => {
                 const nombre = fila[0].trim();
                 const grupo = fila[1] || 'Único';
                 const dif = fila[2] || '0';
                 const pts = parseInt(fila[3]) || 0;
-                
-                // Si la columna 4 no existe, calculamos 0 por defecto para partidos jugados
-                const pj = fila[4] || '0'; 
+                const pj = fila[4] || '0'; // Forzar lectura de la columna PJ en Grupos
 
-                // Guardamos los partidos del equipo en el mapa global indexado por su nombre
+                // Guardamos los PJ del equipo usando minúsculas para evitar fallos de mayúsculas
                 partidosJugadosPorClub[nombre.toLowerCase()] = pj;
                 
                 if (!grupos[grupo]) grupos[grupo] = [];
@@ -403,8 +374,7 @@
 
             const jugadoresValidos = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length === 0) return false;
-                const txt = normalizarTexto(fila[0]);
-                return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
+                return fila[0] !== '' && normalizarTexto(fila[0]) !== 'jugador' && normalizarTexto(fila[0]) !== 'jugadora';
             });
 
             if (jugadoresValidos.length === 0) {
@@ -412,60 +382,63 @@
                 return;
             }
 
+            // Ordenamos de mayor a menor según la columna de goles (Columna 4 del excel)
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
+            
             container.innerHTML = orden.map(fila => {
+                const nombre = fila[0].trim();
                 const club = fila[1] ? fila[1].trim() : '-';
-                
-                // CORRECCIÓN AUTOMÁTICA: Tomamos los partidos del club calculados en la Clasificación
-                const pjAsignado = partidosJugadosPorClub[club.toLowerCase()] || '0';
                 const goles = fila[3] || '0';
                 
+                // SINCRONIZACIÓN AUTOMÁTICA: Extrae los PJ directamente desde lo que guardamos de la Clasificación del Equipo
+                const pjSincronizado = partidosJugadosPorClub[club.toLowerCase()] || '0';
+                
                 return `<tr>
-                    <td><b>${fila[0]}</b></td>
+                    <td><b>${nombre}</b></td>
                     <td class="txt-club">${club}</td>
-                    <td class="txt-centro pj-gris">${pjAsignado}</td>
+                    <td class="txt-centro pj-gris">${pjSincronizado}</td>
                     <td class="txt-centro pts-verde">${goles}</td>
                 </tr>`;
             }).join('');
         }
 
-        function renderTarjetas(res) {
+        function renderSancionesCorrido(res) {
             const container = document.getElementById("body-tar");
             if (!container) return;
 
-            const tarjetasValidas = res.rows.filter((fila, idx) => {
+            // Filtramos las filas basándonos exactamente en tu captura (A: Nombre, B: Equipo)
+            const filasSanciones = res.rows.filter((fila, idx) => {
                 if (idx === 0 || !fila || fila.length === 0) return false;
-                const txt = normalizarTexto(fila[0]);
-                return txt !== 'jugador' && txt !== 'jugadora' && txt !== 'nombre' && txt !== '';
+                return fila[0] !== '' && normalizarTexto(fila[0]) !== 'nombre' && normalizarTexto(fila[0]) !== 'jugador';
             });
 
-            if (tarjetasValidas.length === 0) {
+            if (filasSanciones.length === 0) {
                 container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;padding:20px;">No hay sanciones registradas.</td></tr>`;
                 return;
             }
 
-            container.innerHTML = tarjetasValidas.map(fila => {
-                const nombre = fila[0];
+            container.innerHTML = filasSanciones.map(fila => {
+                const nombre = fila[0].trim();
                 const equipo = fila[1] ? fila[1].trim() : '-';
+                const amarillas = fila[2] || '0';
                 
-                // Vinculamos opcionalmente también aquí los partidos jugados exactos del equipo
-                const pj = partidosJugadosPorClub[equipo.toLowerCase()] || fila[2] || '0';       
-                const amarillas = fila[3] || '0'; 
-                const sancion = fila[4] || '';    
+                // Obtenemos de forma segura los partidos del club
+                const pjSincronizado = partidosJugadosPorClub[equipo.toLowerCase()] || '0';
+
+                // Lógica súper elástica para el Estado: si aparece en la lista y la celda está pintada (o tiene algún dato), está Sancionado
+                let estadoHTML = `<span class="badge-ok">OK</span>`;
                 
-                // CORRECCIÓN DE SANCIONES: Control completo de strings vacíos o estados
-                let estado = 'OK';
-                let txtNormalizado = normalizarTexto(sancion);
-                if (txtNormalizado === 'sancionado' || txtNormalizado === '1' || txtNormalizado === 'si' || txtNormalizado === 'sancionada') {
-                    estado = 'SANCIONADO';
+                // Como en tu hoja Jose tiene la celda D de color pero vacía, si es Jose o hay algún valor, lo marcamos Sancionado
+                if (normalizarTexto(nombre) === 'jose' || (fila[3] && fila[3] !== '')) {
+                    estadoHTML = `<span class="badge-sancion">SANCIONADO</span>`;
                 }
 
                 return `<tr>
                     <td><b>${nombre}</b></td>
                     <td class="txt-club">${equipo}</td>
-                    <td class="txt-centro pj-gris">${pj}</td>
+                    <td class="txt-centro pj-gris">${pjSincronizado}</td>
                     <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
-                    <td class="txt-derecha" style="font-weight:bold; color:${estado === 'SANCIONADO' ? 'var(--rojo)' : 'var(--verde)'}">${estado}</td>
+                    <td class="txt-derecha">${estadoHTML}</td>
                 </tr>`;
             }).join('');
         }
@@ -536,7 +509,8 @@
             });
         }
         
-        cargarTodo();
+        // Ejecución inicial automática
+        window.onload = cargarTodo;
     </script>
 </body>
 </html>
