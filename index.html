@@ -358,7 +358,7 @@
                 const nombreNorm = normalizarTexto(nombre);
                 const pjAutomatico = partidosJugadosPorClub[nombreNorm] || 0;
                 
-                if (!grupos[grupo]) grupos[grupo] = [];
+                if (!groups[grupo]) grupos[grupo] = [];
                 grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif, pj: pjAutomatico });
             });
 
@@ -403,14 +403,15 @@
             }).join('');
         }
 
-        // FUNCIÓN MEJORADA: No le importa si pones números, texto o vacíos. Fuerza la lectura completa de la hoja.
+        // AQUÍ ESTÁ EL ARREGLO ABSOLUTO PARA EVITAR EL BLOQUEO DE FILAS DE GOOGLE
         function renderTarjetasReal(res) {
             const container = document.getElementById("body-tar");
             if (!container) return;
 
+            // Filtro inmediato: saltamos la cabecera y nos quedamos con filas que tengan nombre válido en la columna 0
             const filasTarjetas = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length === 0) return false; 
-                return fila[0] !== undefined && fila[0] !== null && fila[0].trim() !== '' && normalizarTexto(fila[0]) !== 'nombre' && normalizarTexto(fila[0]) !== 'jugador' && normalizarTexto(fila[0]) !== 'jugadora';
+                if (idx === 0 || !fila || fila.length === 0) return false;
+                return fila[0] !== undefined && fila[0] !== null && fila[0].toString().trim() !== '' && normalizarTexto(fila[0]) !== 'nombre' && normalizarTexto(fila[0]) !== 'jugador';
             });
 
             if (filasTarjetas.length === 0) {
@@ -419,17 +420,20 @@
             }
 
             container.innerHTML = filasTarjetas.map(fila => {
-                const nombre = fila[0].trim();
-                const equipo = fila[1] ? fila[1].trim() : '-';
-                const amarillas = fila[2] || '0'; 
-                const sancionCol = fila[3] ? fila[3].toString().trim() : ''; 
+                const nombre = fila[0].toString().trim();
+                const equipo = fila[1] ? fila[1].toString().trim() : '-';
+                
+                // Forzamos valores por si Google rompe el envío de la celda
+                let amarillas = fila[2] ? fila[2].toString().trim() : '0';
+                let sancionCol = fila[3] ? fila[3].toString().trim() : '';
 
                 const clubNorm = normalizarTexto(equipo);
                 const pjAutomatico = partidosJugadosPorClub[clubNorm] || 0;
 
-                // Si pusiste un '1', la palabra 'sancionado', 'si', etc., lo detectará automáticamente como sanción activa
+                // Comprobación inteligente de la sanción (acepta el número 1, la palabra Sancionado, Si, etc.)
                 let estadoHTML = `<span class="badge-ok">OK</span>`;
-                if (sancionCol === '1' || normalizarTexto(sancionCol) === 'sancionado' || normalizarTexto(sancionCol) === 'si') {
+                let tSancion = normalizarTexto(sancionCol);
+                if (sancionCol === '1' || tSancion === 'sancionado' || tSancion === 'si' || tSancion === 'sancionada') {
                     estadoHTML = `<span class="badge-sancion">SANCIONADO</span>`;
                 }
 
