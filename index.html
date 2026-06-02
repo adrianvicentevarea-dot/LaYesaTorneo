@@ -182,7 +182,7 @@
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
+                            <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
                         </thead>
                         <tbody id="body-gol"></tbody>
                     </table>
@@ -194,7 +194,7 @@
                 <div class="card">
                     <table>
                         <thead>
-                            <tr><th>Jugadora</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
+                            <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
                         </thead>
                         <tbody id="body-tar"></tbody>
                     </table>
@@ -204,6 +204,7 @@
     </div>
 
     <script>
+        // CORRECCIÓN IMPORTANTE: Reemplaza estos IDs ficticios por los IDs reales de tus Google Sheets
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
@@ -347,7 +348,7 @@
                 return `<div class="card"><div class="match-row">
                     <div class="match-team" style="text-align:right;">${local}</div>
                     ${marcadorHTML}
-                    <div class="match-team">${visitor || visitante}</div>
+                    <div class="match-team">${visitante}</div>
                 </div></div>`;
             }).join('');
         }
@@ -400,10 +401,9 @@
                 return;
             }
 
-            // Ordena de manera descendente por goles (asumiendo que los goles están en la columna 3 (índice 3))
             const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
             container.innerHTML = orden.map(fila => {
-                const pj = fila[2] || '0'; // Lee partidos jugados de la columna 2 (índice 2)
+                const pj = fila[2] || '0'; 
                 const goles = fila[3] || '0';
                 return `<tr>
                     <td><b>${fila[0]}</b></td>
@@ -432,9 +432,9 @@
             container.innerHTML = tarjetasValidas.map(fila => {
                 const nombre = fila[0];
                 const equipo = fila[1] || '-';
-                const pj = fila[2] || '0';       // Lee partidos jugados de la columna 2 (índice 2)
-                const amarillas = fila[3] || '0'; // Lee amarillas de la columna 3 (índice 3)
-                const sancion = fila[4] || '';    // Lee estado de la columna 4 (índice 4)
+                const pj = fila[2] || '0';       
+                const amarillas = fila[3] || '0'; 
+                const sancion = fila[4] || '';    
                 
                 let estado = 'OK';
                 if (sancion.toLowerCase() === 'sancionado' || sancion.trim() === '1' || sancion.toLowerCase() === 'si' || sancion.toLowerCase() === 'sancionada') {
