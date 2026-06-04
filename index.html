@@ -129,9 +129,9 @@
 
         /* DISEÑO EXCLUSIVO EN VIVO */
         .live-card { background: linear-gradient(135deg, #ffffff 0%, #fdf2f2 100%); border-left: 5px solid var(--en-vivo); }
-        .live-pulse { display: inline-block; width: 10px; height: 10px; background: var(--en-vivo); border-radius: 50%; margin-right: 8px; animate: pulse 1.5s infinite; vertical-align: middle; }
-        .badge-live-score { background: var(--en-vivo); color: white; font-size: 1.4em; padding: 8px 18px; border-radius: 6px; font-weight: bold; min-width: 80px; text-align: center; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
-        .live-time { font-size: 0.85em; color: #e74c3c; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; }
+        .live-pulse { display: inline-block; width: 10px; height: 10px; background: var(--en-vivo); border-radius: 50%; margin-right: 8px; animation: pulse 1.5s infinite; vertical-align: middle; }
+        .badge-live-score { background: var(--en-vivo); color: white; font-size: 1.5em; padding: 8px 18px; border-radius: 6px; font-weight: bold; min-width: 80px; text-align: center; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
+        .live-time { font-size: 0.9em; color: #e74c3c; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: inline-block; background: rgba(231,76,60,0.1); padding: 4px 10px; border-radius: 4px; }
 
         @keyframes pulse {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
@@ -239,6 +239,10 @@
         let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
 
         let partidosJugadosPorClub = {};
+        
+        // Variables globales para el manejo del cronómetro estable
+        let intervaloCuentaAtras = null;
+        let tiempoSegundosRestantes = null;
 
         function cambiarTorneo(nuevoTorneo) {
             localStorage.setItem('torneo_seleccionado', nuevoTorneo);
@@ -300,14 +304,12 @@
                 if (!resP || resP.rows.length === 0) {
                     document.getElementById('partidos-container').innerHTML = `
                         <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
-                            ⚠️ Error de sincronización con Google Sheets.<br>
-                            Asegúrate de que este documento esté publicado (Archivo -> Compartir -> Publicar en la web).
+                            ⚠️ Error de sincronización.<br>Verifica la publicación del documento.
                         </div>`;
                     return;
                 }
 
                 renderPartidos(resP.rows);
-                
                 if (resC) renderClasificacion(resC);
                 if (resG) renderGoleadores(resG);
                 if (resS) renderTarjetasReal(resS);
@@ -316,253 +318,168 @@
             } catch (e) { console.error(e); }
         }
 
+        // Auto-actualizar datos del Excel en segundo plano cada 5 segundos
+        setInterval(async () => {
+            try {
+                const resV = await consultarGoogleSheet('EnVivo');
+                const resP = await consultarGoogleSheet('Partidos');
+                if (resP) renderPartidos(resP.rows);
+                if (resV) actualizarMarcadorYComprobarExcel(resV);
+            } catch(e){}
+        }, 5000);
+
         function renderPartidos(rows) {
             const container = document.getElementById('partidos-container');
             if (!container) return;
-            
             partidosJugadosPorClub = {};
-
-            const partidosValidos = rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length < 2) return false; 
-                return fila[1] !== undefined && fila[1] !== null && fila[1].trim() !== '' && normalizarTexto(fila[1]) !== 'local';
-            });
+            const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[1] && normalizarTexto(fila[1]) !== 'local');
             
-            if (partidosValidos.length === 0) {
-                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;">No hay partidos disponibles.</div>`;
-                return;
-            }
-
             container.innerHTML = partidosValidos.map(fila => {
-                const hora = fila[0] || '';
-                const local = fila[1] || '';
-                const visitante = fila[2] || '';
-                const golesL = fila[3];
-                const golesV = fila[4];
-
-                const gL = parseInt(golesL), gV = parseInt(golesV);
+                const hora = fila[0] || ''; const local = fila[1] || ''; const visitante = fila[2] || '';
+                const gL = parseInt(fila[3]), gV = parseInt(fila[4]);
                 let marcadorHTML = '';
-                
                 if (!isNaN(gL) && !isNaN(gV)) {
                     marcadorHTML = `<div class="match-score">${gL}:${gV}</div>`;
-                    
-                    const clubLocalNormal = normalizarTexto(local);
-                    const clubVisNormal = normalizarTexto(visitante);
-                    
-                    partidosJugadosPorClub[clubLocalNormal] = (partidosJugadosPorClub[clubLocalNormal] || 0) + 1;
-                    partidosJugadosPorClub[clubVisNormal] = (partidosJugadosPorClub[clubVisNormal] || 0) + 1;
+                    partidosJugadosPorClub[normalizarTexto(local)] = (partidosJugadosPorClub[normalizarTexto(local)] || 0) + 1;
+                    partidosJugadosPorClub[normalizarTexto(visitante)] = (partidosJugadosPorClub[normalizarTexto(visitante)] || 0) + 1;
                 } else {
                     marcadorHTML = `<div class="match-score hora">${hora || '-:-'}</div>`;
                 }
-                
-                return `<div class="card"><div class="match-row">
-                    <div class="match-team" style="text-align:right;">${local}</div>
-                    ${marcadorHTML}
-                    <div class="match-team">${visitante}</div>
-                </div></div>`;
+                return `<div class="card"><div class="match-row"><div class="match-team" style="text-align:right;">${local}</div>${marcadorHTML}<div class="match-team">${visitante}</div></div></div>`;
             }).join('');
         }
 
+        // CRONÓMETRO PURO DE 20 MINUTOS EN CUENTA ATRÁS
         function renderEnVivo(res) {
             const container = document.getElementById('vivo-container');
             if (!container) return;
 
-            // Busca si hay datos válidos en la fila 1 (después de la cabecera)
-            const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[1] && fila[1].toString().trim() !== '');
+            const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
 
             if (!filaVivo) {
+                if (intervaloCuentaAtras) { clearInterval(intervaloCuentaAtras); intervaloCuentaAtras = null; }
+                tiempoSegundosRestantes = null;
                 container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido jugándose en este momento.</div>`;
                 return;
             }
 
-            const hora = filaVivo[0] || 'En curso';
-            const local = filaVivo[1] || '—';
-            const marcador = filaVivo[2] || '0:0';
-            const visitante = filaVivo[3] || '—';
+            const local = filaVivo[0] || '—';
+            const marcador = filaVivo[1] || '0:0';
+            const visitante = filaVivo[2] || '—';
+            const textoTiempoExcel = filaVivo[3] || ''; // Lee el "20:00" que mete el botón
 
             container.innerHTML = `
                 <div class="card live-card">
-                    <div style="padding: 12px 20px; background: rgba(231, 76, 60, 0.08); border-bottom: 1px solid rgba(231,76,60,0.1);">
-                        <span class="live-time">⏱️ Hora de Inicio: ${hora}</span>
+                    <div style="padding: 12px 20px; background: rgba(231, 76, 60, 0.05); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(231,76,60,0.1);">
+                        <span id="cronometro-live" class="live-time">⏱️ 20:00</span>
                     </div>
-                    <div class="match-row" style="padding: 25px 20px;">
-                        <div class="match-team" style="text-align:right; font-size:1.2em;">${local}</div>
-                        <div class="badge-live-score">${marcador}</div>
-                        <div class="match-team" style="font-size:1.2em;">${visitante}</div>
+                    <div class="match-row" style="padding: 30px 20px;">
+                        <div class="match-team" style="text-align:right; font-size:1.25em;" id="live-local">${local}</div>
+                        <div class="badge-live-score" id="live-marcador">${marcador}</div>
+                        <div class="match-team" style="font-size:1.25em;" id="live-visitante">${visitante}</div>
                     </div>
                 </div>`;
+
+            // Si el Excel tiene el formato de tiempo ("20:00") e iniciamos por primera vez
+            if (textoTiempoExcel.includes(':') && tiempoSegundosRestantes === null) {
+                const partes = textoTiempoExcel.split(':');
+                const minutosIniciales = parseInt(partes[0]) || 20;
+                const segundosIniciales = parseInt(partes[1]) || 0;
+                tiempoSegundosRestantes = (minutosIniciales * 60) + segundosIniciales;
+                
+                if (intervaloCuentaAtras) clearInterval(intervaloCuentaAtras);
+                
+                intervaloCuentaAtras = setInterval(() => {
+                    if (tiempoSegundosRestantes <= 0) {
+                        document.getElementById('cronometro-live').innerText = "⏹️ FIN DEL PARTIDO";
+                        document.getElementById('cronometro-live').style.background = "#7f8c8d";
+                        document.getElementById('cronometro-live').style.color = "white";
+                        clearInterval(intervaloCuentaAtras);
+                        intervaloCuentaAtras = null;
+                    } else {
+                        tiempoSegundosRestantes--;
+                        const mins = Math.floor(tiempoSegundosRestantes / 60);
+                        const segs = tiempoSegundosRestantes % 60;
+                        document.getElementById('cronometro-live').innerText = `⏱️ Quedan: ${mins}:${segs.toString().padStart(2, '0')}`;
+                    }
+                }, 1000);
+            } else if (!textoTiempoExcel) {
+                // Si borras el tiempo en el excel, se pausa
+                document.getElementById('cronometro-live').innerText = "⏸️ PAUSADO / EN ESPERA";
+                if (intervaloCuentaAtras) { clearInterval(intervaloCuentaAtras); intervaloCuentaAtras = null; }
+                tiempoSegundosRestantes = null;
+            }
+        }
+
+        // Función auxiliar para actualizar goles sin reiniciar el reloj
+        function actualizarMarcadorYComprobarExcel(res) {
+            const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
+            if (!filaVivo) {
+                renderEnVivo(res);
+                return;
+            }
+            // Si cambian los goles o los equipos en el Excel, los pintamos inmediatamente
+            if(document.getElementById('live-local')) document.getElementById('live-local').innerText = filaVivo[0] || '—';
+            if(document.getElementById('live-marcador')) document.getElementById('live-marcador').innerText = filaVivo[1] || '0:0';
+            if(document.getElementById('live-visitante')) document.getElementById('live-visitante').innerText = filaVivo[2] || '—';
+            
+            // Si en el excel se limpia el tiempo o cambia drásticamente, refrescamos el estado del reloj
+            const textoTiempoExcel = filaVivo[3] || '';
+            if (!textoTiempoExcel && tiempoSegundosRestantes !== null) {
+                renderEnVivo(res);
+            }
         }
 
         function renderClasificacion(res) {
-            const container = document.getElementById('grupos-container');
-            if (!container) return;
-
-            const equiposValidos = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length === 0) return false; 
-                return fila[0] !== undefined && fila[0] !== null && fila[0].trim() !== '' && normalizarTexto(fila[0]) !== 'equipo' && normalizarTexto(fila[0]) !== 'nombre';
-            });
-
+            const container = document.getElementById('grupos-container'); if (!container) return;
+            const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'equipo');
             const grupos = {};
-
             equiposValidos.forEach(fila => {
-                const nombre = fila[0].trim();
                 const grupo = fila[1] || 'Único';
-                const dif = fila[2] || '0';
-                const pts = parseInt(fila[3]) || 0;
-                
-                const nombreNorm = normalizarTexto(nombre);
-                const pjAutomatico = partidosJugadosPorClub[nombreNorm] || 0;
-                
                 if (!grupos[grupo]) grupos[grupo] = [];
-                grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif, pj: pjAutomatico });
+                grupos[grupo].push({ nombre: fila[0].trim(), pts: parseInt(fila[3])||0, dif: fila[2]||'0', pj: partidosJugadosPorClub[normalizarTexto(fila[0])]||0 });
             });
-
             container.innerHTML = Object.keys(grupos).map(g => {
-                const orden = grupos[g].sort((a, b) => b.pts - a.pts);
-                return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color: #666;">GRUPO ${g}</div>
-                    <table><thead><tr><th>EQUIPO</th><th class="txt-centro">PJ</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead>
-                    <tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro pj-gris">${e.pj}</td><td class="txt-centro">${e.dif}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
+                const orden = grupos[g].sort((a,b) => b.pts - a.pts);
+                return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color:#666;">GRUPO ${g}</div><table><thead><tr><th>EQUIPO</th><th class="txt-centro">PJ</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead><tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro pj-gris">${e.pj}</td><td class="txt-centro">${e.dif}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
             }).join('');
         }
 
         function renderGoleadores(res) {
-            const container = document.getElementById("body-gol");
-            if (!container) return;
-
-            const jugadoresValidos = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length === 0) return false; 
-                return fila[0] !== undefined && fila[0] !== null && fila[0].trim() !== '' && normalizarTexto(fila[0]) !== 'jugador' && normalizarTexto(fila[0]) !== 'jugadora' && normalizarTexto(fila[0]) !== 'nombre';
-            });
-
-            if (jugadoresValidos.length === 0) {
-                container.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">No hay goles registrados.</td></tr>`;
-                return;
-            }
-
-            const orden = jugadoresValidos.sort((a, b) => (parseInt(b[3]) || 0) - (parseInt(a[3]) || 0));
-            
-            container.innerHTML = orden.map(fila => {
-                const nombre = fila[0].trim();
-                const club = fila[1] ? fila[1].trim() : '-';
-                const goles = fila[3] || '0';
-                
-                const clubNorm = normalizarTexto(club);
-                const pjAutomatico = partidosJugadosPorClub[clubNorm] || 0;
-                
-                return `<tr>
-                    <td><b>${nombre}</b></td>
-                    <td class="txt-club">${club}</td>
-                    <td class="txt-centro pj-gris">${pjAutomatico}</td>
-                    <td class="txt-centro pts-verde">${goles}</td>
-                </tr>`;
-            }).join('');
+            const container = document.getElementById("body-gol"); if (!container) return;
+            const jugadoresValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'jugador');
+            container.innerHTML = jugadoresValidos.sort((a,b) => (parseInt(b[3])||0)-(parseInt(a[3])||0)).map(fila => `<tr><td><b>${fila[0].trim()}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[normalizarTexto(fila[1])]||0}</td><td class="txt-centro pts-verde">${fila[3]||'0'}</td></tr>`).join('');
         }
 
         function renderTarjetasReal(res) {
-            const container = document.getElementById("body-tar");
-            if (!container) return;
-
-            const filasTarjetas = res.rows.filter((fila, idx) => {
-                if (idx === 0 || !fila || fila.length === 0) return false;
-                return fila[0] !== undefined && fila[0] !== null && fila[0].toString().trim() !== '' && normalizarTexto(fila[0]) !== 'nombre' && normalizarTexto(fila[0]) !== 'jugador';
-            });
-
-            if (filasTarjetas.length === 0) {
-                container.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#666;padding:20px;">No hay datos en la pestaña Tarjetas.</td></tr>`;
-                return;
-            }
-
+            const container = document.getElementById("body-tar"); if (!container) return;
+            const filasTarjetas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'nombre');
             container.innerHTML = filasTarjetas.map(fila => {
-                const nombre = fila[0].toString().trim();
-                const equipo = fila[1] ? fila[1].toString().trim() : '-';
-                
-                let amarillas = fila[2] ? fila[2].toString().trim() : '0';
-                let sancionCol = fila[3] ? fila[3].toString().trim() : '';
-
-                const clubNorm = normalizarTexto(equipo);
-                const pjAutomatico = partidosJugadosPorClub[clubNorm] || 0;
-
-                let estadoHTML = `<span class="badge-ok">OK</span>`;
-                let tSancion = normalizarTexto(sancionCol);
-                if (sancionCol === '1' || tSancion === 'sancionado' || tSancion === 'si' || tSancion === 'sancionada') {
-                    estadoHTML = `<span class="badge-sancion">SANCIONADO</span>`;
-                }
-
-                return `<tr>
-                    <td><b>${nombre}</b></td>
-                    <td class="txt-club">${equipo}</td>
-                    <td class="txt-centro pj-gris">${pjAutomatico}</td>
-                    <td class="txt-centro"><span class="badge-amarilla">${amarillas}</span></td>
-                    <td class="txt-derecha">${estadoHTML}</td>
-                </tr>`;
+                let s = fila[3] ? fila[3].toString().trim() : '';
+                let estado = (s==='1'||normalizarTexto(s)==='sancionado'||normalizarTexto(s)==='si') ? `<span class="badge-sancion">SANCIONADO</span>` : `<span class="badge-ok">OK</span>`;
+                return `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[normalizarTexto(fila[1])]||0}</td><td class="txt-centro"><span class="badge-amarilla">${fila[2]||'0'}</span></td><td class="txt-derecha">${estado}</td></tr>`;
             }).join('');
         }
 
         function transformarPartidoBracket(filaFase, titulo) {
-            if (!filaFase) return `
-                <div class="bracket-match">
-                    <div class="bracket-title">${titulo}</div>
-                    <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div>
-                    <div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div>
-                </div>`;
-            
-            const local = filaFase[1], visitante = filaFase[4];
-            const gL = parseInt(filaFase[2]), gV = parseInt(filaFase[3]);
-            
-            const winL = !isNaN(gL) && !isNaN(gV) && gL > gV;
-            const winV = !isNaN(gL) && !isNaN(gV) && gV > gL;
-
-            return `
-                <div class="bracket-match">
-                    <div class="bracket-title">${titulo}</div>
-                    <div class="bracket-team-row ${winL ? 'winner' : ''}">
-                        <span class="bracket-name">${local || '—'}</span>
-                        <span class="bracket-goals ${isNaN(gL) ? 'empty' : ''}">${isNaN(gL) ? '-' : gL}</span>
-                    </div>
-                    <div class="bracket-team-row ${winV ? 'winner' : ''}">
-                        <span class="bracket-name">${visitante || '—'}</span>
-                        <span class="bracket-goals ${isNaN(gV) ? 'empty' : ''}">${isNaN(gV) ? '-' : gV}</span>
-                    </div>
-                </div>`;
+            if (!filaFase) return `<div class="bracket-match"><div class="bracket-title">${titulo}</div><div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div><div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div></div>`;
+            const local = filaFase[1], visitante = filaFase[4], gL = parseInt(filaFase[2]), gV = parseInt(filaFase[3]);
+            return `<div class="bracket-match"><div class="bracket-title">${titulo}</div><div class="bracket-team-row ${gL>gV?'winner':''}"><span class="bracket-name">${local||'—'}</span><span class="bracket-goals ${isNaN(gL)?'empty':''}">${isNaN(gL)?'-':gL}</span></div><div class="bracket-team-row ${gV>gL?'winner':''}"><span class="bracket-name">${visitante||'—'}</span><span class="bracket-goals ${isNaN(gV)?'empty':''}">${isNaN(gV)?'-':gV}</span></div></div>`;
         }
 
         function renderBracket(res) {
-            const container = document.getElementById('bracket-container');
-            if (!container) return;
-
+            const container = document.getElementById('bracket-container'); if (!container) return;
             const fasesValidas = res.rows.filter((fila, idx) => idx === 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'fase');
-            if (fasesValidas.length === 0) {
-                container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">No hay eliminatorias disponibles.</div>`;
-                return;
-            }
-
             const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[0]) === normalizarTexto(nombre));
-
-            container.innerHTML = `
-                <div class="bracket-column">
-                    ${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}
-                    ${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}
-                    ${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}
-                    ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}
-                </div>
-                <div class="bracket-column">
-                    ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}
-                    ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}
-                </div>
-                <div class="bracket-column final-col">
-                    ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
-                </div>
-            `;
+            container.innerHTML = `<div class="bracket-column">${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}</div><div class="bracket-column">${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}</div><div class="bracket-column final-col">${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}</div>`;
         }
 
         function ver(s) {
             ['partidos', 'vivo', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
-                const elem = document.getElementById(id);
-                const btn = document.getElementById('btn-' + id);
-                if (elem) elem.classList.toggle('hidden', id !== s);
-                if (btn) btn.classList.toggle('active', id === s);
+                const elem = document.getElementById(id); const btn = document.getElementById('btn-' + id);
+                if (elem) elem.classList.toggle('hidden', id !== s); if (btn) btn.classList.toggle('active', id === s);
             });
         }
-        
         window.onload = cargarTodo;
     </script>
 </body>
