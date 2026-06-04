@@ -11,6 +11,7 @@
             --verde: #27ae60; 
             --blanco: #ffffff; 
             --rojo: #e74c3c; 
+            --en-vivo: #e74c3c;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; margin: 0; padding: 0; }
         
@@ -51,6 +52,7 @@
             text-decoration: none;
         }
         .btn.active { background: var(--verde); color: white; }
+        #btn-vivo.active { background: var(--en-vivo); }
 
         /* CONTENEDOR PRINCIPAL DERECHO */
         #main-container { 
@@ -99,6 +101,7 @@
             text-transform: uppercase; 
             font-weight: bold; 
         }
+        .seccion-titulo.vivo-title { border-left-color: var(--en-vivo); }
 
         /* TARJETAS Y TABLAS */
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
@@ -123,6 +126,18 @@
         .match-team { width: 42%; font-weight: bold; color: #333; }
         .match-score { background: var(--azul-nav); color: white; padding: 5px 12px; border-radius: 4px; min-width: 60px; text-align: center; font-weight: bold; font-size: 1.1em; }
         .match-score.hora { background: #7f8c8d; font-size: 0.95em; }
+
+        /* DISEÑO EXCLUSIVO EN VIVO */
+        .live-card { background: linear-gradient(135deg, #ffffff 0%, #fdf2f2 100%); border-left: 5px solid var(--en-vivo); }
+        .live-pulse { display: inline-block; width: 10px; height: 10px; background: var(--en-vivo); border-radius: 50%; margin-right: 8px; animate: pulse 1.5s infinite; vertical-align: middle; }
+        .badge-live-score { background: var(--en-vivo); color: white; font-size: 1.4em; padding: 8px 18px; border-radius: 6px; font-weight: bold; min-width: 80px; text-align: center; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
+        .live-time { font-size: 0.85em; color: #e74c3c; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(231, 76, 60, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
 
         /* PLAYOFFS */
         .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; }
@@ -159,6 +174,7 @@
     <nav id="sidebar">
         <div class="nav-header">TORNEO LA YESA</div>
         <div id="btn-partidos" class="btn active" onclick="ver('partidos')">⚽ PARTIDOS</div>
+        <div id="btn-vivo" class="btn" onclick="ver('vivo')" style="color: #ff8a8a;">📺 EN VIVO</div>
         <div id="btn-grupos" class="btn" onclick="ver('grupos')">📊 GRUPOS</div>
         <div id="btn-elim" class="btn" onclick="ver('elim')">🏆 PLAYOFFS</div>
         <div id="btn-gol" class="btn" onclick="ver('gol')">👟 GOLES</div>
@@ -176,6 +192,12 @@
 
         <main id="content">
             <div id="partidos"><span class="seccion-titulo">Resultados y Horarios</span><div id="partidos-container"></div></div>
+            
+            <div id="vivo" class="hidden">
+                <span class="seccion-titulo vivo-title"><span class="live-pulse"></span>Partido en Tiempo Real</span>
+                <div id="vivo-container"></div>
+            </div>
+
             <div id="grupos" class="hidden"><span class="seccion-titulo">Clasificación</span><div id="grupos-container" class="grid-grupos"></div></div>
             <div id="elim" class="hidden"><span class="seccion-titulo">Fase Final</span><div class="bracket-wrapper" id="bracket-container"></div></div>
 
@@ -273,6 +295,7 @@
                 const resG = await consultarGoogleSheet('Goleadores');
                 const resS = await consultarGoogleSheet('Tarjetas'); 
                 const resE = await consultarGoogleSheet('Eliminatorias');
+                const resV = await consultarGoogleSheet('EnVivo');
 
                 if (!resP || resP.rows.length === 0) {
                     document.getElementById('partidos-container').innerHTML = `
@@ -289,6 +312,7 @@
                 if (resG) renderGoleadores(resG);
                 if (resS) renderTarjetasReal(resS);
                 if (resE) renderBracket(resE);
+                if (resV) renderEnVivo(resV);
             } catch (e) { console.error(e); }
         }
 
@@ -338,6 +362,36 @@
             }).join('');
         }
 
+        function renderEnVivo(res) {
+            const container = document.getElementById('vivo-container');
+            if (!container) return;
+
+            // Busca si hay datos válidos en la fila 1 (después de la cabecera)
+            const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[1] && fila[1].toString().trim() !== '');
+
+            if (!filaVivo) {
+                container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido jugándose en este momento.</div>`;
+                return;
+            }
+
+            const hora = filaVivo[0] || 'En curso';
+            const local = filaVivo[1] || '—';
+            const marcador = filaVivo[2] || '0:0';
+            const visitante = filaVivo[3] || '—';
+
+            container.innerHTML = `
+                <div class="card live-card">
+                    <div style="padding: 12px 20px; background: rgba(231, 76, 60, 0.08); border-bottom: 1px solid rgba(231,76,60,0.1);">
+                        <span class="live-time">⏱️ Hora de Inicio: ${hora}</span>
+                    </div>
+                    <div class="match-row" style="padding: 25px 20px;">
+                        <div class="match-team" style="text-align:right; font-size:1.2em;">${local}</div>
+                        <div class="badge-live-score">${marcador}</div>
+                        <div class="match-team" style="font-size:1.2em;">${visitante}</div>
+                    </div>
+                </div>`;
+        }
+
         function renderClasificacion(res) {
             const container = document.getElementById('grupos-container');
             if (!container) return;
@@ -358,7 +412,6 @@
                 const nombreNorm = normalizarTexto(nombre);
                 const pjAutomatico = partidosJugadosPorClub[nombreNorm] || 0;
                 
-                // ERROR CORREGIDO AQUÍ: 'grupos' en vez de 'groups'
                 if (!grupos[grupo]) grupos[grupo] = [];
                 grupos[grupo].push({ nombre: nombre, pts: pts, dif: dif, pj: pjAutomatico });
             });
@@ -502,7 +555,7 @@
         }
 
         function ver(s) {
-            ['partidos', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
+            ['partidos', 'vivo', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
                 const elem = document.getElementById(id);
                 const btn = document.getElementById('btn-' + id);
                 if (elem) elem.classList.toggle('hidden', id !== s);
