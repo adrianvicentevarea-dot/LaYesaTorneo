@@ -23,7 +23,7 @@
             overflow: hidden; 
         }
 
-        /* MENU LATERAL */
+        /* MENU LATERAL - Siempre fijo a la izquierda en PC y Móvil */
         #sidebar { 
             width: 180px; 
             background: var(--azul-nav); 
@@ -32,6 +32,7 @@
             flex-direction: column; 
             flex-shrink: 0; 
             z-index: 1001; 
+            overflow-y: auto; /* Por si hay muchos botones, permite scroll vertical interno */
         }
         .nav-header { 
             padding: 20px 15px; 
@@ -50,6 +51,7 @@
             font-size: 0.85em; 
             font-weight: bold; 
             text-decoration: none;
+            text-align: left;
         }
         .btn.active { background: var(--verde); color: white; }
         #btn-vivo.active { background: var(--en-vivo); }
@@ -82,6 +84,7 @@
             border-radius: 6px; 
             outline: none; 
             cursor: pointer; 
+            max-width: 100%;
         }
         .selector-torneo option { background: var(--azul-nav); color: white; }
 
@@ -158,15 +161,57 @@
 
         .hidden { display: none; }
 
+        /* ADAPTACIONES EXCLUSIVAS PARA MÓVILES (Manteniendo el menú a la izquierda) */
         @media (max-width: 768px) {
-            body { flex-direction: column; }
-            #sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; }
-            .nav-header { display: none; }
-            .btn { flex: 1; text-align: center; padding: 15px 10px; white-space: nowrap; border-bottom: none; border-right: 1px solid rgba(255,255,255,0.05); }
-            .grid-grupos { grid-template-columns: 1fr; }
-            .top-bar { justify-content: center; padding: 10px; }
-            .bracket-column { height: auto; gap: 15px; }
-            .bracket-wrapper { flex-direction: column; align-items: stretch; }
+            #sidebar { 
+                width: 120px; /* Reducimos el ancho en móvil para dejar más espacio a las tablas */
+            }
+            .nav-header { 
+                padding: 15px 5px; 
+                font-size: 0.8em; 
+            }
+            .btn { 
+                padding: 15px 10px; 
+                font-size: 0.75em; 
+                text-align: center; /* En móvil se ve más ordenado centrar los emojis/texto */
+            }
+            .grid-grupos { 
+                grid-template-columns: 1fr; 
+            }
+            .top-bar { 
+                padding: 10px; 
+                justify-content: center; 
+            }
+            .selector-torneo {
+                font-size: 0.85em;
+                padding: 6px 10px;
+            }
+            #content { 
+                padding: 10px; 
+            }
+            .seccion-titulo {
+                font-size: 1em;
+                margin-bottom: 15px;
+            }
+            .match-row {
+                padding: 12px 8px;
+                font-size: 0.9em;
+            }
+            .match-team {
+                width: 38%;
+            }
+            td, th {
+                padding: 8px 6px;
+                font-size: 0.85em;
+            }
+            .bracket-wrapper { 
+                flex-direction: column; 
+                align-items: stretch; 
+            }
+            .bracket-column { 
+                height: auto; 
+                gap: 15px; 
+            }
         }
     </style>
 </head>
@@ -239,8 +284,6 @@
         let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
 
         let partidosJugadosPorClub = {};
-        
-        // Variables globales para el manejo del cronómetro estable
         let intervaloCuentaAtras = null;
         let tiempoSegundosRestantes = null;
 
@@ -272,20 +315,12 @@
                 const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}`;
                 const respuesta = await fetch(url);
                 const texto = await respuesta.text();
-                
                 const inicioJson = texto.indexOf('{');
                 const finJson = texto.lastIndexOf('}') + 1;
                 const jsonNeto = JSON.parse(texto.slice(inicioJson, finJson));
                 
                 if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { rows: [] };
-
-                const rowsRaw = jsonNeto.table.rows;
-                return {
-                    rows: rowsRaw.map(r => {
-                        if (!r || !r.c) return [];
-                        return r.c.map(celda => extraerValorCelda(celda));
-                    })
-                };
+                return { rows: jsonNeto.table.rows.map(r => r.c ? r.c.map(celda => extraerValorCelda(celda)) : []) };
             } catch (error) {
                 console.error("Error cargando: " + nombrePestaña, error);
                 return null;
@@ -302,10 +337,7 @@
                 const resV = await consultarGoogleSheet('EnVivo');
 
                 if (!resP || resP.rows.length === 0) {
-                    document.getElementById('partidos-container').innerHTML = `
-                        <div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">
-                            ⚠️ Error de sincronización.<br>Verifica la publicación del documento.
-                        </div>`;
+                    document.getElementById('partidos-container').innerHTML = `<div style="color:#e74c3c; text-align:center; padding:20px; font-weight:bold;">⚠️ Error de sincronización.</div>`;
                     return;
                 }
 
@@ -318,7 +350,6 @@
             } catch (e) { console.error(e); }
         }
 
-        // Auto-actualizar datos del Excel en segundo plano cada 5 segundos
         setInterval(async () => {
             try {
                 const resV = await consultarGoogleSheet('EnVivo');
@@ -349,24 +380,20 @@
             }).join('');
         }
 
-        // CRONÓMETRO PURO DE 20 MINUTOS EN CUENTA ATRÁS
         function renderEnVivo(res) {
             const container = document.getElementById('vivo-container');
             if (!container) return;
-
             const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
 
             if (!filaVivo) {
                 if (intervaloCuentaAtras) { clearInterval(intervaloCuentaAtras); intervaloCuentaAtras = null; }
                 tiempoSegundosRestantes = null;
-                container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido jugándose en este momento.</div>`;
+                container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`;
                 return;
             }
 
-            const local = filaVivo[0] || '—';
-            const marcador = filaVivo[1] || '0:0';
-            const visitante = filaVivo[2] || '—';
-            const textoTiempoExcel = filaVivo[3] || ''; // Lee el "20:00" que mete el botón
+            const local = filaVivo[0] || '—'; const marcador = filaVivo[1] || '0:0'; const visitante = filaVivo[2] || '—';
+            const textoTiempoExcel = filaVivo[3] || '';
 
             container.innerHTML = `
                 <div class="card live-card">
@@ -380,13 +407,9 @@
                     </div>
                 </div>`;
 
-            // Si el Excel tiene el formato de tiempo ("20:00") e iniciamos por primera vez
             if (textoTiempoExcel.includes(':') && tiempoSegundosRestantes === null) {
                 const partes = textoTiempoExcel.split(':');
-                const minutosIniciales = parseInt(partes[0]) || 20;
-                const segundosIniciales = parseInt(partes[1]) || 0;
-                tiempoSegundosRestantes = (minutosIniciales * 60) + segundosIniciales;
-                
+                tiempoSegundosRestantes = (parseInt(partes[0]) * 60) + parseInt(partes[1]);
                 if (intervaloCuentaAtras) clearInterval(intervaloCuentaAtras);
                 
                 intervaloCuentaAtras = setInterval(() => {
@@ -394,40 +417,26 @@
                         document.getElementById('cronometro-live').innerText = "⏹️ FIN DEL PARTIDO";
                         document.getElementById('cronometro-live').style.background = "#7f8c8d";
                         document.getElementById('cronometro-live').style.color = "white";
-                        clearInterval(intervaloCuentaAtras);
-                        intervaloCuentaAtras = null;
+                        clearInterval(intervaloCuentaAtras); intervaloCuentaAtras = null;
                     } else {
                         tiempoSegundosRestantes--;
-                        const mins = Math.floor(tiempoSegundosRestantes / 60);
-                        const segs = tiempoSegundosRestantes % 60;
-                        document.getElementById('cronometro-live').innerText = `⏱️ Quedan: ${mins}:${segs.toString().padStart(2, '0')}`;
+                        document.getElementById('cronometro-live').innerText = `⏱️ Quedan: ${Math.floor(tiempoSegundosRestantes / 60)}:${(tiempoSegundosRestantes % 60).toString().padStart(2, '0')}`;
                     }
                 }, 1000);
             } else if (!textoTiempoExcel) {
-                // Si borras el tiempo en el excel, se pausa
-                document.getElementById('cronometro-live').innerText = "⏸️ PAUSADO / EN ESPERA";
+                document.getElementById('cronometro-live').innerText = "⏸️ EN ESPERA";
                 if (intervaloCuentaAtras) { clearInterval(intervaloCuentaAtras); intervaloCuentaAtras = null; }
                 tiempoSegundosRestantes = null;
             }
         }
 
-        // Función auxiliar para actualizar goles sin reiniciar el reloj
         function actualizarMarcadorYComprobarExcel(res) {
             const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
-            if (!filaVivo) {
-                renderEnVivo(res);
-                return;
-            }
-            // Si cambian los goles o los equipos en el Excel, los pintamos inmediatamente
+            if (!filaVivo) { renderEnVivo(res); return; }
             if(document.getElementById('live-local')) document.getElementById('live-local').innerText = filaVivo[0] || '—';
             if(document.getElementById('live-marcador')) document.getElementById('live-marcador').innerText = filaVivo[1] || '0:0';
             if(document.getElementById('live-visitante')) document.getElementById('live-visitante').innerText = filaVivo[2] || '—';
-            
-            // Si en el excel se limpia el tiempo o cambia drásticamente, refrescamos el estado del reloj
-            const textoTiempoExcel = filaVivo[3] || '';
-            if (!textoTiempoExcel && tiempoSegundosRestantes !== null) {
-                renderEnVivo(res);
-            }
+            if (!(filaVivo[3] || '') && tiempoSegundosRestantes !== null) renderEnVivo(res);
         }
 
         function renderClasificacion(res) {
