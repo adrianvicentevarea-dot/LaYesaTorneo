@@ -21,21 +21,32 @@
             height: 100vh; 
             width: 100vw;
             overflow: hidden; 
+            position: relative;
         }
 
-        /* MENU LATERAL - Ubicación del acordeón desplegable */
+        /* MENU LATERAL - Oculto por defecto a la izquierda con animación */
         #sidebar { 
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
             width: 220px; 
             background: var(--azul-nav); 
             color: white; 
             display: flex; 
             flex-direction: column; 
-            flex-shrink: 0; 
             z-index: 1001; 
             overflow-y: auto;
             border-right: 1px solid rgba(255,255,255,0.05);
-            transition: transform 0.3s ease;
+            transform: translateX(-100%); /* Escondido por defecto */
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        
+        /* Cuando tiene la clase open, se desliza hacia adentro */
+        #sidebar.open { 
+            transform: translateX(0); 
+        }
+
         .nav-header { 
             padding: 20px 15px; 
             font-weight: bold; 
@@ -46,7 +57,7 @@
             letter-spacing: 0.5px; 
         }
 
-        /* TÍTULOS DESPLEGABLES DENTRO DEL MENU LATERAL */
+        /* TÍTULOS DESPLEGABLES DEL MENÚ ACORDEÓN */
         .seccion-titulo { 
             padding: 15px 20px; 
             cursor: pointer; 
@@ -74,7 +85,6 @@
             transform: rotate(-90deg);
         }
 
-        /* Enlaces/Botones internos del menú desplegable */
         .collapsible-menu-content {
             overflow: hidden;
             max-height: 300px;
@@ -101,13 +111,13 @@
         }
         #btn-sub-vivo.active { background: var(--en-vivo); }
 
-        /* CONTENEDOR PRINCIPAL DERECHO */
+        /* CONTENEDOR PRINCIPAL DERECHO - Ocupa todo el ancho siempre */
         #main-container { 
             flex: 1; 
             display: flex; 
             flex-direction: column; 
             overflow: hidden; 
-            position: relative; 
+            width: 100%;
         }
         
         /* BARRA SUPERIOR CONSTANTE */
@@ -121,15 +131,16 @@
             z-index: 10; 
         }
 
+        /* Botón de Menú Hamburguesa visible en todos los tamaños para ahorrar espacio */
         .menu-toggle {
             background: var(--azul-nav);
             border: 2px solid var(--verde);
             color: white;
-            padding: 8px 12px;
-            font-size: 1.2em;
+            padding: 8px 15px;
+            font-size: 1em;
             border-radius: 6px;
             cursor: pointer;
-            display: none; 
+            display: block; 
             font-weight: bold;
         }
 
@@ -143,9 +154,17 @@
             border-radius: 6px; 
             outline: none; 
             cursor: pointer; 
-            margin-left: auto; /* Empuja el selector a la derecha */
         }
         .selector-torneo option { background: var(--azul-nav); color: white; }
+
+        /* Capa oscura de fondo al abrir el menú (hacer click fuera lo cierra) */
+        #menu-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+        }
 
         /* CONTENIDO SCROLLABLE */
         #content { 
@@ -210,12 +229,6 @@
         .hidden { display: none; }
 
         @media (max-width: 768px) {
-            .menu-toggle { display: block; }
-            #sidebar { 
-                position: absolute; left: 0; top: 0; bottom: 0; width: 200px; 
-                transform: translateX(-100%); 
-            }
-            #sidebar.open { transform: translateX(0); }
             .grid-grupos { grid-template-columns: 1fr; }
             .top-bar { padding: 10px; }
             #content { padding: 10px; }
@@ -225,31 +238,33 @@
     </style>
 </head>
 <body>
+    <div id="menu-overlay" onclick="toggleMenu()"></div>
+
     <nav id="sidebar">
         <div class="nav-header">TORNEO LA YESA</div>
         
         <div class="seccion-titulo active" onclick="toggleMenuSeccion('menu-partidos', this)">⚽ Partidos</div>
         <div id="menu-partidos" class="collapsible-menu-content">
-            <div id="btn-partidos" class="btn-sub active" onclick="ver('partidos')">Resultados</div>
-            <div id="btn-vivo" class="btn-sub" onclick="ver('vivo')" style="color: #ff8a8a;">📺 En Vivo</div>
+            <div id="btn-sub-partidos" class="btn-sub active" onclick="ver('partidos')">Resultados</div>
+            <div id="btn-sub-vivo" class="btn-sub" onclick="ver('vivo')" style="color: #ff8a8a;">📺 En Vivo</div>
         </div>
 
         <div class="seccion-titulo" onclick="toggleMenuSeccion('menu-clasificacion', this)">📊 Clasificación</div>
         <div id="menu-clasificacion" class="collapsible-menu-content collapsed">
-            <div id="btn-grupos" class="btn-sub" onclick="ver('grupos')">Grupos</div>
-            <div id="btn-elim" class="btn-sub" onclick="ver('elim')">Playoffs</div>
+            <div id="btn-sub-grupos" class="btn-sub" onclick="ver('grupos')">Grupos</div>
+            <div id="btn-sub-elim" class="btn-sub" onclick="ver('elim')">Playoffs</div>
         </div>
 
         <div class="seccion-titulo" onclick="toggleMenuSeccion('menu-estadisticas', this)">👟 Estadísticas</div>
         <div id="menu-estadisticas" class="collapsible-menu-content collapsed">
-            <div id="btn-gol" class="btn-sub" onclick="ver('gol')">Goleadores</div>
-            <div id="btn-tar" class="btn-sub" onclick="ver('tar')">🟨 Sanciones</div>
+            <div id="btn-sub-gol" class="btn-sub" onclick="ver('gol')">Goleadores</div>
+            <div id="btn-sub-tar" class="btn-sub" onclick="ver('tar')">🟨 Sanciones</div>
         </div>
     </nav>
 
     <div id="main-container">
         <div class="top-bar">
-            <button class="menu-toggle" onclick="toggleMenu()">☰ Menu</button>
+            <button class="menu-toggle" onclick="toggleMenu()">☰ MENÚ</button>
             <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
                 <option value="masculino">⚽ Fútbol Masculino</option>
                 <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
@@ -299,7 +314,7 @@
     </div>
 
     <script>
-        // Desplegar y replegar secciones del menú lateral izquierdo
+        // Controlar el acordeón interno de la barra lateral
         function toggleMenuSeccion(idContenedor, elementoTitulo) {
             const contenido = document.getElementById(idContenedor);
             if (contenido) {
@@ -309,15 +324,12 @@
             }
         }
 
+        // Abre y cierra la barra lateral completa cambiando su visibilidad y ajustando la pantalla
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('open');
-        }
-
-        function comprobarYCerrarMenu() {
-            if (window.innerWidth <= 768) {
-                document.getElementById('sidebar').classList.remove('open');
-            }
+            const overlay = document.getElementById('menu-overlay');
+            const isOpen = sidebar.classList.toggle('open');
+            overlay.style.display = isOpen ? 'block' : 'none';
         }
 
         const TORNEOS = {
@@ -530,13 +542,22 @@
             container.innerHTML = `<div class="bracket-column">${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}</div><div class="bracket-column">${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}</div><div class="bracket-column final-col">${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}</div>`;
         }
 
+        // Cambia la pestaña activa, cierra la barra de navegación lateral y reajusta la pantalla
         function ver(s) {
             ['partidos', 'vivo', 'grupos', 'elim', 'gol', 'tar'].forEach(id => {
-                const elem = document.getElementById(id); const btn = document.getElementById('btn-sub-' + id) || document.getElementById('btn-' + id);
-                if (elem) elem.classList.toggle('hidden', id !== s); if (btn) btn.classList.toggle('active', id === s);
+                const elem = document.getElementById(id); 
+                const btn = document.getElementById('btn-sub-' + id);
+                if (elem) elem.classList.toggle('hidden', id !== s); 
+                if (btn) btn.classList.toggle('active', id === s);
             });
-            comprobarYCerrarMenu();
+            
+            // Forzar que el menú lateral se cierre de inmediato al hacer click en cualquier opción
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('menu-overlay');
+            sidebar.classList.remove('open');
+            overlay.style.display = 'none';
         }
+        
         window.onload = cargarTodo;
     </script>
 </body>
