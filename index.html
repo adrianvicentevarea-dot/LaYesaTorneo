@@ -23,7 +23,7 @@
             overflow: hidden; 
         }
 
-        /* MENU LATERAL - Siempre fijo a la izquierda en PC y Móvil */
+        /* MENU LATERAL - Fijo en PC, colapsable en móvil */
         #sidebar { 
             width: 180px; 
             background: var(--azul-nav); 
@@ -32,7 +32,8 @@
             flex-direction: column; 
             flex-shrink: 0; 
             z-index: 1001; 
-            overflow-y: auto; /* Por si hay muchos botones, permite scroll vertical interno */
+            overflow-y: auto;
+            transition: transform 0.3s ease; /* Animación suave al abrir/cerrar */
         }
         .nav-header { 
             padding: 20px 15px; 
@@ -68,12 +69,27 @@
         /* BARRA SUPERIOR */
         .top-bar { 
             display: flex; 
-            justify-content: flex-end; 
+            justify-content: space-between; /* Alinea botón a la izq y selector a la der */
+            align-items: center;
             padding: 15px 20px; 
             background: rgba(0, 0, 0, 0.1); 
             border-bottom: 1px solid rgba(255,255,255,0.05);
             z-index: 10; 
         }
+
+        /* BOTÓN HAMBURGUESA (Platgar / Desplegar) */
+        .menu-toggle {
+            background: var(--azul-nav);
+            border: 2px solid var(--verde);
+            color: white;
+            padding: 8px 12px;
+            font-size: 1.2em;
+            border-radius: 6px;
+            cursor: pointer;
+            display: none; /* Oculto en ordenadores */
+            font-weight: bold;
+        }
+
         .selector-torneo { 
             background: var(--azul-nav); 
             color: white; 
@@ -84,7 +100,6 @@
             border-radius: 6px; 
             outline: none; 
             cursor: pointer; 
-            max-width: 100%;
         }
         .selector-torneo option { background: var(--azul-nav); color: white; }
 
@@ -130,7 +145,7 @@
         .match-score { background: var(--azul-nav); color: white; padding: 5px 12px; border-radius: 4px; min-width: 60px; text-align: center; font-weight: bold; font-size: 1.1em; }
         .match-score.hora { background: #7f8c8d; font-size: 0.95em; }
 
-        /* DISEÑO EXCLUSIVO EN VIVO */
+        /* DISEÑO EN VIVO */
         .live-card { background: linear-gradient(135deg, #ffffff 0%, #fdf2f2 100%); border-left: 5px solid var(--en-vivo); }
         .live-pulse { display: inline-block; width: 10px; height: 10px; background: var(--en-vivo); border-radius: 50%; margin-right: 8px; animation: pulse 1.5s infinite; vertical-align: middle; }
         .badge-live-score { background: var(--en-vivo); color: white; font-size: 1.5em; padding: 8px 18px; border-radius: 6px; font-weight: bold; min-width: 80px; text-align: center; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
@@ -161,57 +176,28 @@
 
         .hidden { display: none; }
 
-        /* ADAPTACIONES EXCLUSIVAS PARA MÓVILES (Manteniendo el menú a la izquierda) */
+        /* ADAPTACIÓN EXCLUSIVA PARA PANTALLAS MÓVILES */
         @media (max-width: 768px) {
+            .menu-toggle { 
+                display: block; /* Mostramos el botón de tres rayas en móviles */
+            }
             #sidebar { 
-                width: 120px; /* Reducimos el ancho en móvil para dejar más espacio a las tablas */
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 180px; 
+                transform: translateX(-100%); /* Lo escondemos por defecto hacia la izquierda */
             }
-            .nav-header { 
-                padding: 15px 5px; 
-                font-size: 0.8em; 
+            /* Clase que activa JavaScript para mostrar el menú */
+            #sidebar.open {
+                transform: translateX(0);
             }
-            .btn { 
-                padding: 15px 10px; 
-                font-size: 0.75em; 
-                text-align: center; /* En móvil se ve más ordenado centrar los emojis/texto */
-            }
-            .grid-grupos { 
-                grid-template-columns: 1fr; 
-            }
-            .top-bar { 
-                padding: 10px; 
-                justify-content: center; 
-            }
-            .selector-torneo {
-                font-size: 0.85em;
-                padding: 6px 10px;
-            }
-            #content { 
-                padding: 10px; 
-            }
-            .seccion-titulo {
-                font-size: 1em;
-                margin-bottom: 15px;
-            }
-            .match-row {
-                padding: 12px 8px;
-                font-size: 0.9em;
-            }
-            .match-team {
-                width: 38%;
-            }
-            td, th {
-                padding: 8px 6px;
-                font-size: 0.85em;
-            }
-            .bracket-wrapper { 
-                flex-direction: column; 
-                align-items: stretch; 
-            }
-            .bracket-column { 
-                height: auto; 
-                gap: 15px; 
-            }
+            .grid-grupos { grid-template-columns: 1fr; }
+            .top-bar { padding: 10px; }
+            #content { padding: 10px; }
+            .bracket-wrapper { flex-direction: column; align-items: stretch; }
+            .bracket-column { height: auto; gap: 15px; }
         }
     </style>
 </head>
@@ -228,6 +214,7 @@
 
     <div id="main-container">
         <div class="top-bar">
+            <button class="menu-toggle" onclick="toggleMenu()">☰ Menu</button>
             <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
                 <option value="masculino">⚽ Fútbol Masculino</option>
                 <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
@@ -273,6 +260,19 @@
     </div>
 
     <script>
+        // Función para abrir y cerrar el menú plegable en móvil
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Cierra el menú automáticamente cuando se pulsa una sección (sólo en móviles)
+        function comprobarYCerrarMenu() {
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+        }
+
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
@@ -440,7 +440,7 @@
         }
 
         function renderClasificacion(res) {
-            const container = document.getElementById('grupos-container'); if (!container) return;
+            const container = document.getElementById('grid-grupos'); if (!container) return;
             const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'equipo');
             const grupos = {};
             equiposValidos.forEach(fila => {
@@ -488,6 +488,7 @@
                 const elem = document.getElementById(id); const btn = document.getElementById('btn-' + id);
                 if (elem) elem.classList.toggle('hidden', id !== s); if (btn) btn.classList.toggle('active', id === s);
             });
+            comprobarYCerrarMenu(); // Cierra el menú al hacer clic en un enlace en el móvil
         }
         window.onload = cargarTodo;
     </script>
