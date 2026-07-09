@@ -317,7 +317,7 @@
             }).join('');
         }
 
-        // SECCIÓN EN VIVO MEJORADA CON FORMATO (MIN:SEG) INCLUSO SI ESTÁ PAUSADO
+        // SECCIÓN EN VIVO COMPLETAMENTE CORREGIDA (SOPORTA SEGUNDOS EN VIVO Y EN PAUSA)
         function renderEnVivo(res) {
             const container = document.getElementById('vivo-container'); if (!container) return;
             const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
@@ -340,15 +340,16 @@
 
             const elemCrono = document.getElementById('cronometro-live');
 
-            // Función interna para dar formato MM:SS exacto a cualquier número de minutos
+            // Función para dar formato MM:SS exacto sacando los segundos reales de los decimales de la columna D
             function construirTextoFormato(minutosTotales) {
                 if (minutosTotales <= 0) return "00:00";
-                const m = Math.floor(minutosTotales);
-                const s = Math.round((minutosTotales - m) * 60);
-                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                const minutosEnteros = Math.floor(minutosTotales);
+                // Multiplicamos la parte decimal por 60 y redondeamos para evitar discrepancias
+                const segundosEnteros = Math.round((minutosTotales - minutosEnteros) * 60);
+                return `${minutosEnteros.toString().padStart(2, '0')}:${segundosEnteros.toString().padStart(2, '0')}`;
             }
 
-            // MEJORA: Si la hora de actualización está vacía (botón pausar presionado), muestra el tiempo exacto congelado en min:seg
+            // Si no hay hora de actualización en la columna E, extrae el tiempo en pausa con sus segundos reales exactos
             if (!horaDeActualizacionTexto.includes(':')) { 
                 elemCrono.innerText = `⏱️ PAUSA — ${construirTextoFormato(minutosRestantesAlActualizar)}`; 
                 return; 
