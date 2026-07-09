@@ -156,18 +156,17 @@
             overflow-y: auto; 
         }
 
-        /* TARJETAS Y CONTENEDORES CON DESPLAZAMIENTO LATERAL (BARRA DESLIZADORA) */
+        /* TARJETAS Y CONTENEDORES CON DESPLAZAMIENTO LATERAL */
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .card { background: var(--blanco); border-radius: 6px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
         
-        /* Contenedor responsivo deslizable para tablas */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
         
-        table { width: 100%; border-collapse: collapse; min-width: 500px; } /* Mantiene una anchura mínima para forzar el deslizamiento */
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
         td, th { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; white-space: nowrap; }
         th { background: #f9f9f9; color: #7f8c8d; font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
         td b { font-size: 1.05em; }
@@ -305,6 +304,11 @@
         let partidosJugadosPorClub = {};
         let listaGoleadoresCache = [];
         let listaTarjetasCache = [];
+        
+        // Índices dinámicos de las columnas detectados automáticamente
+        let colIdxGoles = 3; 
+        let colIdxAmarillas = 2;
+        let colIdxSancion = 3;
 
         function cambiarTorneo(nuevoTorneo) {
             localStorage.setItem('torneo_seleccionado', nuevoTorneo);
@@ -340,6 +344,8 @@
 
         async function cargarTodo() {
             try {
+                partidosJugadosPorClub = {};
+
                 const resP = await consultarGoogleSheet('Partidos');
                 const resC = await consultarGoogleSheet('Clasificacion');
                 const resG = await consultarGoogleSheet('Goleadores');
@@ -350,13 +356,28 @@
                 if (resP && resP.rows.length > 0) renderPartidos(resP.rows);
                 if (resC) renderClasificacion(resC);
                 
-                if (resG) {
+                // Procesar Goleadores de forma inteligente
+                if (resG && resG.rows.length > 0) {
+                    const cabeceraG = resG.rows[0];
+                    // Buscamos dinámicamente en qué columna pusiste los goles
+                    const idxEncontrado = cabeceraG.findIndex(c => normalizarTexto(c).includes('gol'));
+                    if (idxEncontrado !== -1) colIdxGoles = idxEncontrado;
+
                     listaGoleadoresCache = resG.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'jugador');
-                    // Ordenamos de mayor a menor cantidad de goles de forma estricta
-                    listaGoleadoresCache.sort((a,b) => (parseInt(b[3])||0)-(parseInt(a[3])||0));
+                    
+                    // Ordenación estricta usando el índice correcto encontrado
+                    listaGoleadoresCache.sort((a,b) => (parseInt(b[colIdxGoles])||0)-(parseInt(a[colIdxGoles])||0));
                 }
                 
-                if (resS) {
+                // Procesar Tarjetas de forma inteligente
+                if (resS && resS.rows.length > 0) {
+                    const cabeceraS = resS.rows[0];
+                    const idxAm = cabeceraS.findIndex(c => c.includes('🟨') || normalizarTexto(c).includes('amarilla'));
+                    const idxSan = cabeceraS.findIndex(c => normalizarTexto(c).includes('estado') || normalizarTexto(c).includes('sancion'));
+                    
+                    if (idxAm !== -1) colIdxAmarillas = idxAm;
+                    if (idxSan !== -1) colIdxSancion = idxSan;
+
                     listaTarjetasCache = resS.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'nombre');
                 }
 
@@ -368,54 +389,60 @@
             } catch (e) { console.error(e); }
         }
 
-        // GOLEADORES: Filtro dinámico y Top 5 de más goles
         function filtrarGoleadores(query) {
             const container = document.getElementById("body-gol"); if (!container) return;
             const q = normalizarTexto(query);
             
             const filtrados = q === '' ? listaGoleadoresCache.slice(0, 5) : listaGoleadoresCache.filter(f => normalizarTexto(f[0]).includes(q));
             
-            container.innerHTML = filtrados.map(fila => `<tr><td><b>${fila[0].trim()}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[normalizarTexto(fila[1])]||0}</td><td class="txt-centro pts-verde">${fila[3]||'0'}</td></tr>`).join('');
+            container.innerHTML = filtrados.map(fila => {
+                const clubNormalizado = normalizarTexto(fila[1]);
+                const pjJugador = partidosJugadosPorClub[clubNormalizado] || 0;
+                // Leemos el valor exacto de la columna de goles dinámica
+                const golesJugador = fila[colIdxGoles] || '0';
+                return `<tr><td><b>${fila[0].trim()}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${pjJugador}</td><td class="txt-centro pts-verde">${golesJugador}</td></tr>`;
+            }).join('');
         }
 
-        // SANCIONES: Filtro dinámico, Unificado de Goles y Top 5 ordenado por más Tarjetas
         function filtrarTarjetas(query) {
             const container = document.getElementById("body-tar"); if (!container) return;
             const q = normalizarTexto(query);
 
-            // Copiamos los nombres y clubes exactos de Goleadores
             const unificados = listaGoleadoresCache.map(goleador => {
                 const nombreGoleador = normalizarTexto(goleador[0]);
                 const datosTarjeta = listaTarjetasCache.find(t => normalizarTexto(t[0]) === nombreGoleador);
                 return [
-                    goleador[0], // Nombre
-                    goleador[1], // Club
-                    datosTarjeta ? datosTarjeta[2] : '0', // Amarillas
-                    datosTarjeta ? datosTarjeta[3] : ''  // Estado Sanción
+                    goleador[0], 
+                    goleador[1], 
+                    datosTarjeta ? datosTarjeta[colIdxAmarillas] : '0', 
+                    datosTarjeta ? datosTarjeta[colIdxSancion] : ''  
                 ];
             });
 
-            // ORDENACIÓN ESTRICTA: Ordena la lista unificada de mayor a menor cantidad de tarjetas amarillas
             unificados.sort((a, b) => (parseInt(b[2]) || 0) - (parseInt(a[2]) || 0));
 
-            // Si está vacío saca los 5 con más tarjetas, si se escribe en el buscador filtra la lista completa
             const filtrados = q === '' ? unificados.slice(0, 5) : unificados.filter(f => normalizarTexto(f[0]).includes(q));
 
             container.innerHTML = filtrados.map(fila => {
                 let s = fila[3] ? fila[3].toString().trim() : '';
                 let estado = (s==='1'||normalizarTexto(s)==='sancionado'||normalizarTexto(s)==='si') ? `<span class="badge-sancion">SANCIONADO</span>` : `<span class="badge-ok">OK</span>`;
-                return `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[normalizarTexto(fila[1])]||0}</td><td class="txt-centro"><span class="badge-amarilla">${fila[2]||'0'}</span></td><td class="txt-derecha">${estado}</td></tr>`;
+                
+                const clubNormalizado = normalizarTexto(fila[1]);
+                const pjJugador = partidosJugadosPorClub[clubNormalizado] || 0;
+
+                return `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${pjJugador}</td><td class="txt-centro"><span class="badge-amarilla">${fila[2]||'0'}</span></td><td class="txt-derecha">${estado}</td></tr>`;
             }).join('');
         }
 
         function renderPartidos(rows) {
             const container = document.getElementById('partidos-container'); if (!container) return;
-            partidosJugadosPorClub = {};
             const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[1] && normalizarTexto(fila[1]) !== 'local');
+            
             container.innerHTML = partidosValidos.map(fila => {
                 const hora = fila[0] || ''; const local = fila[1] || ''; const visitante = fila[2] || '';
                 const gL = parseInt(fila[3]), gV = parseInt(fila[4]);
                 let marcadorHTML = !isNaN(gL) && !isNaN(gV) ? `<div class="match-score">${gL}:${gV}</div>` : `<div class="match-score hora">${hora || '-:-'}</div>`;
+                
                 if (!isNaN(gL) && !isNaN(gV)) {
                     partidosJugadosPorClub[normalizarTexto(local)] = (partidosJugadosPorClub[normalizarTexto(local)] || 0) + 1;
                     partidosJugadosPorClub[normalizarTexto(visitante)] = (partidosJugadosPorClub[normalizarTexto(visitante)] || 0) + 1;
@@ -431,7 +458,16 @@
             equiposValidos.forEach(fila => {
                 const grupo = fila[1] || 'Único';
                 if (!grupos[grupo]) grupos[grupo] = [];
-                grupos[grupo].push({ nombre: fila[0].trim(), pts: parseInt(fila[3])||0, dif: fila[2]||'0', pj: partidosJugadosPorClub[normalizarTexto(fila[0])]||0 });
+                
+                const clubNombre = fila[0].trim();
+                const pjOficial = partidosJugadosPorClub[normalizarTexto(clubNombre)] || 0;
+
+                grupos[grupo].push({ 
+                    nombre: clubNombre, 
+                    pts: parseInt(fila[3])||0, 
+                    dif: fila[2]||'0', 
+                    pj: pjOficial 
+                });
             });
             container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a,b) => b.pts - a.pts);
