@@ -317,7 +317,7 @@
             }).join('');
         }
 
-        // SECCIÓN EN VIVO COMPLETAMENTE CORREGIDA (SOPORTA SEGUNDOS EN VIVO Y EN PAUSA)
+        // SECCIÓN EN VIVO COMPLETAMENTE ADAPTADA AL FORMATO DE PAUSA DE APPS SCRIPT
         function renderEnVivo(res) {
             const container = document.getElementById('vivo-container'); if (!container) return;
             const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
@@ -340,16 +340,16 @@
 
             const elemCrono = document.getElementById('cronometro-live');
 
-            // Función para dar formato MM:SS exacto sacando los segundos reales de los decimales de la columna D
-            function construirTextoFormato(minutosTotales) {
-                if (minutosTotales <= 0) return "00:00";
-                const minutosEnteros = Math.floor(minutosTotales);
-                // Multiplicamos la parte decimal por 60 y redondeamos para evitar discrepancias
-                const segundosEnteros = Math.round((minutosTotales - minutosEnteros) * 60);
-                return `${minutosEnteros.toString().padStart(2, '0')}:${segundosEnteros.toString().padStart(2, '0')}`;
+            // Procesa el formato de pausa (Ej: extrae los minutos enteros y los segundos tras el punto decimal)
+            function construirTextoFormato(valorExcel) {
+                if (valorExcel <= 0) return "00:00";
+                const minutos = Math.floor(valorExcel);
+                let segundos = Math.round((valorExcel - minutos) * 100);
+                if (segundos >= 60) segundos = 59;
+                return `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
             }
 
-            // Si no hay hora de actualización en la columna E, extrae el tiempo en pausa con sus segundos reales exactos
+            // Si el tiempo está pausado (la columna E no tiene hora registrada)
             if (!horaDeActualizacionTexto.includes(':')) { 
                 elemCrono.innerText = `⏱️ PAUSA — ${construirTextoFormato(minutosRestantesAlActualizar)}`; 
                 return; 
@@ -362,7 +362,13 @@
             function actualizarCuentaAtras() {
                 const ahora = new Date();
                 const segundosTranscurridos = Math.floor((ahora - fechaActualizacion) / 1000);
-                let segundosFinalesRestantes = (minutosRestantesAlActualizar * 60) - segundosTranscurridos;
+                
+                // Desglosamos los minutos y segundos reales base guardados en el Excel
+                const minsIniciales = Math.floor(minutosRestantesAlActualizar);
+                const segsIniciales = Math.round((minutosRestantesAlActualizar - minsIniciales) * 100);
+                const segundosTotalesBase = (minsIniciales * 60) + segsIniciales;
+
+                let segundosFinalesRestantes = segundosTotalesBase - segundosTranscurridos;
 
                 if (segundosFinalesRestantes <= 0) {
                     elemCrono.innerText = `🏁 TIEMPO CONCLUIDO — 00:00`; clearInterval(intervaloCronometroLive);
