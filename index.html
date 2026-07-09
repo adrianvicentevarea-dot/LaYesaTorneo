@@ -26,146 +26,36 @@
 
         /* MENU LATERAL */
         #sidebar { 
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 200px; 
-            background: var(--azul-nav); 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            z-index: 1001; 
-            overflow-y: auto;
-            border-right: 1px solid rgba(255,255,255,0.05);
-            transform: translateX(-100%); 
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute; left: 0; top: 0; bottom: 0; width: 200px; 
+            background: var(--azul-nav); color: white; display: flex; flex-direction: column; 
+            z-index: 1001; overflow-y: auto; border-right: 1px solid rgba(255,255,255,0.05);
+            transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
-        #sidebar.open { 
-            transform: translateX(0); 
-        }
+        #sidebar.open { transform: translateX(0); }
+        .nav-header { padding: 20px 15px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1em; color: var(--verde); letter-spacing: 0.5px; }
+        .btn { padding: 15px 20px; cursor: pointer; color: #bdc3c7; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85em; font-weight: bold; text-decoration: none; text-align: left; text-transform: uppercase; }
+        .btn:hover, .btn.active { background: var(--verde); color: white; }
+        #btn-vivo.active { background: var(--en-vivo); }
 
-        .nav-header { 
-            padding: 20px 15px; 
-            font-weight: bold; 
-            text-align: center; 
-            border-bottom: 1px solid rgba(255,255,255,0.1); 
-            font-size: 1em; 
-            color: var(--verde); 
-            letter-spacing: 0.5px; 
-        }
-
-        .btn { 
-            padding: 15px 20px; 
-            cursor: pointer; 
-            color: #bdc3c7; 
-            border-bottom: 1px solid rgba(255,255,255,0.05); 
-            font-size: 0.85em; 
-            font-weight: bold; 
-            text-decoration: none;
-            text-align: left;
-            text-transform: uppercase;
-        }
-        .btn:hover, .btn.active { 
-            background: var(--verde); 
-            color: white; 
-        }
-        #btn-vivo.active { 
-            background: var(--en-vivo); 
-        }
-
-        /* CONTENEDOR PRINCIPAL DERECHO */
-        #main-container { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-            width: 100%;
-        }
-        
-        /* BARRA SUPERIOR CONSTANTE */
-        .top-bar { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            padding: 15px 20px; 
-            background: rgba(0, 0, 0, 0.1); 
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            z-index: 10; 
-        }
-
-        .menu-toggle {
-            background: var(--azul-nav);
-            border: 2px solid var(--verde);
-            color: white;
-            padding: 8px 15px;
-            font-size: 1em;
-            border-radius: 6px;
-            cursor: pointer;
-            display: block; 
-            font-weight: bold;
-        }
-
-        .selector-torneo { 
-            background: var(--azul-nav); 
-            color: white; 
-            border: 2px solid var(--verde); 
-            padding: 8px 15px; 
-            font-size: 0.9em; 
-            font-weight: bold; 
-            border-radius: 6px; 
-            outline: none; 
-            cursor: pointer; 
-        }
+        /* CONTENEDOR PRINCIPAL */
+        #main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(0, 0, 0, 0.1); border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 10; }
+        .menu-toggle { background: var(--azul-nav); border: 2px solid var(--verde); color: white; padding: 8px 15px; font-size: 1em; border-radius: 6px; cursor: pointer; display: block; font-weight: bold; }
+        .selector-torneo { background: var(--azul-nav); color: white; border: 2px solid var(--verde); padding: 8px 15px; font-size: 0.9em; font-weight: bold; border-radius: 6px; outline: none; cursor: pointer; }
         .selector-torneo option { background: var(--azul-nav); color: white; }
 
-        /* BUSCADOR DE JUGADORES */
-        .search-container {
-            margin-bottom: 12px;
-            display: flex;
-            width: 100%;
-        }
-        .search-input {
-            width: 100%;
-            padding: 10px 15px;
-            border-radius: 6px;
-            border: 2px solid rgba(255,255,255,0.1);
-            background: var(--azul-nav);
-            color: white;
-            font-size: 0.9em;
-            outline: none;
-        }
-        .search-input:focus {
-            border-color: var(--verde);
-        }
+        /* BUSCADOR */
+        .search-container { margin-bottom: 12px; display: flex; width: 100%; }
+        .search-input { width: 100%; padding: 10px 15px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.1); background: var(--azul-nav); color: white; font-size: 0.9em; outline: none; }
+        .search-input:focus { border-color: var(--verde); }
 
-        /* Capa oscura de fondo */
-        #menu-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            display: none;
-        }
+        #menu-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; }
+        #content { flex: 1; padding: 20px; overflow-y: auto; }
 
-        /* CONTENIDO SCROLLABLE */
-        #content { 
-            flex: 1; 
-            padding: 20px; 
-            overflow-y: auto; 
-        }
-
-        /* TARJETAS Y CONTENEDORES CON DESPLAZAMIENTO LATERAL */
+        /* TARJETAS Y TABLAS */
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .card { background: var(--blanco); border-radius: 6px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
-        
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 500px; }
         td, th { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; white-space: nowrap; }
         th { background: #f9f9f9; color: #7f8c8d; font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
@@ -179,30 +69,13 @@
         .badge-amarilla { background: #f1c40f; padding: 3px 8px; border-radius: 3px; font-weight: bold; color: #000; font-size: 0.95em; }
         .badge-sancion { background: var(--rojo); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
         .badge-ok { background: var(--verde); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
+        .brazalete-capitan { background-color: var(--rojo); color: white; font-weight: bold; font-size: 0.75em; padding: 2px 5px; border-radius: 3px; margin-left: 6px; display: inline-block; vertical-align: middle; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 1px 2px rgba(0,0,0,0.15); line-height: 1; }
 
-        /* BRAZALETE DE CAPITÁN */
-        .brazalete-capitan {
-            background-color: var(--rojo);
-            color: white;
-            font-weight: bold;
-            font-size: 0.75em;
-            padding: 2px 5px;
-            border-radius: 3px;
-            margin-left: 6px;
-            display: inline-block;
-            vertical-align: middle;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-            line-height: 1;
-        }
-
-        /* PARTIDOS */
+        /* PARTIDOS Y EN VIVO */
         .match-row { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 1.1em; }
         .match-team { width: 42%; font-weight: bold; color: #333; }
         .match-score { background: var(--azul-nav); color: white; padding: 5px 12px; border-radius: 4px; min-width: 60px; text-align: center; font-weight: bold; font-size: 1.1em; }
         .match-score.hora { background: #7f8c8d; font-size: 0.95em; }
-
-        /* DISEÑO EN VIVO */
         .live-card { background: linear-gradient(135deg, #ffffff 0%, #fdf2f2 100%); border-left: 5px solid var(--en-vivo); }
         .badge-live-score { background: var(--en-vivo); color: white; font-size: 1.5em; padding: 8px 18px; border-radius: 6px; font-weight: bold; min-width: 80px; text-align: center; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
         .live-time { font-size: 1.2em; font-weight: bold; color: var(--en-vivo); letter-spacing: 0.5px; }
@@ -211,15 +84,12 @@
         .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; -webkit-overflow-scrolling: touch; }
         .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 550px; min-width: 220px; flex: 1; }
         .bracket-column.final-col { justify-content: center; min-width: 240px; }
-        
         .bracket-match { background: white; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; font-size: 0.95em; width: 100%; margin-bottom: 10px; }
         .bracket-title { background: #f4f6f7; font-size: 0.8em; font-weight: bold; text-align: center; color: #666; border-bottom: 1px solid #ddd; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
-        
         .bracket-team-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; }
         .bracket-name { font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
         .bracket-goals { background: var(--azul-nav); color: white; font-weight: bold; padding: 4px 10px; border-radius: 3px; min-width: 30px; text-align: center; font-size: 1em; }
         .bracket-goals.empty { background: #e0e0e0; color: #999; }
-        
         .winner { background: #ebf5fb; }
         .winner .bracket-name { color: #2980b9; }
         .winner .bracket-goals { background: var(--verde); }
@@ -259,43 +129,18 @@
 
         <main id="content">
             <div id="partidos"><div id="partidos-container"></div></div>
-            
             <div id="vivo" class="hidden"><div id="vivo-container"></div></div>
-
             <div id="grupos" class="hidden"><div id="grupos-container" class="grid-grupos"></div></div>
-
             <div id="elim" class="hidden"><div class="bracket-wrapper" id="bracket-container"></div></div>
 
             <div id="gol" class="hidden">
-                <div class="search-container">
-                    <input type="text" id="search-gol" class="search-input" placeholder="🔍 Buscar goleador/a..." oninput="filtrarGoleadores(this.value)">
-                </div>
-                <div class="card">
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
-                            </thead>
-                            <tbody id="body-gol"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="search-container"><input type="text" id="search-gol" class="search-input" placeholder="🔍 Buscar goleador/a..." oninput="filtrarGoleadores(this.value)"></div>
+                <div class="card"><div class="table-responsive"><table><thead><tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr></thead><tbody id="body-gol"></tbody></table></div></div>
             </div>
             
             <div id="tar" class="hidden">
-                <div class="search-container">
-                    <input type="text" id="search-tar" class="search-input" placeholder="🔍 Buscar jugador/a..." oninput="filtrarTarjetas(this.value)">
-                </div>
-                <div class="card">
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
-                            </thead>
-                            <tbody id="body-tar"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="search-container"><input type="text" id="search-tar" class="search-input" placeholder="🔍 Buscar jugador/a..." oninput="filtrarTarjetas(this.value)"></div>
+                <div class="card"><div class="table-responsive"><table><thead><tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr></thead><tbody id="body-tar"></tbody></table></div></div>
             </div>
         </main>
     </div>
@@ -341,7 +186,6 @@
             if (!nombreCrudo) return '';
             let nombre = nombreCrudo.toString().trim();
             const regexCapitan = /\s*[\(]?\b[cC]\b[\)]?$/;
-            
             if (regexCapitan.test(nombre)) {
                 nombre = nombre.replace(regexCapitan, '').trim();
                 return `${nombre} <span class="brazalete-capitan" title="Capitán">C</span>`;
@@ -349,14 +193,18 @@
             return nombre;
         }
 
-        function extraerValorCelda(celda) {
+        // FUNCIÓN DE EXTRACCIÓN MODIFICADA: SEGUNDOS EXCLUSIVOS PARA EN VIVO
+        function extraerValorCelda(celda, esPestañaVivo = false) {
             if (!celda) return '';
             if (celda.v !== null && celda.v !== undefined && typeof celda.v === 'string' && celda.v.includes('Date(')) {
                 const partes = celda.v.match(/\d+/g);
                 if (partes && partes.length >= 5) {
-                    // Si trae segundos los usamos, si no por defecto :00
-                    const segs = partes[5] ? partes[5].padStart(2, '0') : '00';
-                    return `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}:${segs}`;
+                    if (esPestañaVivo) {
+                        const segs = partes[5] ? partes[5].padStart(2, '0') : '00';
+                        return `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}:${segs}`;
+                    } else {
+                        return `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}`;
+                    }
                 }
             }
             if (celda.f !== null && celda.f !== undefined) return celda.f.trim();
@@ -371,14 +219,15 @@
                 const texto = await respuesta.text();
                 const jsonNeto = JSON.parse(texto.slice(texto.indexOf('{'), texto.lastIndexOf('}') + 1));
                 if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { rows: [] };
-                return { rows: jsonNeto.table.rows.map(r => r.c ? r.c.map(celda => extraerValorCelda(celda)) : []) };
+                
+                const esVivo = (nombrePestaña === 'EnVivo');
+                return { rows: jsonNeto.table.rows.map(r => r.c ? r.c.map(celda => extraerValorCelda(celda, esVivo)) : []) };
             } catch (error) { return null; }
         }
 
         async function cargarTodo() {
             try {
                 partidosJugadosPorClub = {};
-
                 const resP = await consultarGoogleSheet('Partidos');
                 const resC = await consultarGoogleSheet('Clasificacion');
                 const resG = await consultarGoogleSheet('Goleadores');
@@ -393,10 +242,7 @@
                     const cabeceraG = resG.rows[0];
                     const idxEncontrado = cabeceraG.findIndex(c => normalizarTexto(c).includes('gol'));
                     if (idxEncontrado !== -1) colIdxGoles = idxEncontrado;
-
-                    listaGoleadoresCache = resG.rows.filter((fila, idx) => {
-                        return idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '';
-                    });
+                    listaGoleadoresCache = resG.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
                     listaGoleadoresCache.sort((a,b) => (parseInt(b[colIdxGoles])||0)-(parseInt(a[colIdxGoles])||0));
                 }
                 
@@ -404,18 +250,12 @@
                     const cabeceraS = resS.rows[0];
                     const idxAm = cabeceraS.findIndex(c => c.includes('🟨') || normalizarTexto(c).includes('amarilla'));
                     const idxSan = cabeceraS.findIndex(c => normalizarTexto(c).includes('estado') || normalizarTexto(c).includes('sancion'));
-                    
                     if (idxAm !== -1) colIdxAmarillas = idxAm;
                     if (idxSan !== -1) colIdxSancion = idxSan;
-
-                    listaTarjetasCache = resS.rows.filter((fila, idx) => {
-                        return idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '';
-                    });
+                    listaTarjetasCache = resS.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
                 }
 
-                filtrarGoleadores('');
-                filtrarTarjetas('');
-
+                filtrarGoleadores(''); filtrarTarjetas('');
                 if (resE) renderBracket(resE);
                 if (resV) renderEnVivo(resV);
             } catch (e) { console.error(e); }
@@ -425,55 +265,36 @@
             const container = document.getElementById("body-gol"); if (!container) return;
             const q = normalizarTexto(query);
             const filtrados = q === '' ? listaGoleadoresCache.slice(0, 5) : listaGoleadoresCache.filter(f => normalizarTexto(f[0]).includes(q));
-            
             container.innerHTML = filtrados.map(fila => {
                 const clubNormalizado = normalizarTexto(fila[1]);
-                const pjJugador = partidosJugadosPorClub[clubNormalizado] || 0;
-                const golesJugador = fila[colIdxGoles] || '0';
-                const nombreFormateado = formatearNombreConCapitan(fila[0]);
-                return `<tr><td><b>${nombreFormateado}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${pjJugador}</td><td class="txt-centro pts-verde">${golesJugador}</td></tr>`;
+                return `<tr><td><b>${formatearNombreConCapitan(fila[0])}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[clubNormalizado]||0}</td><td class="txt-centro pts-verde">${fila[colIdxGoles]||'0'}</td></tr>`;
             }).join('');
         }
 
         function filtrarTarjetas(query) {
             const container = document.getElementById("body-tar"); if (!container) return;
             const q = normalizarTexto(query);
-
             const unificados = listaGoleadoresCache.map(goleador => {
                 const nombreGoleador = normalizarTexto(goleador[0]);
-                const datosTarjeta = listaTarjetasCache.find(t => {
-                    const tNombre = normalizarTexto(t[0]).replace(/\s*[\(]?[cC][\)]?$/, '').trim();
-                    const gNombre = nombreGoleador.replace(/\s*[\(]?[cC][\)]?$/, '').trim();
-                    return tNombre === gNombre;
-                });
+                const datosTarjeta = listaTarjetasCache.find(t => normalizarTexto(t[0]).replace(/\s*[\(]?[cC][\)]?$/, '').trim() === nombreGoleador.replace(/\s*[\(]?[cC][\)]?$/, '').trim());
                 return [goleador[0], goleador[1], datosTarjeta ? datosTarjeta[colIdxAmarillas] : '0', datosTarjeta ? datosTarjeta[colIdxSancion] : ''];
             });
-
             unificados.sort((a, b) => (parseInt(b[2]) || 0) - (parseInt(a[2]) || 0));
             const filtrados = q === '' ? unificados.slice(0, 5) : unificados.filter(f => normalizarTexto(f[0]).includes(q));
-
             container.innerHTML = filtrados.map(fila => {
                 let s = fila[3] ? fila[3].toString().trim() : '';
                 let estado = (s==='1'||normalizarTexto(s)==='sancionado'||normalizarTexto(s)==='si') ? `<span class="badge-sancion">SANCIONADO</span>` : `<span class="badge-ok">OK</span>`;
-                const clubNormalizado = normalizarTexto(fila[1]);
-                const pjJugador = partidosJugadosPorClub[clubNormalizado] || 0;
-                const nombreFormateado = formatearNombreConCapitan(fila[0]);
-
-                return `<tr><td><b>${nombreFormateado}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${pjJugador}</td><td class="txt-centro"><span class="badge-amarilla">${fila[2]||'0'}</span></td><td class="txt-derecha">${estado}</td></tr>`;
+                return `<tr><td><b>${formatearNombreConCapitan(fila[0])}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[normalizarTexto(fila[1])]||0}</td><td class="txt-centro"><span class="badge-amarilla">${fila[2]||'0'}</span></td><td class="txt-derecha">${estado}</td></tr>`;
             }).join('');
         }
 
         function renderPartidos(rows) {
             const container = document.getElementById('partidos-container'); if (!container) return;
-            const partidosValidos = rows.filter((fila, idx) => {
-                return idx > 0 && fila && fila[1] && fila[1].toString().trim() !== '';
-            });
-            
+            const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[1] && fila[1].toString().trim() !== '');
             container.innerHTML = partidosValidos.map(fila => {
                 const hora = fila[0] || ''; const local = fila[1] || ''; const visitante = fila[2] || '';
                 const gL = parseInt(fila[3]), gV = parseInt(fila[4]);
                 let marcadorHTML = !isNaN(gL) && !isNaN(gV) ? `<div class="match-score">${gL}:${gV}</div>` : `<div class="match-score hora">${hora || '-:-'}</div>`;
-                
                 if (!isNaN(gL) && !isNaN(gV)) {
                     partidosJugadosPorClub[normalizarTexto(local)] = (partidosJugadosPorClub[normalizarTexto(local)] || 0) + 1;
                     partidosJugadosPorClub[normalizarTexto(visitante)] = (partidosJugadosPorClub[normalizarTexto(visitante)] || 0) + 1;
@@ -484,17 +305,12 @@
 
         function renderClasificacion(res) {
             const container = document.getElementById('grupos-container'); if (!container) return;
-            const equiposValidos = res.rows.filter((fila, idx) => {
-                return idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '';
-            });
+            const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
             const grupos = {};
             equiposValidos.forEach(fila => {
-                const grupo = fila[1] || 'Único';
-                if (!grupos[grupo]) grupos[grupo] = [];
+                const grupo = fila[1] || 'Único'; if (!grupos[grupo]) grupos[grupo] = [];
                 const clubNombre = fila[0].trim();
-                const pjOficial = partidosJugadosPorClub[normalizarTexto(clubNombre)] || 0;
-
-                grupos[grupo].push({ nombre: clubNombre, pts: parseInt(fila[3])||0, dif: fila[2]||'0', pj: pjOficial });
+                grupos[grupo].push({ nombre: clubNombre, pts: parseInt(fila[3])||0, dif: fila[2]||'0', pj: partidosJugadosPorClub[normalizarTexto(clubNombre)] || 0 });
             });
             container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a,b) => b.pts - a.pts);
@@ -502,29 +318,19 @@
             }).join('');
         }
 
-        // LÓGICA DINÁMICA AVANZADA: CONTROL DE PAUSAS Y INICIOS TARDÍOS SIN FALLOS AL RECARGAR
         function renderEnVivo(res) {
             const container = document.getElementById('vivo-container'); if (!container) return;
             const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
-            
             if (intervaloCronometroLive) clearInterval(intervaloCronometroLive);
+            if (!filaVivo) { container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`; return; }
 
-            if (!filaVivo) { 
-                container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`; 
-                return; 
-            }
-
-            const local = filaVivo[0];
-            const marcador = filaVivo[1] || '0:0';
-            const visitante = filaVivo[2];
-            const minutosRestantesAlActualizar = parseFloat(filaVivo[3]) || 0; // Columna D
-            const horaDeActualizacionTexto = filaVivo[4] || ''; // Columna E (Formatos válidos: HH:MM:SS o HH:MM)
+            const local = filaVivo[0]; const marcador = filaVivo[1] || '0:0'; const visitante = filaVivo[2];
+            const minutosRestantesAlActualizar = parseFloat(filaVivo[3]) || 0;
+            const horaDeActualizacionTexto = filaVivo[4] || '';
 
             container.innerHTML = `
                 <div class="card live-card">
-                    <div style="padding: 12px 20px; background: rgba(231, 76, 60, 0.05); text-align:center;">
-                        <span id="cronometro-live" class="live-time">⏱️ CALCULANDO...</span>
-                    </div>
+                    <div style="padding: 12px 20px; background: rgba(231, 76, 60, 0.05); text-align:center;"><span id="cronometro-live" class="live-time">⏱️ CALCULANDO...</span></div>
                     <div class="match-row" style="padding: 30px 20px;">
                         <div class="match-team" style="text-align:right; font-size:1.25em;">${local}</div>
                         <div class="badge-live-score">${marcador}</div>
@@ -533,42 +339,25 @@
                 </div>`;
 
             const elemCrono = document.getElementById('cronometro-live');
+            if (minutosRestantesAlActualizar <= 0 || !horaDeActualizacionTexto.includes(':')) { elemCrono.innerText = `⏱️ TIEMPO DETENIDO / DESCANSO`; return; }
 
-            // Si los minutos son 0 o no hay registro de hora, el partido está en pausa/concluido
-            if (minutosRestantesAlActualizar <= 0 || !horaDeActualizacionTexto.includes(':')) {
-                elemCrono.innerText = `⏱️ TIEMPO DETENIDO / DESCANSO`;
-                return;
-            }
-
-            // Calculamos el hito temporal exacto basándonos en los datos del Excel
             const partesHora = horaDeActualizacionTexto.split(':');
             const fechaActualizacion = new Date();
             fechaActualizacion.setHours(parseInt(partesHora[0]), parseInt(partesHora[1]), partesHora[2] ? parseInt(partesHora[2]) : 0, 0);
 
             function actualizarCuentaAtras() {
                 const ahora = new Date();
-                
-                // Segundos transcurridos desde que le diste a guardar/iniciar en el excel
                 const segundosTranscurridos = Math.floor((ahora - fechaActualizacion) / 1000);
-                
-                // Segundos totales de juego que debían quedar
-                const segundosTotalesDeJuego = minutosRestantesAlActualizar * 60;
-                
-                // Los segundos reales que quedan en este instante exacto
-                let segundosFinalesRestantes = segundosTotalesDeJuego - segundosTranscurridos;
+                let segundosFinalesRestantes = (minutosRestantesAlActualizar * 60) - segundosTranscurridos;
 
                 if (segundosFinalesRestantes <= 0) {
-                    elemCrono.innerText = `🏁 TIEMPO CONCLUIDO`;
-                    clearInterval(intervaloCronometroLive);
+                    elemCrono.innerText = `🏁 TIEMPO CONCLUIDO`; clearInterval(intervaloCronometroLive);
                 } else {
-                    const mins = Math.floor(segundosFinalesRestantes / 60);
-                    const segs = segundosFinalesRestantes % 60;
+                    const mins = Math.floor(segundosFinalesRestantes / 60); const segs = segundosFinalesRestantes % 60;
                     elemCrono.innerText = `⏱️ EN VIVO — ${mins.toString().padStart(2, '0')}:${segs.toString().padStart(2, '0')}`;
                 }
             }
-
-            actualizarCuentaAtras();
-            intervaloCronometroLive = setInterval(actualizarCuentaAtras, 1000);
+            actualizarCuentaAtras(); intervaloCronometroLive = setInterval(actualizarCuentaAtras, 1000);
         }
 
         function transformarPartidoBracket(filaFase, titulo) {
@@ -592,7 +381,6 @@
             const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('menu-overlay');
             sidebar.classList.remove('open'); overlay.style.display = 'none';
         }
-        
         window.onload = cargarTodo;
     </script>
 </body>
