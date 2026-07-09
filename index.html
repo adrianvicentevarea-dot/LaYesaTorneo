@@ -156,11 +156,18 @@
             overflow-y: auto; 
         }
 
-        /* TARJETAS Y TABLAS */
+        /* TARJETAS Y CONTENEDORES CON DESPLAZAMIENTO LATERAL (BARRA DESLIZADORA) */
         .grid-grupos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .card { background: var(--blanco); border-radius: 6px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
         
-        table { width: 100%; border-collapse: collapse; }
+        /* Contenedor responsivo deslizable para tablas */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table { width: 100%; border-collapse: collapse; min-width: 500px; } /* Mantiene una anchura mínima para forzar el deslizamiento */
         td, th { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; white-space: nowrap; }
         th { background: #f9f9f9; color: #7f8c8d; font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
         td b { font-size: 1.05em; }
@@ -184,7 +191,7 @@
         .live-card { background: linear-gradient(135deg, #ffffff 0%, #fdf2f2 100%); border-left: 5px solid var(--en-vivo); }
         .badge-live-score { background: var(--en-vivo); color: white; font-size: 1.5em; padding: 8px 18px; border-radius: 6px; font-weight: bold; min-width: 80px; text-align: center; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
         
-        /* PLAYOFFS - Soporte táctil para arrastrar lateralmente */
+        /* PLAYOFFS */
         .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; -webkit-overflow-scrolling: touch; }
         .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 550px; min-width: 220px; flex: 1; }
         .bracket-column.final-col { justify-content: center; min-width: 240px; }
@@ -248,12 +255,14 @@
                     <input type="text" id="search-gol" class="search-input" placeholder="🔍 Buscar goleador/a..." oninput="filtrarGoleadores(this.value)">
                 </div>
                 <div class="card">
-                    <table>
-                        <thead>
-                            <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
-                        </thead>
-                        <tbody id="body-gol"></tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr>
+                            </thead>
+                            <tbody id="body-gol"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
             
@@ -262,12 +271,14 @@
                     <input type="text" id="search-tar" class="search-input" placeholder="🔍 Buscar jugador/a..." oninput="filtrarTarjetas(this.value)">
                 </div>
                 <div class="card">
-                    <table>
-                        <thead>
-                            <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
-                        </thead>
-                        <tbody id="body-tar"></tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr>
+                            </thead>
+                            <tbody id="body-tar"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </main>
@@ -341,6 +352,7 @@
                 
                 if (resG) {
                     listaGoleadoresCache = resG.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'jugador');
+                    // Ordenamos de mayor a menor cantidad de goles de forma estricta
                     listaGoleadoresCache.sort((a,b) => (parseInt(b[3])||0)-(parseInt(a[3])||0));
                 }
                 
@@ -348,7 +360,6 @@
                     listaTarjetasCache = resS.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'nombre');
                 }
 
-                // Forzar el renderizado inicial aplicando el filtro vacío (que activa el top 5)
                 filtrarGoleadores('');
                 filtrarTarjetas('');
 
@@ -357,36 +368,37 @@
             } catch (e) { console.error(e); }
         }
 
-        // CONTROL EXCLUSIVO DEL BUSCADOR Y TOP 5 DE GOLEADORES
+        // GOLEADORES: Filtro dinámico y Top 5 de más goles
         function filtrarGoleadores(query) {
             const container = document.getElementById("body-gol"); if (!container) return;
             const q = normalizarTexto(query);
             
-            // Si el cuadro de búsqueda está vacío saca solo el Top 5, si no, busca en la lista completa
             const filtrados = q === '' ? listaGoleadoresCache.slice(0, 5) : listaGoleadoresCache.filter(f => normalizarTexto(f[0]).includes(q));
             
             container.innerHTML = filtrados.map(fila => `<tr><td><b>${fila[0].trim()}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[normalizarTexto(fila[1])]||0}</td><td class="txt-centro pts-verde">${fila[3]||'0'}</td></tr>`).join('');
         }
 
-        // CONTROL EXCLUSIVO DEL BUSCADOR, UNIFICACIÓN DESDE GOLES Y TOP 5 DE TARJETAS
+        // SANCIONES: Filtro dinámico, Unificado de Goles y Top 5 ordenado por más Tarjetas
         function filtrarTarjetas(query) {
             const container = document.getElementById("body-tar"); if (!container) return;
             const q = normalizarTexto(query);
 
-            // Mapeamos los datos para usar exactamente los mismos nombres y clubes de la lista de Goleadores
+            // Copiamos los nombres y clubes exactos de Goleadores
             const unificados = listaGoleadoresCache.map(goleador => {
                 const nombreGoleador = normalizarTexto(goleador[0]);
-                // Buscamos si ese jugador de goles tiene cargadas amarillas en la lista original de tarjetas
                 const datosTarjeta = listaTarjetasCache.find(t => normalizarTexto(t[0]) === nombreGoleador);
                 return [
-                    goleador[0], // Nombre del jugador (Pestaña Goleadores)
-                    goleador[1], // Club del jugador (Pestaña Goleadores)
-                    datosTarjeta ? datosTarjeta[2] : '0', // Nro de amarillas (Si no existe, 0)
-                    datosTarjeta ? datosTarjeta[3] : ''   // Estado Sanción (Si no existe, vacío)
+                    goleador[0], // Nombre
+                    goleador[1], // Club
+                    datosTarjeta ? datosTarjeta[2] : '0', // Amarillas
+                    datosTarjeta ? datosTarjeta[3] : ''  // Estado Sanción
                 ];
             });
 
-            // Si el cuadro de búsqueda está vacío saca solo el Top 5, de lo contrario filtra
+            // ORDENACIÓN ESTRICTA: Ordena la lista unificada de mayor a menor cantidad de tarjetas amarillas
+            unificados.sort((a, b) => (parseInt(b[2]) || 0) - (parseInt(a[2]) || 0));
+
+            // Si está vacío saca los 5 con más tarjetas, si se escribe en el buscador filtra la lista completa
             const filtrados = q === '' ? unificados.slice(0, 5) : unificados.filter(f => normalizarTexto(f[0]).includes(q));
 
             container.innerHTML = filtrados.map(fila => {
