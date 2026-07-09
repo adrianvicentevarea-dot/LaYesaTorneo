@@ -305,7 +305,6 @@
         let listaGoleadoresCache = [];
         let listaTarjetasCache = [];
         
-        // Índices dinámicos de las columnas detectados automáticamente
         let colIdxGoles = 3; 
         let colIdxAmarillas = 2;
         let colIdxSancion = 3;
@@ -356,20 +355,23 @@
                 if (resP && resP.rows.length > 0) renderPartidos(resP.rows);
                 if (resC) renderClasificacion(resC);
                 
-                // Procesar Goleadores de forma inteligente
+                // Procesar Goleadores (Filtro corregido para no omitir filas)
                 if (resG && resG.rows.length > 0) {
                     const cabeceraG = resG.rows[0];
-                    // Buscamos dinámicamente en qué columna pusiste los goles
                     const idxEncontrado = cabeceraG.findIndex(c => normalizarTexto(c).includes('gol'));
                     if (idxEncontrado !== -1) colIdxGoles = idxEncontrado;
 
-                    listaGoleadoresCache = resG.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'jugador');
+                    // CORRECCIÓN CLAVE: Filtramos asegurando que la celda de nombre exista y no sea la palabra descriptiva de cabecera
+                    listaGoleadoresCache = resG.rows.filter(fila => {
+                        if (!fila || !fila[0]) return false;
+                        const textoCelda = normalizarTexto(fila[0]);
+                        return textoCelda !== '' && textoCelda !== 'jugador' && textoCelda !== 'jugadora' && textoCelda !== 'nombre';
+                    });
                     
-                    // Ordenación estricta usando el índice correcto encontrado
                     listaGoleadoresCache.sort((a,b) => (parseInt(b[colIdxGoles])||0)-(parseInt(a[colIdxGoles])||0));
                 }
                 
-                // Procesar Tarjetas de forma inteligente
+                // Procesar Tarjetas (Filtro corregido para no omitir filas)
                 if (resS && resS.rows.length > 0) {
                     const cabeceraS = resS.rows[0];
                     const idxAm = cabeceraS.findIndex(c => c.includes('🟨') || normalizarTexto(c).includes('amarilla'));
@@ -378,7 +380,11 @@
                     if (idxAm !== -1) colIdxAmarillas = idxAm;
                     if (idxSan !== -1) colIdxSancion = idxSan;
 
-                    listaTarjetasCache = resS.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'nombre');
+                    listaTarjetasCache = resS.rows.filter(fila => {
+                        if (!fila || !fila[0]) return false;
+                        const textoCelda = normalizarTexto(fila[0]);
+                        return textoCelda !== '' && textoCelda !== 'nombre' && textoCelda !== 'jugador';
+                    });
                 }
 
                 filtrarGoleadores('');
@@ -398,7 +404,6 @@
             container.innerHTML = filtrados.map(fila => {
                 const clubNormalizado = normalizarTexto(fila[1]);
                 const pjJugador = partidosJugadosPorClub[clubNormalizado] || 0;
-                // Leemos el valor exacto de la columna de goles dinámica
                 const golesJugador = fila[colIdxGoles] || '0';
                 return `<tr><td><b>${fila[0].trim()}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${pjJugador}</td><td class="txt-centro pts-verde">${golesJugador}</td></tr>`;
             }).join('');
@@ -436,7 +441,10 @@
 
         function renderPartidos(rows) {
             const container = document.getElementById('partidos-container'); if (!container) return;
-            const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[1] && normalizarTexto(fila[1]) !== 'local');
+            const partidosValidos = rows.filter(fila => {
+                if (!fila || !fila[1]) return false;
+                return normalizarTexto(fila[1]) !== 'local';
+            });
             
             container.innerHTML = partidosValidos.map(fila => {
                 const hora = fila[0] || ''; const local = fila[1] || ''; const visitante = fila[2] || '';
@@ -453,7 +461,10 @@
 
         function renderClasificacion(res) {
             const container = document.getElementById('grupos-container'); if (!container) return;
-            const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'equipo');
+            const equiposValidos = res.rows.filter(fila => {
+                if (!fila || !fila[0]) return false;
+                return normalizarTexto(fila[0]) !== 'equipo';
+            });
             const grupos = {};
             equiposValidos.forEach(fila => {
                 const grupo = fila[1] || 'Único';
@@ -477,7 +488,7 @@
 
         function renderEnVivo(res) {
             const container = document.getElementById('vivo-container'); if (!container) return;
-            const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
+            const filaVivo = res.rows.find(fila => fila && fila[0] && fila[0].toString().trim() !== '' && normalizarTexto(fila[0]) !== 'local');
             if (!filaVivo) { container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`; return; }
             container.innerHTML = `<div class="card live-card"><div style="padding: 12px 20px; background: rgba(231, 76, 60, 0.05); text-align:center;"><span id="cronometro-live" class="live-time">⏱️ EN VIVO</span></div><div class="match-row" style="padding: 30px 20px;"><div class="match-team" style="text-align:right; font-size:1.25em;">${filaVivo[0]}</div><div class="badge-live-score">${filaVivo[1] || '0:0'}</div><div class="match-team" style="font-size:1.25em;">${filaVivo[2]}</div></div></div>`;
         }
@@ -490,7 +501,7 @@
 
         function renderBracket(res) {
             const container = document.getElementById('bracket-container'); if (!container) return;
-            const fasesValidas = res.rows.filter((fila, idx) => idx === 0 && fila && fila[0] && normalizarTexto(fila[0]) !== 'fase');
+            const fasesValidas = res.rows.filter(fila => fila && fila[0] && normalizarTexto(fila[0]) !== 'fase');
             const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[0]) === normalizarTexto(nombre));
             container.innerHTML = `<div class="bracket-column">${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}</div><div class="bracket-column">${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}</div><div class="bracket-column final-col">${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}</div>`;
         }
