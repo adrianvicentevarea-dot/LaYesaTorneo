@@ -355,23 +355,21 @@
                 if (resP && resP.rows.length > 0) renderPartidos(resP.rows);
                 if (resC) renderClasificacion(resC);
                 
-                // Procesar Goleadores de forma ultra-segura
+                // Procesar Goleadores (Salta fila 1 y lee todo lo escrito)
                 if (resG && resG.rows.length > 0) {
                     const cabeceraG = resG.rows[0];
                     const idxEncontrado = cabeceraG.findIndex(c => normalizarTexto(c).includes('gol'));
                     if (idxEncontrado !== -1) colIdxGoles = idxEncontrado;
 
-                    // Mantenemos todas las filas válidas que tengan nombre real
-                    listaGoleadoresCache = resG.rows.filter(fila => {
-                        if (!fila || !fila[0]) return false;
-                        const textoCelda = normalizarTexto(fila[0]);
-                        return textoCelda !== '' && textoCelda !== 'jugador' && textoCelda !== 'jugadora' && textoCelda !== 'nombre';
+                    // El filtro `idx > 0` garantiza leer a partir de la fila número 2 de la hoja de cálculo
+                    listaGoleadoresCache = resG.rows.filter((fila, idx) => {
+                        return idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '';
                     });
                     
-                    // Ordenación de mayor a menor goleador
                     listaGoleadoresCache.sort((a,b) => (parseInt(b[colIdxGoles])||0)-(parseInt(a[colIdxGoles])||0));
                 }
                 
+                // Procesar Tarjetas (Salta fila 1 y lee todo lo escrito)
                 if (resS && resS.rows.length > 0) {
                     const cabeceraS = resS.rows[0];
                     const idxAm = cabeceraS.findIndex(c => c.includes('🟨') || normalizarTexto(c).includes('amarilla'));
@@ -380,14 +378,12 @@
                     if (idxAm !== -1) colIdxAmarillas = idxAm;
                     if (idxSan !== -1) colIdxSancion = idxSan;
 
-                    listaTarjetasCache = resS.rows.filter(fila => {
-                        if (!fila || !fila[0]) return false;
-                        const textoCelda = normalizarTexto(fila[0]);
-                        return textoCelda !== '' && textoCelda !== 'nombre' && textoCelda !== 'jugador';
+                    // Lee rigurosamente a partir de la fila 2 de la tabla
+                    listaTarjetasCache = resS.rows.filter((fila, idx) => {
+                        return idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '';
                     });
                 }
 
-                // Mostrar la lista completa sin recortar a los 5 primeros para asegurar que salen todos
                 filtrarGoleadores('');
                 filtrarTarjetas('');
 
@@ -400,7 +396,6 @@
             const container = document.getElementById("body-gol"); if (!container) return;
             const q = normalizarTexto(query);
             
-            // Si no se busca nada, mostramos toda la lista ordenada
             const filtrados = q === '' ? listaGoleadoresCache : listaGoleadoresCache.filter(f => normalizarTexto(f[0]).includes(q));
             
             container.innerHTML = filtrados.map(fila => {
@@ -443,9 +438,9 @@
 
         function renderPartidos(rows) {
             const container = document.getElementById('partidos-container'); if (!container) return;
-            const partidosValidos = rows.filter(fila => {
-                if (!fila || !fila[1]) return false;
-                return normalizarTexto(fila[1]) !== 'local';
+            // Salta la fila 1 de cabeceras en Partidos
+            const partidosValidos = rows.filter((fila, idx) => {
+                return idx > 0 && fila && fila[1] && fila[1].toString().trim() !== '';
             });
             
             container.innerHTML = partidosValidos.map(fila => {
@@ -463,9 +458,9 @@
 
         function renderClasificacion(res) {
             const container = document.getElementById('grupos-container'); if (!container) return;
-            const equiposValidos = res.rows.filter(fila => {
-                if (!fila || !fila[0]) return false;
-                return normalizarTexto(fila[0]) !== 'equipo';
+            // Salta la fila 1 de cabeceras en Clasificación
+            const equiposValidos = res.rows.filter((fila, idx) => {
+                return idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '';
             });
             const grupos = {};
             equiposValidos.forEach(fila => {
@@ -490,7 +485,8 @@
 
         function renderEnVivo(res) {
             const container = document.getElementById('vivo-container'); if (!container) return;
-            const filaVivo = res.rows.find(fila => fila && fila[0] && fila[0].toString().trim() !== '' && normalizarTexto(fila[0]) !== 'local');
+            // Salta cabecera de EnVivo
+            const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
             if (!filaVivo) { container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`; return; }
             container.innerHTML = `<div class="card live-card"><div style="padding: 12px 20px; background: rgba(231, 76, 60, 0.05); text-align:center;"><span id="cronometro-live" class="live-time">⏱️ EN VIVO</span></div><div class="match-row" style="padding: 30px 20px;"><div class="match-team" style="text-align:right; font-size:1.25em;">${filaVivo[0]}</div><div class="badge-live-score">${filaVivo[1] || '0:0'}</div><div class="match-team" style="font-size:1.25em;">${filaVivo[2]}</div></div></div>`;
         }
@@ -501,9 +497,10 @@
             return `<div class="bracket-match"><div class="bracket-title">${titulo}</div><div class="bracket-team-row ${gL>gV?'winner':''}"><span class="bracket-name">${local||'—'}</span><span class="bracket-goals ${isNaN(gL)?'empty':''}">${isNaN(gL)?'-':gL}</span></div><div class="bracket-team-row ${gV>gL?'winner':''}"><span class="bracket-name">${visitante||'—'}</span><span class="bracket-goals ${isNaN(gV)?'empty':''}">${isNaN(gV)?'-':gV}</span></div></div>`;
         }
 
+        // Salta cabecera de Eliminatorias
         function renderBracket(res) {
             const container = document.getElementById('bracket-container'); if (!container) return;
-            const fasesValidas = res.rows.filter(fila => fila && fila[0] && normalizarTexto(fila[0]) !== 'fase');
+            const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
             const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[0]) === normalizarTexto(nombre));
             container.innerHTML = `<div class="bracket-column">${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}</div><div class="bracket-column">${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}</div><div class="bracket-column final-col">${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}</div>`;
         }
