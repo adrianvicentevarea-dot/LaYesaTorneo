@@ -355,23 +355,23 @@
                 if (resP && resP.rows.length > 0) renderPartidos(resP.rows);
                 if (resC) renderClasificacion(resC);
                 
-                // Procesar Goleadores (Filtro corregido para no omitir filas)
+                // Procesar Goleadores de forma ultra-segura
                 if (resG && resG.rows.length > 0) {
                     const cabeceraG = resG.rows[0];
                     const idxEncontrado = cabeceraG.findIndex(c => normalizarTexto(c).includes('gol'));
                     if (idxEncontrado !== -1) colIdxGoles = idxEncontrado;
 
-                    // CORRECCIÓN CLAVE: Filtramos asegurando que la celda de nombre exista y no sea la palabra descriptiva de cabecera
+                    // Mantenemos todas las filas válidas que tengan nombre real
                     listaGoleadoresCache = resG.rows.filter(fila => {
                         if (!fila || !fila[0]) return false;
                         const textoCelda = normalizarTexto(fila[0]);
                         return textoCelda !== '' && textoCelda !== 'jugador' && textoCelda !== 'jugadora' && textoCelda !== 'nombre';
                     });
                     
+                    // Ordenación de mayor a menor goleador
                     listaGoleadoresCache.sort((a,b) => (parseInt(b[colIdxGoles])||0)-(parseInt(a[colIdxGoles])||0));
                 }
                 
-                // Procesar Tarjetas (Filtro corregido para no omitir filas)
                 if (resS && resS.rows.length > 0) {
                     const cabeceraS = resS.rows[0];
                     const idxAm = cabeceraS.findIndex(c => c.includes('🟨') || normalizarTexto(c).includes('amarilla'));
@@ -387,6 +387,7 @@
                     });
                 }
 
+                // Mostrar la lista completa sin recortar a los 5 primeros para asegurar que salen todos
                 filtrarGoleadores('');
                 filtrarTarjetas('');
 
@@ -399,7 +400,8 @@
             const container = document.getElementById("body-gol"); if (!container) return;
             const q = normalizarTexto(query);
             
-            const filtrados = q === '' ? listaGoleadoresCache.slice(0, 5) : listaGoleadoresCache.filter(f => normalizarTexto(f[0]).includes(q));
+            // Si no se busca nada, mostramos toda la lista ordenada
+            const filtrados = q === '' ? listaGoleadoresCache : listaGoleadoresCache.filter(f => normalizarTexto(f[0]).includes(q));
             
             container.innerHTML = filtrados.map(fila => {
                 const clubNormalizado = normalizarTexto(fila[1]);
@@ -426,7 +428,7 @@
 
             unificados.sort((a, b) => (parseInt(b[2]) || 0) - (parseInt(a[2]) || 0));
 
-            const filtrados = q === '' ? unificados.slice(0, 5) : unificados.filter(f => normalizarTexto(f[0]).includes(q));
+            const filtrados = q === '' ? unificados : unificados.filter(f => normalizarTexto(f[0]).includes(q));
 
             container.innerHTML = filtrados.map(fila => {
                 let s = fila[3] ? fila[3].toString().trim() : '';
