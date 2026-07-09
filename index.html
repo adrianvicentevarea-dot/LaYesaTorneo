@@ -180,6 +180,22 @@
         .badge-sancion { background: var(--rojo); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
         .badge-ok { background: var(--verde); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
 
+        /* BRAZALETE DE CAPITÁN */
+        .brazalete-capitan {
+            background-color: var(--rojo);
+            color: white;
+            font-weight: bold;
+            font-size: 0.75em;
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin-left: 6px;
+            display: inline-block;
+            vertical-align: middle;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            line-height: 1;
+        }
+
         /* PARTIDOS */
         .match-row { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 1.1em; }
         .match-team { width: 42%; font-weight: bold; color: #333; }
@@ -319,6 +335,21 @@
             return texto.toString().toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         }
 
+        // Procesa el nombre del jugador para extraer el brazalete si contiene marcas de capitán
+        function formatearNombreConCapitan(nombreCrudo) {
+            if (!nombreCrudo) return '';
+            let nombre = nombreCrudo.toString().trim();
+            
+            // Expresión regular que detecta (c), (C), o una "c"/"C" suelta al final de los textos
+            const regexCapitan = /\s*[\(]?\b[cC]\b[\)]?$/;
+            
+            if (regexCapitan.test(nombre)) {
+                nombre = nombre.replace(regexCapitan, '').trim();
+                return `${nombre} <span class="brazalete-capitan" title="Capitán">C</span>`;
+            }
+            return nombre;
+        }
+
         function extraerValorCelda(celda) {
             if (!celda) return '';
             if (celda.v !== null && celda.v !== undefined && typeof celda.v === 'string' && celda.v.includes('Date(')) {
@@ -394,14 +425,14 @@
             const container = document.getElementById("body-gol"); if (!container) return;
             const q = normalizarTexto(query);
             
-            // Si no hay búsqueda, corta la lista para mostrar estrictamente el TOP 5
             const filtrados = q === '' ? listaGoleadoresCache.slice(0, 5) : listaGoleadoresCache.filter(f => normalizarTexto(f[0]).includes(q));
             
             container.innerHTML = filtrados.map(fila => {
                 const clubNormalizado = normalizarTexto(fila[1]);
                 const pjJugador = partidosJugadosPorClub[clubNormalizado] || 0;
                 const golesJugador = fila[colIdxGoles] || '0';
-                return `<tr><td><b>${fila[0].trim()}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${pjJugador}</td><td class="txt-centro pts-verde">${golesJugador}</td></tr>`;
+                const nombreFormateado = formatearNombreConCapitan(fila[0]);
+                return `<tr><td><b>${nombreFormateado}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${pjJugador}</td><td class="txt-centro pts-verde">${golesJugador}</td></tr>`;
             }).join('');
         }
 
@@ -411,7 +442,12 @@
 
             const unificados = listaGoleadoresCache.map(goleador => {
                 const nombreGoleador = normalizarTexto(goleador[0]);
-                const datosTarjeta = listaTarjetasCache.find(t => normalizarTexto(t[0]) === nombreGoleador);
+                // Para buscar en tarjetas, limpiamos de posibles (c) el origen comparativo
+                const datosTarjeta = listaTarjetasCache.find(t => {
+                    const tNombre = normalizarTexto(t[0]).replace(/\s*[\(]?[cC][\)]?$/, '').trim();
+                    const gNombre = nombreGoleador.replace(/\s*[\(]?[cC][\)]?$/, '').trim();
+                    return tNombre === gNombre;
+                });
                 return [
                     goleador[0], 
                     goleador[1], 
@@ -422,7 +458,6 @@
 
             unificados.sort((a, b) => (parseInt(b[2]) || 0) - (parseInt(a[2]) || 0));
 
-            // Si no hay búsqueda, corta la lista para mostrar estrictamente el TOP 5
             const filtrados = q === '' ? unificados.slice(0, 5) : unificados.filter(f => normalizarTexto(f[0]).includes(q));
 
             container.innerHTML = filtrados.map(fila => {
@@ -431,8 +466,9 @@
                 
                 const clubNormalizado = normalizarTexto(fila[1]);
                 const pjJugador = partidosJugadosPorClub[clubNormalizado] || 0;
+                const nombreFormateado = formatearNombreConCapitan(fila[0]);
 
-                return `<tr><td><b>${fila[0]}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${pjJugador}</td><td class="txt-centro"><span class="badge-amarilla">${fila[2]||'0'}</span></td><td class="txt-derecha">${estado}</td></tr>`;
+                return `<tr><td><b>${nombreFormateado}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${pjJugador}</td><td class="txt-centro"><span class="badge-amarilla">${fila[2]||'0'}</span></td><td class="txt-derecha">${estado}</td></tr>`;
             }).join('');
         }
 
