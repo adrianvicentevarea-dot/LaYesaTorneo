@@ -85,7 +85,7 @@
         .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 550px; min-width: 220px; flex: 1; }
         .bracket-column.final-col { justify-content: center; min-width: 240px; }
         .bracket-match { background: white; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; font-size: 0.95em; width: 100%; margin-bottom: 10px; }
-        .bracket-title { background: #f4f6f7; font-size: 0.8em; font-weight: bold; text-align: center; color: #666; border-bottom: 1px solid #ddd; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .bracket-match-title { background: #f4f6f7; font-size: 0.8em; font-weight: bold; text-align: center; color: #666; border-bottom: 1px solid #ddd; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
         .bracket-team-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; }
         .bracket-name { font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
         .bracket-goals { background: var(--azul-nav); color: white; font-weight: bold; padding: 4px 10px; border-radius: 3px; min-width: 30px; text-align: center; font-size: 1em; }
@@ -303,13 +303,13 @@
         }
 
         function renderClasificacion(res) {
-            const container = document.getElementById('grupos-container'); if (!container) return;
+            const container = document.getElementById('grid-grupos'); if (!container) return;
             const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
             const grupos = {};
             equiposValidos.forEach(fila => {
-                const grupo = fila[1] || 'Único'; if (!grupos[grupo]) grupos[grupo] = [];
+                const group = fila[1] || 'Único'; if (!grupos[group]) grupos[group] = [];
                 const clubNombre = fila[0].trim();
-                grupos[grupo].push({ nombre: clubNombre, pts: parseInt(fila[3])||0, dif: fila[2]||'0', pj: partidosJugadosPorClub[normalizarTexto(clubNombre)] || 0 });
+                grupos[group].push({ nombre: clubNombre, pts: parseInt(fila[3])||0, dif: fila[2]||'0', pj: partidosJugadosPorClub[normalizarTexto(clubNombre)] || 0 });
             });
             container.innerHTML = Object.keys(grupos).map(g => {
                 const orden = grupos[g].sort((a,b) => b.pts - a.pts);
@@ -317,7 +317,6 @@
             }).join('');
         }
 
-        // SECCIÓN EN VIVO: DETECTA Y CORRIGE EL PROBLEMA DE LA COMA DECIMAL EUROPEA
         function renderEnVivo(res) {
             const container = document.getElementById('vivo-container'); if (!container) return;
             const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
@@ -326,7 +325,6 @@
 
             const local = filaVivo[0]; const marcador = filaVivo[1] || '0:0'; const visitante = filaVivo[2];
             
-            // Reemplaza la coma por un punto antes de convertir a número flotante
             const celdaTiempoLimpia = (filaVivo[3] || '0').toString().replace(',', '.');
             const minutosRestantesAlActualizar = parseFloat(celdaTiempoLimpia) || 0;
             const horaDeActualizacionTexto = filaVivo[4] || '';
@@ -343,7 +341,6 @@
 
             const elemCrono = document.getElementById('cronometro-live');
 
-            // Procesa correctamente el formato de pausa
             function construirTextoFormato(valorExcel) {
                 if (valorExcel <= 0) return "00:00";
                 const minutos = Math.floor(valorExcel);
@@ -352,7 +349,12 @@
                 return `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
             }
 
-            // Si está en pausa (Columna E vacía)
+            // DETECTA SI EL PARTIDO VIENE DIRECTO DESDE EL BOTÓN "FIN" (AÚN NO HA INICIADO)
+            if (horaDeActualizacionTexto.length > 0 && !horaDeActualizacionTexto.match(/\d+:\d+:\d+/) && minutosRestantesAlActualizar === 20) {
+                elemCrono.innerText = `📅 PRÓXIMO PARTIDO — HORARIO: ${horaDeActualizacionTexto}`;
+                return;
+            }
+
             if (!horaDeActualizacionTexto.includes(':')) { 
                 elemCrono.innerText = `⏱️ PAUSA — ${construirTextoFormato(minutosRestantesAlActualizar)}`; 
                 return; 
@@ -383,9 +385,9 @@
         }
 
         function transformarPartidoBracket(filaFase, titulo) {
-            if (!filaFase) return `<div class="bracket-match"><div class="bracket-title">${titulo}</div><div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div><div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div></div>`;
+            if (!filaFase) return `<div class="bracket-match"><div class="bracket-match-title">${titulo}</div><div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div><div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div></div>`;
             const local = filaFase[1], visitante = filaFase[4], gL = parseInt(filaFase[2]), gV = parseInt(filaFase[3]);
-            return `<div class="bracket-match"><div class="bracket-title">${titulo}</div><div class="bracket-team-row ${gL>gV?'winner':''}"><span class="bracket-name">${local||'—'}</span><span class="bracket-goals ${isNaN(gL)?'empty':''}">${isNaN(gL)?'-':gL}</span></div><div class="bracket-team-row ${gV>gL?'winner':''}"><span class="bracket-name">${visitante||'—'}</span><span class="bracket-goals ${isNaN(gV)?'empty':''}">${isNaN(gV)?'-':gV}</span></div></div>`;
+            return `<div class="bracket-match"><div class="bracket-match-title">${titulo}</div><div class="bracket-team-row ${gL>gV?'winner':''}"><span class="bracket-name">${local||'—'}</span><span class="bracket-goals ${isNaN(gL)?'empty':''}">${isNaN(gL)?'-':gL}</span></div><div class="bracket-team-row ${gV>gL?'winner':''}"><span class="bracket-name">${visitante||'—'}</span><span class="bracket-goals ${isNaN(gV)?'empty':''}">${isNaN(gV)?'-':gV}</span></div></div>`;
         }
 
         function renderBracket(res) {
