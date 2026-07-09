@@ -167,6 +167,7 @@
         let listaGoleadoresCache = [];
         let listaTarjetasCache = [];
         let intervaloCronometroLive = null;
+        let intervaloAutoRefresco = null;
         
         let colIdxGoles = 3; 
         let colIdxAmarillas = 2;
@@ -213,7 +214,7 @@
 
         async function consultarGoogleSheet(nombrePestaña) {
             try {
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}`;
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}&nocache=${new Date().getTime()}`;
                 const respuesta = await fetch(url);
                 const texto = await respuesta.text();
                 const jsonNeto = JSON.parse(texto.slice(texto.indexOf('{'), texto.lastIndexOf('}') + 1));
@@ -303,7 +304,8 @@
         }
 
         function renderClasificacion(res) {
-            const container = document.getElementById('grid-grupos'); if (!container) return;
+            // CORREGIDO: Buscaba un id inexistente, ahora enlaza perfectamente a grupos-container
+            const container = document.getElementById('grupos-container'); if (!container) return;
             const equiposValidos = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
             const grupos = {};
             equiposValidos.forEach(fila => {
@@ -343,13 +345,13 @@
 
             function construirTextoFormato(valorExcel) {
                 if (valorExcel <= 0) return "00:00";
-                const minutos = Math.floor(valorExcel);
-                let segundos = Math.round((valorExcel - minutos) * 100);
-                if (segundos >= 60) segundos = 59;
-                return `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+                const minutes = Math.floor(valorExcel);
+                let seconds = Math.round((valorExcel - minutes) * 100);
+                if (seconds >= 60) seconds = 59;
+                return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             }
 
-            // DETECTA SI EL PARTIDO VIENE DIRECTO DESDE EL BOTÓN "FIN" (AÚN NO HA INICIADO)
+            // DETECTA SI EL PARTIDO ESTÁ EN ESPERA (RECIÉN CAMBIADO CON EL BOTÓN FIN)
             if (horaDeActualizacionTexto.length > 0 && !horaDeActualizacionTexto.match(/\d+:\d+:\d+/) && minutosRestantesAlActualizar === 20) {
                 elemCrono.innerText = `📅 PRÓXIMO PARTIDO — HORARIO: ${horaDeActualizacionTexto}`;
                 return;
@@ -362,7 +364,7 @@
 
             const partesHora = horaDeActualizacionTexto.split(':');
             const fechaActualizacion = new Date();
-            fechaActualizacion.setHours(parseInt(partesHora[0]), parseInt(partesHora[1]), partesHora[2] ? parseInt(partesHora[2]) : 0, 0);
+            fechaActualizacion.setHours(parseInt(partesHora[0], 10), parseInt(partesHora[1], 10), partesHora[2] ? parseInt(partesHora[2], 10) : 0, 0);
 
             function actualizarCuentaAtras() {
                 const ahora = new Date();
@@ -404,8 +406,14 @@
             });
             const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('menu-overlay');
             sidebar.classList.remove('open'); overlay.style.display = 'none';
+            cargarTodo(); // Forzar actualización de datos en el cambio de sección
         }
-        window.onload = cargarTodo;
+
+        window.onload = function() {
+            cargarTodo();
+            // Refresco automático silencioso cada 10 segundos para cazar los cambios del botón FIN inmediatamente
+            intervaloAutoRefresco = setInterval(cargarTodo, 10000);
+        };
     </script>
 </body>
 </html>
