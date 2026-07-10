@@ -123,8 +123,8 @@
             <button class="menu-toggle" onclick="toggleMenu()">☰ MENÚ</button>
             <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
                 <option value="masculino">⚽ Fútbol Masculino</option>
-                <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
-                <option value="mixto">🔄 Fútbol Mixto</option>
+                <option value="femenino">⚽ Fútbol Femenino</option>
+                <option value="mixto">⚽ Fútbol Mixto</option>
             </select>
         </div>
 
@@ -166,7 +166,7 @@
 
         let partidosJugadosPorClub = {};
         let cachePartidosRows = []; 
-        let cacheClasificacionRows = []; // Respaldo para el torneo masculino
+        let cacheClasificacionRows = []; 
         let listaGoleadoresCache = [];
         let listaTarjetasCache = [];
         let intervaloCronometroLive = null;
@@ -247,7 +247,6 @@
                     cacheClasificacionRows = resC.rows;
                 }
 
-                // Genera la tabla de posiciones sin fallos de ejecución
                 renderClasificacionAutomatica();
                 
                 if (resG && resG.rows.length > 0) {
@@ -319,7 +318,6 @@
         function renderClasificacionAutomatica() {
             const container = document.getElementById('grupos-container'); if (!container) return;
             
-            // 1. MODO LIGA GENERAL AUTOMÁTICA (Para Femenino y Mixto)
             if (torneoActual === 'femenino' || torneoActual === 'mixto') {
                 container.classList.add('modo-liga');
                 let estadisticasEquipos = {};
@@ -358,7 +356,6 @@
                 let listaEquipos = Object.values(estadisticasEquipos);
                 listaEquipos.forEach(e => { e.dif = e.gf - e.gc; });
 
-                // ORDENACIÓN EXIGIDA: 1º Puntos, 2º Diferencia de Goles
                 listaEquipos.sort((a, b) => {
                     if (b.pts !== a.pts) return b.pts - a.pts;
                     return b.dif - a.dif;
@@ -396,7 +393,6 @@
                         </table>
                     </div>`;
             } else {
-                // 2. MODO GRUPOS ESTÁNDAR (Para el Masculino utilizando su pestaña Clasificacion original)
                 container.classList.remove('modo-liga');
                 
                 if (!cacheClasificacionRows || cacheClasificacionRows.length <= 1) {
@@ -436,8 +432,8 @@
             if (!filaVivo) { container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`; return; }
 
             const local = filaVivo[0]; const marcador = filaVivo[1] || '0:0'; const visitante = filaVivo[2];
-            const celdaTiempo Lompia = (filaVivo[3] || '0').toString().replace(',', '.');
-            const minutosRestantesAlActualizar = parseFloat(celdaTiempo Lompia) || 0;
+            const celdaTiempoLimpia = (filaVivo[3] || '0').toString().replace(',', '.');
+            const minutosRestantesAlActualizar = parseFloat(celdaTiempoLimpia) || 0;
             const horaDeActualizacionTexto = filaVivo[4] || '';
 
             container.innerHTML = `
