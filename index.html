@@ -57,16 +57,16 @@
         .grid-grupos.modo-liga { grid-template-columns: 1fr; }
         .card { background: var(--blanco); border-radius: 6px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
         .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 500px; }
-        td, th { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; white-space: nowrap; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        td, th { padding: 12px 10px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.95em; white-space: nowrap; }
         th { background: #f9f9f9; color: #7f8c8d; font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
-        td b { font-size: 1.05em; }
+        td b { font-size: 1em; }
         
         .txt-centro { text-align: center; }
         .txt-derecha { text-align: right; }
         .txt-club { color: #777; font-style: italic; }
         .pts-verde { color: var(--verde); font-weight: bold; font-size: 1.1em; }
-        .pj-gris { color: #7f8c8d; font-weight: bold; font-size: 1em; }
+        .pj-gris { color: #7f8c8d; font-weight: bold; }
         .badge-amarilla { background: #f1c40f; padding: 3px 8px; border-radius: 3px; font-weight: bold; color: #000; font-size: 0.95em; }
         .badge-sancion { background: var(--rojo); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
         .badge-ok { background: var(--verde); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
@@ -81,7 +81,7 @@
         .badge-live-score { background: var(--en-vivo); color: white; font-size: 1.5em; padding: 8px 18px; border-radius: 6px; font-weight: bold; min-width: 80px; text-align: center; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
         .live-time { font-size: 1.2em; font-weight: bold; color: var(--en-vivo); letter-spacing: 0.5px; }
 
-        /* PLAYOFFS */
+        /* PLAYOFFS / BRACKET */
         .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; -webkit-overflow-scrolling: touch; }
         .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 550px; min-width: 220px; flex: 1; }
         .bracket-column.final-col { justify-content: center; min-width: 240px; }
@@ -240,14 +240,15 @@
 
                 if (resP && resP.rows.length > 0) {
                     cachePartidosRows = resP.rows;
-                    renderPartidos(resP.rows);
+                    renderPartidos(resP.rows); 
                 }
                 
                 if (resC && resC.rows.length > 0) {
                     cacheClasificacionRows = resC.rows;
                 }
 
-                renderClasificacionAutomatica();
+                // Genera la clasificación completamente matemática y automática
+                procesarYRenderClasificacionAutomatica();
                 
                 if (resG && resG.rows.length > 0) {
                     const cabeceraG = resG.rows[0];
@@ -267,7 +268,7 @@
                 }
 
                 filtrarGoleadores(''); filtrarTarjetas('');
-                if (resE) renderBracket(resE);
+                if (resE) renderBracketAdaptado(resE);
                 if (resV) renderEnVivo(resV);
             } catch (e) { console.error(e); }
         }
@@ -315,114 +316,147 @@
             }).join('');
         }
 
-        function renderClasificacionAutomatica() {
+        function procesarYRenderClasificacionAutomatica() {
             const container = document.getElementById('grupos-container'); if (!container) return;
             
+            let estadisticas = {};
+            let mapaGrupos = {}; // Para saber a qué grupo pertenece cada club en el masculino
+
+            // 1. Mapeamos primero los grupos iniciales que pusiste en el Excel (si existen) para mantener la división de Grupos A y B
+            if (cacheClasificacionRows && cacheClasificacionRows.length > 1) {
+                cacheClasificacionRows.forEach((fila, idx) => {
+                    if (idx === 0 || !fila[0]) return;
+                    const club = fila[0].trim();
+                    const grupo = fila[1] ? fila[1].trim().toUpperCase() : 'GENERAL';
+                    mapaGrupos[normalizarTexto(club)] = grupo;
+                    
+                    // Inicializamos la ficha limpia del club
+                    if (!estadisticas[club]) {
+                        estadisticas[club] = { nombre: club, grupo: grupo, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
+                    }
+                });
+            }
+
+            // 2. Escaneamos todos los partidos jugados y computamos goles, victorias, empates y derrotas
+            if (cachePartidosRows && cachePartidosRows.length > 1) {
+                cachePartidosRows.forEach((fila, idx) => {
+                    if (idx === 0) return;
+                    const local = fila[1] ? fila[1].trim() : '';
+                    const visitante = fila[2] ? fila[2].trim() : '';
+                    if (!local || !visitante) return;
+
+                    // Si un club no estaba en la pestaña clasificación, lo añadimos sobre la marcha
+                    if (!estadisticas[local]) {
+                        let g = mapaGrupos[normalizarTexto(local)] || (torneoActual === 'masculino' ? 'A' : 'GENERAL');
+                        estadisticas[local] = { nombre: local, grupo: g, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
+                    }
+                    if (!estadisticas[visitante]) {
+                        let g = mapaGrupos[normalizarTexto(visitante)] || (torneoActual === 'masculino' ? 'A' : 'GENERAL');
+                        estadisticas[visitante] = { nombre: visitante, grupo: g, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
+                    }
+
+                    const gL = parseInt(fila[3]);
+                    const gV = parseInt(fila[4]);
+
+                    // Si el partido ya se ha jugado (tiene goles apuntados)
+                    if (!isNaN(gL) && !isNaN(gV)) {
+                        estadisticas[local].pj += 1;
+                        estadisticas[visitante].pj += 1;
+                        
+                        estadisticas[local].gf += gL;
+                        estadisticas[local].gc += gV;
+                        estadisticas[visitante].gf += gV;
+                        estadisticas[visitante].gc += gL;
+
+                        if (gL > gV) {
+                            // Gana Local
+                            estadisticas[local].pg += 1;
+                            estadisticas[local].pts += 3;
+                            estadisticas[visitante].pp += 1;
+                        } else if (gV > gL) {
+                            // Gana Visitante
+                            estadisticas[visitante].pg += 1;
+                            estadisticas[visitante].pts += 3;
+                            estadisticas[local].pp += 1;
+                        } else {
+                            // Empate
+                            estadisticas[local].pe += 1;
+                            estadisticas[local].pts += 1;
+                            estadisticas[visitante].pe += 1;
+                            estadisticas[visitante].pts += 1;
+                        }
+                    }
+                });
+            }
+
+            // Calcular diferencias de goles de todos los registrados
+            let listaEquipos = Object.values(estadisticas);
+            listaEquipos.forEach(e => { e.dif = e.gf - e.gc; });
+
+            // Agrupamos según corresponda el torneo
+            let gruposFinales = {};
+
             if (torneoActual === 'femenino' || torneoActual === 'mixto') {
                 container.classList.add('modo-liga');
-                let estadisticasEquipos = {};
-
-                if (cachePartidosRows && cachePartidosRows.length > 1) {
-                    cachePartidosRows.forEach((fila, idx) => {
-                        if (idx === 0) return;
-                        const local = fila[1] ? fila[1].trim() : '';
-                        const visitante = fila[2] ? fila[2].trim() : '';
-                        if (!local || !visitante) return;
-
-                        if (!estadisticasEquipos[local]) estadisticasEquipos[local] = { nombre: local, pj: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
-                        if (!estadisticasEquipos[visitante]) estadisticasEquipos[visitante] = { nombre: visitante, pj: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
-
-                        const gL = parseInt(fila[3]);
-                        const gV = parseInt(fila[4]);
-
-                        if (!isNaN(gL) && !isNaN(gV)) {
-                            estadisticasEquipos[local].pj += 1;
-                            estadisticasEquipos[visitante].pj += 1;
-                            estadisticasEquipos[local].gf += gL;
-                            estadisticasEquipos[local].gc += gV;
-                            estadisticasEquipos[visitante].gf += gV;
-                            estadisticasEquipos[visitante].gc += gL;
-
-                            if (gL > gV) estadisticasEquipos[local].pts += 3;
-                            else if (gV > gL) estadisticasEquipos[visitante].pts += 3;
-                            else {
-                                estadisticasEquipos[local].pts += 1;
-                                estadisticasEquipos[visitante].pts += 1;
-                            }
-                        }
-                    });
-                }
-
-                let listaEquipos = Object.values(estadisticasEquipos);
-                listaEquipos.forEach(e => { e.dif = e.gf - e.gc; });
-
-                listaEquipos.sort((a, b) => {
-                    if (b.pts !== a.pts) return b.pts - a.pts;
-                    return b.dif - a.dif;
-                });
-
-                if (listaEquipos.length === 0) {
-                    container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">📊 No hay equipos cargados en la pestaña 'Partidos'.</div>`;
-                    return;
-                }
-
-                container.innerHTML = `
-                    <div class="card">
-                        <div style="padding:10px 15px; background:var(--azul-nav); font-weight:bold; font-size:0.9em; color:white; text-transform:uppercase; letter-spacing:0.5px;">🏆 TABLA DE LIGA GENERAL</div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 50px;" class="txt-centro">POS</th>
-                                    <th>EQUIPO</th>
-                                    <th class="txt-centro">PJ</th>
-                                    <th class="txt-centro">DIF</th>
-                                    <th class="txt-centro">PTS</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${listaEquipos.map((e, index) => `
-                                    <tr>
-                                        <td class="txt-centro" style="color:#7f8c8d; font-weight:bold;">${index + 1}º</td>
-                                        <td><b>${e.nombre}</b></td>
-                                        <td class="txt-centro pj-gris">${e.pj}</td>
-                                        <td class="txt-centro" style="font-weight:bold; color:${e.dif > 0 ? 'var(--verde)' : e.dif < 0 ? 'var(--rojo)' : '#333'}">${e.dif > 0 ? '+' + e.dif : e.dif}</td>
-                                        <td class="txt-centro pts-verde">${e.pts}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>`;
+                gruposFinales['GENERAL'] = listaEquipos;
             } else {
                 container.classList.remove('modo-liga');
-                
-                if (!cacheClasificacionRows || cacheClasificacionRows.length <= 1) {
-                    container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">📊 Cargando clasificación por grupos...</div>`;
-                    return;
-                }
+                listaEquipos.forEach(e => {
+                    if (!gruposFinales[e.grupo]) gruposFinales[e.grupo] = [];
+                    gruposFinales[e.grupo].push(e);
+                });
+            }
 
-                const grupos = {};
-                const equiposValidos = cacheClasificacionRows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
+            // Pintar las tablas correspondientes
+            container.innerHTML = Object.keys(gruposFinales).map(g => {
+                let equiposDelGrupo = gruposFinales[g];
                 
-                equiposValidos.forEach(fila => {
-                    const group = fila[1] || 'A'; 
-                    if (!grupos[group]) grupos[group] = [];
-                    const clubNombre = fila[0].trim();
-                    grupos[group].push({ 
-                        nombre: clubNombre, 
-                        pts: parseInt(fila[3])||0, 
-                        dif: parseInt(fila[2])||0, 
-                        pj: partidosJugadosPorClub[normalizarTexto(clubNombre)] || 0 
-                    });
+                // ORDENACIÓN: 1º Puntos, 2º Diferencia de Goles, 3º Goles a favor
+                equiposDelGrupo.sort((a, b) => {
+                    if (b.pts !== a.pts) return b.pts - a.pts;
+                    if (b.dif !== a.dif) return b.dif - a.dif;
+                    return b.gf - a.gf;
                 });
 
-                container.innerHTML = Object.keys(grupos).map(g => {
-                    const orden = grupos[g].sort((a,b) => {
-                        if (b.pts !== a.pts) return b.pts - a.pts;
-                        return b.dif - a.dif;
-                    });
-                    return `<div class="card"><div style="padding:10px 15px; background:#f0f0f0; font-weight:bold; font-size:0.8em; color:#666;">GRUPO ${g}</div><table><thead><tr><th>EQUIPO</th><th class="txt-centro">PJ</th><th class="txt-centro">DIF</th><th class="txt-centro">PTS</th></tr></thead><tbody>${orden.map(e => `<tr><td><b>${e.nombre}</b></td><td class="txt-centro pj-gris">${e.pj}</td><td class="txt-centro" style="font-weight:bold; color:${e.dif > 0 ? 'var(--verde)' : e.dif < 0 ? 'var(--rojo)' : '#333'}">${e.dif > 0 ? '+' + e.dif : e.dif}</td><td class="txt-centro pts-verde">${e.pts}</td></tr>`).join('')}</tbody></table></div>`;
-                }).join('');
-            }
+                return `
+                    <div class="card">
+                        <div style="padding:10px 15px; background:var(--azul-nav); font-weight:bold; font-size:0.9em; color:white; text-transform:uppercase; letter-spacing:0.5px;">🏆 Clasificación ${g === 'GENERAL' ? 'Liga General' : 'Grupo ' + g}</div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;" class="txt-centro">POS</th>
+                                        <th>EQUIPO</th>
+                                        <th class="txt-centro" title="Partidos Jugados">PJ</th>
+                                        <th class="txt-centro" title="Partidos Ganados">PG</th>
+                                        <th class="txt-centro" title="Partidos Empatados">PE</th>
+                                        <th class="txt-centro" title="Partidos Perdidos">PP</th>
+                                        <th class="txt-centro" title="Goles a Favor">GF</th>
+                                        <th class="txt-centro" title="Goles en Contra">GC</th>
+                                        <th class="txt-centro" title="Diferencia de Goles">DIF</th>
+                                        <th class="txt-centro" title="Puntos">PTS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${equiposDelGrupo.map((e, index) => `
+                                        <tr>
+                                            <td class="txt-centro" style="color:#7f8c8d; font-weight:bold;">${index + 1}º</td>
+                                            <td><b>${e.nombre}</b></td>
+                                            <td class="txt-centro pj-gris">${e.pj}</td>
+                                            <td class="txt-centro">${e.pg}</td>
+                                            <td class="txt-centro">${e.pe}</td>
+                                            <td class="txt-centro">${e.pp}</td>
+                                            <td class="txt-centro" style="color:#95a5a6;">${e.gf}</td>
+                                            <td class="txt-centro" style="color:#95a5a6;">${e.gc}</td>
+                                            <td class="txt-centro" style="font-weight:bold; color:${e.dif > 0 ? 'var(--verde)' : e.dif < 0 ? 'var(--rojo)' : '#333'}">${e.dif > 0 ? '+' + e.dif : e.dif}</td>
+                                            <td class="txt-centro pts-verde">${e.pts}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+            }).join('');
         }
 
         function renderEnVivo(res) {
@@ -496,11 +530,18 @@
             return `<div class="bracket-match"><div class="bracket-match-title">${titulo}</div><div class="bracket-team-row ${gL>gV?'winner':''}"><span class="bracket-name">${local||'—'}</span><span class="bracket-goals ${isNaN(gL)?'empty':''}">${isNaN(gL)?'-':gL}</span></div><div class="bracket-team-row ${gV>gL?'winner':''}"><span class="bracket-name">${visitante||'—'}</span><span class="bracket-goals ${isNaN(gV)?'empty':''}">${isNaN(gV)?'-':gV}</span></div></div>`;
         }
 
-        function renderBracket(res) {
+        function renderBracketAdaptado(res) {
             const container = document.getElementById('bracket-container'); if (!container) return;
             const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
             const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[0]) === normalizarTexto(nombre));
-            container.innerHTML = `<div class="bracket-column">${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}</div><div class="bracket-column">${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}</div><div class="bracket-column final-col">${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}</div>`;
+
+            if (torneoActual === 'femenino') {
+                container.innerHTML = `<div class="bracket-column final-col">${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}</div>`;
+            } else if (torneoActual === 'mixto') {
+                container.innerHTML = `<div class="bracket-column">${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}</div><div class="bracket-column final-col">${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}</div>`;
+            } else {
+                container.innerHTML = `<div class="bracket-column">${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}</div><div class="bracket-column">${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}</div><div class="bracket-column final-col">${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}</div>`;
+            }
         }
 
         function ver(s) {
