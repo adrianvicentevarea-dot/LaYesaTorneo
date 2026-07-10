@@ -136,12 +136,12 @@
 
             <div id="gol" class="hidden">
                 <div class="search-container"><input type="text" id="search-gol" class="search-input" placeholder="🔍 Buscar goleador/a..." oninput="filtrarGoleadores(this.value)"></div>
-                <div class="card"><div class="table-responsive"><table><thead><tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr></thead><tbody id="body-gol"></tbody></table></div></div>
+                <div class="card"><div class="table-responsive"><table><thead><tr><th>Jugador/a</th><th>Equipo</th><th class="txt-centro">PJ</th><th class="txt-centro">G</th></tr></thead><tbody id="body-gol"></tbody></table></div></div>
             </div>
             
             <div id="tar" class="hidden">
                 <div class="search-container"><input type="text" id="search-tar" class="search-input" placeholder="🔍 Buscar jugador/a..." oninput="filtrarTarjetas(this.value)"></div>
-                <div class="card"><div class="table-responsive"><table><thead><tr><th>Jugador/a</th><th>Club</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr></thead><tbody id="body-tar"></tbody></table></div></div>
+                <div class="card"><div class="table-responsive"><table><thead><tr><th>Jugador/a</th><th>Equipo</th><th class="txt-centro">PJ</th><th class="txt-centro">🟨</th><th class="txt-derecha">Estado</th></tr></thead><tbody id="body-tar"></tbody></table></div></div>
             </div>
         </main>
     </div>
@@ -171,10 +171,11 @@
         let listaTarjetasCache = [];
         let intervaloCronometroLive = null;
         let intervaloAutoRefresco = null;
-        
+
+        // Índices basados exactamente en tu captura de columnas (Nombre=0, Equipo=1, Dorsal=2, Goles=3, Partidos=4)
         let colIdxGoles = 3; 
-        let colIdxAmarillas = 2;
-        let colIdxSancion = 3;
+        let colIdxAmarillas = 3; // Suponiendo que en la de Tarjetas la columna 3 (D) sea la de amarillas
+        let colIdxSancion = 4;   // Y la columna 4 (E) sea el Estado/Sanción
 
         function cambiarTorneo(nuevoTorneo) {
             localStorage.setItem('torneo_seleccionado', nuevoTorneo);
@@ -217,7 +218,7 @@
 
         async function consultarGoogleSheet(nombrePestaña) {
             try {
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}&nocache=${new Date().getTime()}`;
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq=out:json&sheet=${encodeURIComponent(nombrePestaña)}&nocache=${new Date().getTime()}`;
                 const respuesta = await fetch(url);
                 const texto = await respuesta.text();
                 const jsonNeto = JSON.parse(texto.slice(texto.indexOf('{'), texto.lastIndexOf('}') + 1));
@@ -247,24 +248,20 @@
                     cacheClasificacionRows = resC.rows;
                 }
 
-                // Genera la clasificación completamente matemática y automática
                 procesarYRenderClasificacionAutomatica();
                 
                 if (resG && resG.rows.length > 0) {
-                    const cabeceraG = resG.rows[0];
-                    const idxEncontrado = cabeceraG.findIndex(c => normalizarTexto(c).includes('gol'));
-                    if (idxEncontrado !== -1) colIdxGoles = idxEncontrado;
+                    // Nos saltamos la cabecera (idx=0) y nos aseguramos de que no dejen filas colgadas
                     listaGoleadoresCache = resG.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
+                    // Ordenamos tratando celdas vacías como 0 goles
                     listaGoleadoresCache.sort((a,b) => (parseInt(b[colIdxGoles])||0)-(parseInt(a[colIdxGoles])||0));
                 }
                 
                 if (resS && resS.rows.length > 0) {
-                    const cabeceraS = resS.rows[0];
-                    const idxAm = cabeceraS.findIndex(c => c.includes('🟨') || normalizarTexto(c).includes('amarilla'));
-                    const idxSan = cabeceraS.findIndex(c => normalizarTexto(c).includes('estado') || normalizarTexto(c).includes('sancion'));
-                    if (idxAm !== -1) colIdxAmarillas = idxAm;
-                    if (idxSan !== -1) colIdxSancion = idxSan;
                     listaTarjetasCache = resS.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
+                } else {
+                    // Si no tienes pestaña de tarjetas independiente, duplicamos la de Goleadores para que al menos salgan todos
+                    listaTarjetasCache = listaGoleadoresCache;
                 }
 
                 filtrarGoleadores(''); filtrarTarjetas('');
@@ -276,27 +273,40 @@
         function filtrarGoleadores(query) {
             const container = document.getElementById("body-gol"); if (!container) return;
             const q = normalizarTexto(query);
+            
+            // Si está vacío saca el Top 5. Si escribe, busca en la lista completa.
             const filtrados = q === '' ? listaGoleadoresCache.slice(0, 5) : listaGoleadoresCache.filter(f => normalizarTexto(f[0]).includes(q));
+            
             container.innerHTML = filtrados.map(fila => {
-                const clubNormalizado = normalizarTexto(fila[1]);
-                return `<tr><td><b>${formatearNombreConCapitan(fila[0])}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[clubNormalizado]||0}</td><td class="txt-centro pts-verde">${fila[colIdxGoles]||'0'}</td></tr>`;
+                const clubNormalizado = normalizarTexto(fila[1]); // Fila[1] es la columna 'Equipo'
+                const golesSaneados = fila[colIdxGoles] && fila[colIdxGoles].toString().trim() !== '' ? fila[colIdxGoles] : '0';
+                return `<tr><td><b>${formatearNombreConCapitan(fila[0])}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[clubNormalizado]||0}</td><td class="txt-centro pts-verde">${golesSaneados}</td></tr>`;
             }).join('');
         }
 
         function filtrarTarjetas(query) {
             const container = document.getElementById("body-tar"); if (!container) return;
             const q = normalizarTexto(query);
-            const unificados = listaGoleadoresCache.map(goleador => {
-                const nombreGoleador = normalizarTexto(goleador[0]);
-                const datosTarjeta = listaTarjetasCache.find(t => normalizarTexto(t[0]).replace(/\s*[\(]?[cC][\)]?$/, '').trim() === nombreGoleador.replace(/\s*[\(]?[cC][\)]?$/, '').trim());
-                return [goleador[0], goleador[1], datosTarjeta ? datosTarjeta[colIdxAmarillas] : '0', datosTarjeta ? datosTarjeta[colIdxSancion] : ''];
+            
+            let listaTarjetasFormateada = listaTarjetasCache.map(fila => {
+                return {
+                    nombre: fila[0],
+                    club: fila[1] || '-',
+                    amarillas: parseInt(fila[colIdxAmarillas]) || 0,
+                    sancion: fila[colIdxSancion] ? fila[colIdxSancion].toString().trim() : ''
+                };
             });
-            unificados.sort((a, b) => (parseInt(b[2]) || 0) - (parseInt(a[2]) || 0));
-            const filtrados = q === '' ? unificados.slice(0, 5) : unificados.filter(f => normalizarTexto(f[0]).includes(q));
-            container.innerHTML = filtrados.map(fila => {
-                let s = fila[3] ? fila[3].toString().trim() : '';
+
+            listaTarjetasFormateada.sort((a, b) => b.amarillas - a.amarillas);
+
+            const filtrados = q === '' ? listaTarjetasFormateada.slice(0, 5) : listaTarjetasFormateada.filter(f => normalizarTexto(f.nombre).includes(q));
+            
+            container.innerHTML = filtrados.map(jugador => {
+                let s = jugador.sancion;
                 let estado = (s==='1'||normalizarTexto(s)==='sancionado'||normalizarTexto(s)==='si') ? `<span class="badge-sancion">SANCIONADO</span>` : `<span class="badge-ok">OK</span>`;
-                return `<tr><td><b>${formatearNombreConCapitan(fila[0])}</b></td><td class="txt-club">${fila[1]||'-'}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[normalizarTexto(fila[1])]||0}</td><td class="txt-centro"><span class="badge-amarilla">${fila[2]||'0'}</span></td><td class="txt-derecha">${estado}</td></tr>`;
+                const clubNormalizado = normalizarTexto(jugador.club);
+                
+                return `<tr><td><b>${formatearNombreConCapitan(jugador.nombre)}</b></td><td class="txt-club">${jugador.club}</td><td class="txt-centro pj-gris">${partidosJugadosPorClub[clubNormalizado]||0}</td><td class="txt-centro"><span class="badge-amarilla">${jugador.amarillas}</span></td><td class="txt-derecha">${estado}</td></tr>`;
             }).join('');
         }
 
@@ -308,6 +318,7 @@
                 const gL = parseInt(fila[3]), gV = parseInt(fila[4]);
                 let marcadorHTML = !isNaN(gL) && !isNaN(gV) ? `<div class="match-score">${gL}:${gV}</div>` : `<div class="match-score hora">${hora || '-:-'}</div>`;
                 
+                // IMPORTANTE: Aquí se cuentan los partidos automáticamente si tienen marcador puesto
                 if (!isNaN(gL) && !isNaN(gV)) {
                     partidosJugadosPorClub[normalizarTexto(local)] = (partidosJugadosPorClub[normalizarTexto(local)] || 0) + 1;
                     partidosJugadosPorClub[normalizarTexto(visitante)] = (partidosJugadosPorClub[normalizarTexto(visitante)] || 0) + 1;
@@ -320,9 +331,8 @@
             const container = document.getElementById('grupos-container'); if (!container) return;
             
             let estadisticas = {};
-            let mapaGrupos = {}; // Para saber a qué grupo pertenece cada club en el masculino
+            let mapaGrupos = {};
 
-            // 1. Mapeamos primero los grupos iniciales que pusiste en el Excel (si existen) para mantener la división de Grupos A y B
             if (cacheClasificacionRows && cacheClasificacionRows.length > 1) {
                 cacheClasificacionRows.forEach((fila, idx) => {
                     if (idx === 0 || !fila[0]) return;
@@ -330,14 +340,12 @@
                     const grupo = fila[1] ? fila[1].trim().toUpperCase() : 'GENERAL';
                     mapaGrupos[normalizarTexto(club)] = grupo;
                     
-                    // Inicializamos la ficha limpia del club
                     if (!estadisticas[club]) {
                         estadisticas[club] = { nombre: club, grupo: grupo, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
                     }
                 });
             }
 
-            // 2. Escaneamos todos los partidos jugados y computamos goles, victorias, empates y derrotas
             if (cachePartidosRows && cachePartidosRows.length > 1) {
                 cachePartidosRows.forEach((fila, idx) => {
                     if (idx === 0) return;
@@ -345,7 +353,6 @@
                     const visitante = fila[2] ? fila[2].trim() : '';
                     if (!local || !visitante) return;
 
-                    // Si un club no estaba en la pestaña clasificación, lo añadimos sobre la marcha
                     if (!estadisticas[local]) {
                         let g = mapaGrupos[normalizarTexto(local)] || (torneoActual === 'masculino' ? 'A' : 'GENERAL');
                         estadisticas[local] = { nombre: local, grupo: g, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
@@ -358,7 +365,6 @@
                     const gL = parseInt(fila[3]);
                     const gV = parseInt(fila[4]);
 
-                    // Si el partido ya se ha jugado (tiene goles apuntados)
                     if (!isNaN(gL) && !isNaN(gV)) {
                         estadisticas[local].pj += 1;
                         estadisticas[visitante].pj += 1;
@@ -369,17 +375,14 @@
                         estadisticas[visitante].gc += gL;
 
                         if (gL > gV) {
-                            // Gana Local
                             estadisticas[local].pg += 1;
                             estadisticas[local].pts += 3;
                             estadisticas[visitante].pp += 1;
                         } else if (gV > gL) {
-                            // Gana Visitante
                             estadisticas[visitante].pg += 1;
                             estadisticas[visitante].pts += 3;
                             estadisticas[local].pp += 1;
                         } else {
-                            // Empate
                             estadisticas[local].pe += 1;
                             estadisticas[local].pts += 1;
                             estadisticas[visitante].pe += 1;
@@ -389,11 +392,9 @@
                 });
             }
 
-            // Calcular diferencias de goles de todos los registrados
             let listaEquipos = Object.values(estadisticas);
             listaEquipos.forEach(e => { e.dif = e.gf - e.gc; });
 
-            // Agrupamos según corresponda el torneo
             let gruposFinales = {};
 
             if (torneoActual === 'femenino' || torneoActual === 'mixto') {
@@ -407,11 +408,9 @@
                 });
             }
 
-            // Pintar las tablas correspondientes
             container.innerHTML = Object.keys(gruposFinales).map(g => {
                 let equiposDelGrupo = gruposFinales[g];
                 
-                // ORDENACIÓN: 1º Puntos, 2º Diferencia de Goles, 3º Goles a favor
                 equiposDelGrupo.sort((a, b) => {
                     if (b.pts !== a.pts) return b.pts - a.pts;
                     if (b.dif !== a.dif) return b.dif - a.dif;
@@ -427,14 +426,14 @@
                                     <tr>
                                         <th style="width: 40px;" class="txt-centro">POS</th>
                                         <th>EQUIPO</th>
-                                        <th class="txt-centro" title="Partidos Jugados">PJ</th>
-                                        <th class="txt-centro" title="Partidos Ganados">PG</th>
-                                        <th class="txt-centro" title="Partidos Empatados">PE</th>
-                                        <th class="txt-centro" title="Partidos Perdidos">PP</th>
-                                        <th class="txt-centro" title="Goles a Favor">GF</th>
-                                        <th class="txt-centro" title="Goles en Contra">GC</th>
-                                        <th class="txt-centro" title="Diferencia de Goles">DIF</th>
-                                        <th class="txt-centro" title="Puntos">PTS</th>
+                                        <th class="txt-centro">PJ</th>
+                                        <th class="txt-centro">PG</th>
+                                        <th class="txt-centro">PE</th>
+                                        <th class="txt-centro">PP</th>
+                                        <th class="txt-centro">GF</th>
+                                        <th class="txt-centro">GC</th>
+                                        <th class="txt-centro">DIF</th>
+                                        <th class="txt-centro">PTS</th>
                                     </tr>
                                 </thead>
                                 <tbody>
