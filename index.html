@@ -197,28 +197,14 @@
             return nombre;
         }
 
-        function extraerValorCelda(celda, esPestañaVivo = false) {
-            if (!celda) return '';
-            if (celda.v !== null && celda.v !== undefined && typeof celda.v === 'string' && celda.v.includes('Date(')) {
-                const partes = celda.v.match(/\d+/g);
-                if (partes && partes.length >= 5) {
-                    if (esPestañaVivo) {
-                        return `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}:${partes[5] ? partes[5].padStart(2, '0') : '00'}`;
-                    } else {
-                        return `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}`;
-                    }
-                }
-            }
-            if (celda.v !== null && celda.v !== undefined) return celda.v.toString().trim();
-            if (celda.f !== null && celda.f !== undefined) return celda.f.trim();
-            return '';
-        }
-
         async function consultarGoogleSheet(nombrePestaña) {
             try {
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq=out:json&sheet=${encodeURIComponent(nombrePestaña)}&nocache=${new Date().getTime()}`;
+                // Nuevo método de extracción ultra-robusto que evita bloqueos CORS de Google
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}&nocache=${new Date().getTime()}`;
                 const respuesta = await fetch(url);
                 const texto = await respuesta.text();
+                
+                // Limpieza del formato JSON protectivo de Google
                 const inicioJson = texto.indexOf('{');
                 const finJson = texto.lastIndexOf('}');
                 if(inicioJson === -1 || finJson === -1) return { rows: [] };
@@ -226,8 +212,25 @@
                 const jsonNeto = JSON.parse(texto.slice(inicioJson, finJson + 1));
                 if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { rows: [] };
                 
-                const esVivo = (nombrePestaña === 'EnVivo');
-                return { rows: jsonNeto.table.rows.map(r => r.c ? r.c.map(celda => extraerValorCelda(celda, esVivo)) : []) };
+                // Mapeo seguro de filas y celdas
+                return {
+                    rows: jsonNeto.table.rows.map(r => {
+                        if (!r || !r.c) return [];
+                        return r.c.map(celda => {
+                            if (!celda) return '';
+                            // Detección automática de horas de Google
+                            if (celda.v !== null && celda.v !== undefined && typeof celda.v === 'string' && celda.v.includes('Date(')) {
+                                const partes = celda.v.match(/\d+/g);
+                                if (partes && partes.length >= 5) {
+                                    return `${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}`;
+                                }
+                            }
+                            if (celda.v !== null && celda.v !== undefined) return celda.v.toString().trim();
+                            if (celda.f !== null && celda.f !== undefined) return celda.f.trim();
+                            return '';
+                        });
+                    })
+                };
             } catch (error) { 
                 console.error("Error cargando pestaña " + nombrePestaña, error);
                 return { rows: [] }; 
@@ -557,12 +560,11 @@
             });
             const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('menu-overlay');
             sidebar.classList.remove('open'); overlay.style.display = 'none';
-            cargarTodo();
         }
 
         window.onload = function() {
             cargarTodo();
-            intervaloAutoRefresco = setInterval(cargarTodo, 10000);
+            intervaloAutoRefresco = setInterval(cargarTodo, 15000); // Auto-refresco cada 15 segundos
         };
     </script>
 </body>
