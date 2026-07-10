@@ -124,7 +124,7 @@
             <select id="selectorTorneo" class="selector-torneo" onchange="cambiarTorneo(this.value)">
                 <option value="masculino">⚽ Fútbol Masculino</option>
                 <option value="femenino">🙋‍♀️ Fútbol Femenino</option>
-                <option value="ninos">🧒 Fútbol Mixto (Peques)</option>
+                <option value="mixto">🔄 Fútbol Mixto</option>
             </select>
         </div>
 
@@ -157,7 +157,7 @@
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
-            ninos: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'
+            mixto: '1mjY3jCUqb-hCau3HZrPWs0Kk2kVVY6xlKg-Dw1a3j-o'
         };
 
         let torneoActual = localStorage.getItem('torneo_seleccionado') || 'masculino';
@@ -165,7 +165,8 @@
         let SHEET_ID = TORNEOS[torneoActual] || TORNEOS.masculino;
 
         let partidosJugadosPorClub = {};
-        let cachePartidosRows = []; // Guardamos los partidos para procesar estadísticas
+        let cachePartidosRows = []; 
+        let cacheClasificacionRows = []; // Respaldo para el torneo masculino
         let listaGoleadoresCache = [];
         let listaTarjetasCache = [];
         let intervaloCronometroLive = null;
@@ -219,7 +220,7 @@
                 const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}&nocache=${new Date().getTime()}`;
                 const respuesta = await fetch(url);
                 const texto = await respuesta.text();
-                const jsonNeto = JSON.parse(texto.slice(texto.indexOf('{'), text.lastIndexOf('}') + 1));
+                const jsonNeto = JSON.parse(texto.slice(texto.indexOf('{'), texto.lastIndexOf('}') + 1));
                 if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { rows: [] };
                 
                 const esVivo = (nombrePestaña === 'EnVivo');
@@ -231,6 +232,7 @@
             try {
                 partidosJugadosPorClub = {};
                 const resP = await consultarGoogleSheet('Partidos');
+                const resC = await consultarGoogleSheet('Clasificacion');
                 const resG = await consultarGoogleSheet('Goleadores');
                 const resS = await consultarGoogleSheet('Tarjetas'); 
                 const resE = await consultarGoogleSheet('Eliminatorias');
@@ -241,7 +243,11 @@
                     renderPartidos(resP.rows);
                 }
                 
-                // Calculamos y dibujamos la tabla de posiciones basándonos en los partidos
+                if (resC && resC.rows.length > 0) {
+                    cacheClasificacionRows = resC.rows;
+                }
+
+                // Genera la tabla de posiciones sin fallos de ejecución
                 renderClasificacionAutomatica();
                 
                 if (resG && resG.rows.length > 0) {
@@ -310,76 +316,62 @@
             }).join('');
         }
 
-        // 🧠 FUNCIÓN ESTRELLA: PROCESA Y CALCULA TODO EN TIEMPO REAL DESDE EL HTML
         function renderClasificacionAutomatica() {
             const container = document.getElementById('grupos-container'); if (!container) return;
-            if (!cachePartidosRows || cachePartidosRows.length <= 1) return;
-
-            let estadisticasEquipos = {};
-
-            // 1. Recorrer los partidos para extraer equipos y procesar victorias/empates/derrotas/goles
-            cachePartidosRows.forEach((fila, idx) => {
-                if (idx === 0) return; // Saltarse cabecera
-                const local = fila[1] ? fila[1].trim() : '';
-                const visitante = fila[2] ? fila[2].trim() : '';
-                if (!local || !visitante) return;
-
-                // Inicializar objetos si no existen
-                if (!estadisticasEquipos[local]) estadisticasEquipos[local] = { nombre: local, pj: 0, gf: 0, gc: 0, dif: 0, pts: 0, grupo: 'Único' };
-                if (!estadisticasEquipos[visitante]) estadisticasEquipos[visitante] = { nombre: visitante, pj: 0, gf: 0, gc: 0, dif: 0, pts: 0, grupo: 'Único' };
-
-                // Si en el torneo masculino tienes asignado un grupo provisional por el orden, puedes mapearlo aquí, 
-                // pero lo ideal para ligas es procesar sus resultados directo.
-                // Usaremos una regla simple para el masculino si los nombres contienen grupo o si vienen predeterminados.
-                if (torneoActual === 'masculino') {
-                   // Intentar deducir grupo si pusiste algo, si no por defecto se auto-divide.
-                   // Para mantener consistencia con tu config original:
-                   estadisticasEquipos[local].grupo = (local.toLowerCase().includes('a') || local.charCodeAt(0)%2===0) ? 'A' : 'B';
-                   estadisticasEquipos[visitante].grupo = estadisticasEquipos[local].grupo;
-                }
-
-                const gL = parseInt(fila[3]);
-                const gV = parseInt(fila[4]);
-
-                // Si el partido ya tiene resultado puesto en el Excel
-                if (!isNaN(gL) && !isNaN(gV)) {
-                    estadisticasEquipos[local].pj += 1;
-                    estadisticasEquipos[visitante].pj += 1;
-                    estadisticasEquipos[local].gf += gL;
-                    estadisticasEquipos[local].gc += gV;
-                    estadisticasEquipos[visitante].gf += gV;
-                    estadisticasEquipos[visitante].gc += gL;
-
-                    if (gL > gV) { // Gana Local
-                        estadisticasEquipos[local].pts += 3;
-                    } else if (gV > gL) { // Gana Visitante
-                        estadisticasEquipos[visitante].pts += 3;
-                    } else { // Empate
-                        estadisticasEquipos[local].pts += 1;
-                        estadisticasEquipos[visitante].pts += 1;
-                    }
-                }
-            });
-
-            // Convertir objeto en lista y calcular diferencias netas de goles
-            let listaEquipos = Object.values(estadisticasEquipos);
-            listaEquipos.forEach(e => {
-                e.dif = e.gf - e.gc;
-            });
-
-            // 2. RENDERIZADO SEGÚN EL MODO DE JUEGO (LIGA O GRUPOS)
-            if (torneoActual === 'femenino' || torneoActual === 'ninos') {
+            
+            // 1. MODO LIGA GENERAL AUTOMÁTICA (Para Femenino y Mixto)
+            if (torneoActual === 'femenino' || torneoActual === 'mixto') {
                 container.classList.add('modo-liga');
-                
-                // ORDENACIÓN DE LIGA: 1º Puntos, 2º Diferencia de Goles
+                let estadisticasEquipos = {};
+
+                if (cachePartidosRows && cachePartidosRows.length > 1) {
+                    cachePartidosRows.forEach((fila, idx) => {
+                        if (idx === 0) return;
+                        const local = fila[1] ? fila[1].trim() : '';
+                        const visitante = fila[2] ? fila[2].trim() : '';
+                        if (!local || !visitante) return;
+
+                        if (!estadisticasEquipos[local]) estadisticasEquipos[local] = { nombre: local, pj: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
+                        if (!estadisticasEquipos[visitante]) estadisticasEquipos[visitante] = { nombre: visitante, pj: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
+
+                        const gL = parseInt(fila[3]);
+                        const gV = parseInt(fila[4]);
+
+                        if (!isNaN(gL) && !isNaN(gV)) {
+                            estadisticasEquipos[local].pj += 1;
+                            estadisticasEquipos[visitante].pj += 1;
+                            estadisticasEquipos[local].gf += gL;
+                            estadisticasEquipos[local].gc += gV;
+                            estadisticasEquipos[visitante].gf += gV;
+                            estadisticasEquipos[visitante].gc += gL;
+
+                            if (gL > gV) estadisticasEquipos[local].pts += 3;
+                            else if (gV > gL) estadisticasEquipos[visitante].pts += 3;
+                            else {
+                                estadisticasEquipos[local].pts += 1;
+                                estadisticasEquipos[visitante].pts += 1;
+                            }
+                        }
+                    });
+                }
+
+                let listaEquipos = Object.values(estadisticasEquipos);
+                listaEquipos.forEach(e => { e.dif = e.gf - e.gc; });
+
+                // ORDENACIÓN EXIGIDA: 1º Puntos, 2º Diferencia de Goles
                 listaEquipos.sort((a, b) => {
                     if (b.pts !== a.pts) return b.pts - a.pts;
                     return b.dif - a.dif;
                 });
 
+                if (listaEquipos.length === 0) {
+                    container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">📊 No hay equipos cargados en la pestaña 'Partidos'.</div>`;
+                    return;
+                }
+
                 container.innerHTML = `
                     <div class="card">
-                        <div style="padding:10px 15px; background:var(--azul-nav); font-weight:bold; font-size:0.9em; color:white; text-transform:uppercase; letter-spacing:0.5px;">🏆 TABLA DE LIGA GENERAL (100% AUTOMÁTICA)</div>
+                        <div style="padding:10px 15px; background:var(--azul-nav); font-weight:bold; font-size:0.9em; color:white; text-transform:uppercase; letter-spacing:0.5px;">🏆 TABLA DE LIGA GENERAL</div>
                         <table>
                             <thead>
                                 <tr>
@@ -404,12 +396,27 @@
                         </table>
                     </div>`;
             } else {
-                // MODO SECCIONES POR GRUPOS (Para el Masculino)
+                // 2. MODO GRUPOS ESTÁNDAR (Para el Masculino utilizando su pestaña Clasificacion original)
                 container.classList.remove('modo-liga');
+                
+                if (!cacheClasificacionRows || cacheClasificacionRows.length <= 1) {
+                    container.innerHTML = `<div style="color:white;text-align:center;padding:20px;width:100%;">📊 Cargando clasificación por grupos...</div>`;
+                    return;
+                }
+
                 const grupos = {};
-                listaEquipos.forEach(e => {
-                    if (!grupos[e.grupo]) grupos[e.grupo] = [];
-                    grupos[e.grupo].push(e);
+                const equiposValidos = cacheClasificacionRows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
+                
+                equiposValidos.forEach(fila => {
+                    const group = fila[1] || 'A'; 
+                    if (!grupos[group]) grupos[group] = [];
+                    const clubNombre = fila[0].trim();
+                    grupos[group].push({ 
+                        nombre: clubNombre, 
+                        pts: parseInt(fila[3])||0, 
+                        dif: parseInt(fila[2])||0, 
+                        pj: partidosJugadosPorClub[normalizarTexto(clubNombre)] || 0 
+                    });
                 });
 
                 container.innerHTML = Object.keys(grupos).map(g => {
@@ -429,8 +436,8 @@
             if (!filaVivo) { container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`; return; }
 
             const local = filaVivo[0]; const marcador = filaVivo[1] || '0:0'; const visitante = filaVivo[2];
-            const celdaTiempoLimpia = (filaVivo[3] || '0').toString().replace(',', '.');
-            const minutosRestantesAlActualizar = parseFloat(celdaTiempoLimpia) || 0;
+            const celdaTiempo Lompia = (filaVivo[3] || '0').toString().replace(',', '.');
+            const minutosRestantesAlActualizar = parseFloat(celdaTiempo Lompia) || 0;
             const horaDeActualizacionTexto = filaVivo[4] || '';
 
             container.innerHTML = `
