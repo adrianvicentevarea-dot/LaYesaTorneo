@@ -199,12 +199,10 @@
 
         async function consultarGoogleSheet(nombrePestaña) {
             try {
-                // Nuevo método de extracción ultra-robusto que evita bloqueos CORS de Google
                 const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(nombrePestaña)}&nocache=${new Date().getTime()}`;
                 const respuesta = await fetch(url);
                 const texto = await respuesta.text();
                 
-                // Limpieza del formato JSON protectivo de Google
                 const inicioJson = texto.indexOf('{');
                 const finJson = texto.lastIndexOf('}');
                 if(inicioJson === -1 || finJson === -1) return { rows: [] };
@@ -212,13 +210,11 @@
                 const jsonNeto = JSON.parse(texto.slice(inicioJson, finJson + 1));
                 if (!jsonNeto || !jsonNeto.table || !jsonNeto.table.rows) return { rows: [] };
                 
-                // Mapeo seguro de filas y celdas
                 return {
                     rows: jsonNeto.table.rows.map(r => {
                         if (!r || !r.c) return [];
                         return r.c.map(celda => {
                             if (!celda) return '';
-                            // Detección automática de horas de Google
                             if (celda.v !== null && celda.v !== undefined && typeof celda.v === 'string' && celda.v.includes('Date(')) {
                                 const partes = celda.v.match(/\d+/g);
                                 if (partes && partes.length >= 5) {
@@ -266,7 +262,7 @@
                 if (resS && resS.rows && resS.rows.length > 0) {
                     listaTarjetasCache = resS.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
                 } else {
-                    listaTarjetasCache = listaGoleadoresCache;
+                    listaTarjetasCache = [];
                 }
 
                 filtrarGoleadores(''); filtrarTarjetas('');
@@ -283,7 +279,7 @@
             const container = document.getElementById("body-gol"); if (!container) return;
             const q = normalizarTexto(query);
             
-            const filtrados = q === '' ? listaGoleadoresCache.slice(0, 5) : listaGoleadoresCache.filter(f => normalizarTexto(f[0]).includes(q));
+            const filtrados = q === '' ? listaGoleadoresCache.slice(0, 15) : listaGoleadoresCache.filter(f => normalizarTexto(f[0]).includes(q));
             
             container.innerHTML = filtrados.map(fila => {
                 const clubNormalizado = normalizarTexto(fila[1]); 
@@ -307,7 +303,7 @@
 
             listaTarjetasFormateada.sort((a, b) => b.amarillas - a.amarillas);
 
-            const filtrados = q === '' ? listaTarjetasFormateada.slice(0, 5) : listaTarjetasFormateada.filter(f => normalizarTexto(f.nombre).includes(q));
+            const filtrados = q === '' ? listaTarjetasFormateada.slice(0, 15) : listaTarjetasFormateada.filter(f => normalizarTexto(f.nombre).includes(q));
             
             container.innerHTML = filtrados.map(jugador => {
                 let s = jugador.sancion;
@@ -474,8 +470,10 @@
             if (!filaVivo) { container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`; return; }
 
             const local = filaVivo[0]; const marcador = filaVivo[1] || '0:0'; const visitante = filaVivo[2];
-            const celdaTiempoLimpia = (filaVivo[3] || '0').toString().replace(',', '.');
-            const minutosRestantesAlActualizar = parseFloat(celdaTiempoLimpia) || 0;
+            
+            // Saneamiento robusto de comas a puntos para los decimales de Google Sheets
+            let rawMinutos = (filaVivo[3] || '0').toString().replace(',', '.');
+            const minutosRestantesAlActualizar = parseFloat(rawMinutos) || 0;
             const horaDeActualizacionTexto = filaVivo[4] || '';
 
             container.innerHTML = `
@@ -564,7 +562,7 @@
 
         window.onload = function() {
             cargarTodo();
-            intervaloAutoRefresco = setInterval(cargarTodo, 15000); // Auto-refresco cada 15 segundos
+            intervaloAutoRefresco = setInterval(cargarTodo, 15000);
         };
     </script>
 </body>
