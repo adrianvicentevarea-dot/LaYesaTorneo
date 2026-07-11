@@ -82,13 +82,13 @@
         .live-time { font-size: 1.2em; font-weight: bold; color: var(--en-vivo); letter-spacing: 0.5px; }
 
         /* PLAYOFFS / BRACKET */
-        .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; -webkit-overflow-scrolling: touch; }
-        .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 550px; min-width: 220px; flex: 1; }
-        .bracket-column.final-col { justify-content: center; min-width: 240px; }
+        .bracket-wrapper { display: flex; gap: 30px; padding: 10px 5px; overflow-x: auto; align-items: center; -webkit-overflow-scrolling: touch; justify-content: center; min-width: 100%; }
+        .bracket-column { display: flex; flex-direction: column; justify-content: space-around; height: 500px; min-width: 240px; }
+        .bracket-column.final-col { justify-content: center; }
         .bracket-match { background: white; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; font-size: 0.95em; width: 100%; margin-bottom: 10px; }
         .bracket-match-title { background: #f4f6f7; font-size: 0.8em; font-weight: bold; text-align: center; color: #666; border-bottom: 1px solid #ddd; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
         .bracket-team-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; }
-        .bracket-name { font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .bracket-name { font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
         .bracket-goals { background: var(--azul-nav); color: white; font-weight: bold; padding: 4px 10px; border-radius: 3px; min-width: 30px; text-align: center; font-size: 1em; }
         .bracket-goals.empty { background: #e0e0e0; color: #999; }
         .winner { background: #ebf5fb; }
@@ -101,6 +101,7 @@
             .grid-grupos { grid-template-columns: 1fr; }
             .top-bar { padding: 10px; }
             #content { padding: 10px; }
+            .bracket-wrapper { justify-content: flex-start; }
             .bracket-column { height: auto; gap: 15px; }
         }
     </style>
@@ -238,20 +239,22 @@
             try {
                 const resP = await consultarGoogleSheet('Partidos');
                 if (resP && resP.rows && resP.rows.length > 0) {
-                    cachePartidosRows = resP.rows;
-                    renderPartidos(resP.rows); 
+                    // Filtrar dinámicamente si la primera fila es cabecera
+                    cachePartidosRows = resP.rows.filter(f => f && f[1] && normalizarTexto(f[1]) !== 'local');
+                    renderPartidos(cachePartidosRows); 
                 }
                 
                 const resC = await consultarGoogleSheet('Clasificacion');
                 if (resC && resC.rows && resC.rows.length > 0) {
-                    cacheClasificacionRows = resC.rows;
+                    cacheClasificacionRows = resC.rows.filter(f => f && f[0] && normalizarTexto(f[0]) !== 'nombre');
                 }
 
                 procesarYRenderClasificacionAutomatica();
                 
                 const resG = await consultarGoogleSheet('Goleadores');
                 if (resG && resG.rows && resG.rows.length > 0) {
-                    listaGoleadoresCache = resG.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
+                    // CORREGIDO: Evita saltarse al jugador número 1
+                    listaGoleadoresCache = resG.rows.filter(fila => fila && fila[0] && normalizarTexto(fila[0]) !== 'nombre' && fila[0].toString().trim() !== '');
                     listaGoleadoresCache.sort((a,b) => (parseInt(b[colIdxGoles])||0)-(parseInt(a[colIdxGoles])||0));
                 } else {
                     listaGoleadoresCache = [];
@@ -259,7 +262,8 @@
                 
                 const resS = await consultarGoogleSheet('Tarjetas'); 
                 if (resS && resS.rows && resS.rows.length > 0) {
-                    listaTarjetasCache = resS.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
+                    // CORREGIDO: Evita saltarse al jugador número 1
+                    listaTarjetasCache = resS.rows.filter(fila => fila && fila[0] && normalizarTexto(fila[0]) !== 'nombre' && fila[0].toString().trim() !== '');
                 } else {
                     listaTarjetasCache = [];
                 }
@@ -275,7 +279,6 @@
             } catch (e) { console.error("Error global en cargarTodo:", e); }
         }
 
-        // TOP 5 de goleadores por defecto
         function filtrarGoleadores(query) {
             const container = document.getElementById("body-gol"); if (!container) return;
             const q = normalizarTexto(query);
@@ -289,7 +292,6 @@
             }).join('');
         }
 
-        // CORREGIDO: TOP 5 de Sanciones por defecto
         function filtrarTarjetas(query) {
             const container = document.getElementById("body-tar"); if (!container) return;
             const q = normalizarTexto(query);
@@ -306,7 +308,6 @@
 
             listaTarjetasFormateada.sort((a, b) => b.amarillas - a.amarillas);
 
-            // Si está vacío, solo muestra los mejores 5 amonestados
             const filtrados = q === '' ? listaTarjetasFormateada.slice(0, 5) : listaTarjetasFormateada.filter(f => normalizarTexto(f.nombre).includes(q));
             
             container.innerHTML = filtrados.map(jugador => {
@@ -317,9 +318,8 @@
             }).join('');
         }
 
-        function renderPartidos(rows) {
+        function renderPartidos(partidosValidos) {
             const container = document.getElementById('partidos-container'); if (!container) return;
-            const partidosValidos = rows.filter((fila, idx) => idx > 0 && fila && fila[1] && fila[1].toString().trim() !== '');
             container.innerHTML = partidosValidos.map(fila => {
                 const hora = fila[0] || ''; const local = fila[1] || ''; const visitante = fila[2] || '';
                 const gL = parseInt(fila[3]), gV = parseInt(fila[4]);
@@ -335,9 +335,9 @@
             let estadisticas = {};
             let mapaGrupos = {};
 
-            if (cacheClasificacionRows && cacheClasificacionRows.length > 1) {
-                cacheClasificacionRows.forEach((fila, idx) => {
-                    if (idx === 0 || !fila[0]) return;
+            if (cacheClasificacionRows && cacheClasificacionRows.length > 0) {
+                cacheClasificacionRows.forEach(fila => {
+                    if (!fila[0]) return;
                     const club = fila[0].trim();
                     const grupo = fila[1] ? fila[1].trim().toUpperCase() : 'GENERAL';
                     mapaGrupos[normalizarTexto(club)] = grupo;
@@ -348,9 +348,8 @@
                 });
             }
 
-            if (cachePartidosRows && cachePartidosRows.length > 1) {
-                cachePartidosRows.forEach((fila, idx) => {
-                    if (idx === 0) return;
+            if (cachePartidosRows && cachePartidosRows.length > 0) {
+                cachePartidosRows.forEach(fila => {
                     const local = fila[1] ? fila[1].trim() : '';
                     const visitante = fila[2] ? fila[2].trim() : '';
                     if (!local || !visitante) return;
@@ -361,7 +360,7 @@
                     }
                     if (!estadisticas[visitante]) {
                         let g = mapaGrupos[normalizarTexto(visitante)] || 'GENERAL';
-                        estadisticas[visitante] = { nombre: visitante, group: g, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
+                        estadisticas[visitante] = { nombre: visitante, grupo: g, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
                     }
 
                     const gL = parseInt(fila[3]);
@@ -462,12 +461,15 @@
 
         function renderEnVivo(res) {
             const container = document.getElementById('vivo-container'); if (!container) return;
-            if (!res.rows || res.rows.length <= 1) { container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`; return; }
+            const filasUtiles = res.rows.filter(f => f && f[0] && normalizarTexto(f[0]) !== 'local');
             
-            const filaVivo = res.rows.find((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
             if (intervaloCronometroLive) clearInterval(intervaloCronometroLive);
-            if (!filaVivo) { container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`; return; }
-
+            if (filasUtiles.length === 0 || filasUtiles[0][0].toString().trim() === '') { 
+                container.innerHTML = `<div style="color:white;text-align:center;padding:40px;font-size:1.1em;">⏸️ No hay ningún partido en vivo.</div>`; 
+                return; 
+            }
+            
+            const filaVivo = filasUtiles[0];
             const local = filaVivo[0]; const marcador = filaVivo[1] || '0:0'; const visitante = filaVivo[2];
             
             let rawMinutos = (filaVivo[3] || '0').toString().replace(',', '.');
@@ -536,14 +538,14 @@
             return `<div class="bracket-match"><div class="bracket-match-title">${titulo}</div><div class="bracket-team-row ${gL>gV?'winner':''}"><span class="bracket-name">${local||'—'}</span><span class="bracket-goals ${isNaN(gL)?'empty':''}">${isNaN(gL)?'-':gL}</span></div><div class="bracket-team-row ${gV>gL?'winner':''}"><span class="bracket-name">${visitante||'—'}</span><span class="bracket-goals ${isNaN(gV)?'empty':''}">${isNaN(gV)?'-':gV}</span></div></div>`;
         }
 
-        // CORREGIDO: Buscador flexible para que reconozca "Semifinal" y "Final" de tu Excel
+        // CORREGIDO: Renderizado 100% dinámico basado en lo que hay en el Excel
         function renderBracketAdaptado(res) {
             const container = document.getElementById('bracket-container'); if (!container) return;
-            if (!res.rows || res.rows.length <= 1) return;
-            const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
+            if (!res.rows || res.rows.length === 0) { container.innerHTML = ""; return; }
             
-            // Busca de manera parcial (ej. si pides 'Semifinal 1' pero tu celda solo dice 'Semifinal')
-            const buscarFase = (nombre) => {
+            const fasesValidas = res.rows.filter(fila => fila && fila[0] && normalizarTexto(fila[0]) !== 'fase' && fila[0].toString().trim() !== '');
+            
+            const buscarFaseParcial = (nombre) => {
                 return fasesValidas.find(f => {
                     let txtCelda = normalizarTexto(f[0]);
                     let txtBuscado = normalizarTexto(nombre);
@@ -551,33 +553,43 @@
                 });
             };
 
-            if (torneoActual === 'femenino') {
-                container.innerHTML = `<div class="bracket-column final-col">${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}</div>`;
-            } else if (torneoActual === 'mixto') {
-                container.innerHTML = `
+            // Detectar automáticamente la estructura real del Excel
+            const tieneCuartos = fasesValidas.some(f => normalizarTexto(f[0]).includes('cuarto'));
+            const tieneSemifinales = fasesValidas.some(f => normalizarTexto(f[0]).includes('semifinal'));
+            const tieneFinal = fasesValidas.some(f => normalizarTexto(f[0]).includes('final'));
+
+            let htmlAcumulado = "";
+
+            // 1. Columna de Cuartos (si existen)
+            if (tieneCuartos) {
+                htmlAcumulado += `
                     <div class="bracket-column">
-                        ${transformarPartidoBracket(fasesValidas.filter(f => normalizarTexto(f[0]).includes('semifinal'))[0], 'Semifinal 1')}
-                        ${transformarPartidoBracket(fasesValidas.filter(f => normalizarTexto(f[0]).includes('semifinal'))[1], 'Semifinal 2')}
-                    </div>
-                    <div class="bracket-column final-col">
-                        ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
-                    </div>`;
-            } else {
-                container.innerHTML = `
-                    <div class="bracket-column">
-                        ${transformarPartidoBracket(buscarFase('Cuartos 1'), 'Cuartos 1')}
-                        ${transformarPartidoBracket(buscarFase('Cuartos 2'), 'Cuartos 2')}
-                        ${transformarPartidoBracket(buscarFase('Cuartos 3'), 'Cuartos 3')}
-                        ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}
-                    </div>
-                    <div class="bracket-column">
-                        ${transformarPartidoBracket(fasesValidas.filter(f => normalizarTexto(f[0]).includes('semifinal'))[0], 'Semifinal 1')}
-                        ${transformarPartidoBracket(fasesValidas.filter(f => normalizarTexto(f[0]).includes('semifinal'))[1], 'Semifinal 2')}
-                    </div>
-                    <div class="bracket-column final-col">
-                        ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
+                        ${transformarPartidoBracket(buscarFaseParcial('Cuartos 1'), 'Cuartos 1')}
+                        ${transformarPartidoBracket(buscarFaseParcial('Cuartos 2'), 'Cuartos 2')}
+                        ${transformarPartidoBracket(buscarFaseParcial('Cuartos 3'), 'Cuartos 3')}
+                        ${transformarPartidoBracket(buscarFaseParcial('Cuartos 4'), 'Cuartos 4')}
                     </div>`;
             }
+
+            // 2. Columna de Semifinales (si existen)
+            if (tieneSemifinales) {
+                const semisFiltradas = fasesValidas.filter(f => normalizarTexto(f[0]).includes('semifinal'));
+                htmlAcumulado += `
+                    <div class="bracket-column">
+                        ${transformarPartidoBracket(semisFiltradas[0], 'Semifinal 1')}
+                        ${transformarPartidoBracket(semisFiltradas[1], 'Semifinal 2')}
+                    </div>`;
+            }
+
+            // 3. Columna de Gran Final (si existe)
+            if (tieneFinal) {
+                htmlAcumulado += `
+                    <div class="bracket-column final-col">
+                        ${transformarPartidoBracket(buscarFaseParcial('Final'), '🏆 GRAN FINAL')}
+                    </div>`;
+            }
+
+            container.innerHTML = htmlAcumulado || `<div style="color:white;text-align:center;padding:40px;width:100%;">⏸️ No hay eliminatorias programadas aún.</div>`;
         }
 
         function ver(s) {
