@@ -154,7 +154,6 @@
             overlay.style.display = isOpen ? 'block' : 'none';
         }
 
-        //IDs actualizados de tus hojas de cálculo
         const TORNEOS = {
             masculino: '11JNeF_bSmgVw-UjmW2QIgzKK9EVLufY6hIGIVx2HLvg',
             femenino: '1dtRR1tM1BdcnAMAQLjxMC0v_xXL4vPYBazVUo_BCgcQ', 
@@ -172,12 +171,11 @@
         let intervaloCronometroLive = null;
         let intervaloAutoRefresco = null;
 
-        // Índices de columnas exactos basados en tus nuevas capturas
-        let colIdxGoles = 3;        // Columna D (Goles)
-        let colIdxPartidosGol = 4;  // Columna E (Partidos) en Goleadores
-        let colIdxAmarillas = 2;    // Columna C (Amarillas) en Tarjetas
-        let colIdxSancion = 3;      // Columna D (Sanción) en Tarjetas
-        let colIdxPartidosTar = 4;  // Columna E (Partidos Jugados) en Tarjetas
+        let colIdxGoles = 3;        
+        let colIdxPartidosGol = 4;  
+        let colIdxAmarillas = 2;    
+        let colIdxSancion = 3;      
+        let colIdxPartidosTar = 4;  
 
         function cambiarTorneo(nuevoTorneo) {
             localStorage.setItem('torneo_seleccionado', nuevoTorneo);
@@ -251,7 +249,6 @@
 
                 procesarYRenderClasificacionAutomatica();
                 
-                // Carga robusta de la pestaña Goleadores
                 const resG = await consultarGoogleSheet('Goleadores');
                 if (resG && resG.rows && resG.rows.length > 0) {
                     listaGoleadoresCache = resG.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
@@ -260,7 +257,6 @@
                     listaGoleadoresCache = [];
                 }
                 
-                // Carga robusta de la pestaña Tarjetas (Sanciones)
                 const resS = await consultarGoogleSheet('Tarjetas'); 
                 if (resS && resS.rows && resS.rows.length > 0) {
                     listaTarjetasCache = resS.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
@@ -279,7 +275,7 @@
             } catch (e) { console.error("Error global en cargarTodo:", e); }
         }
 
-        // Filtrado optimizado: Muestra el TOP 5 cuando no hay búsqueda activa
+        // TOP 5 de goleadores por defecto
         function filtrarGoleadores(query) {
             const container = document.getElementById("body-gol"); if (!container) return;
             const q = normalizarTexto(query);
@@ -293,7 +289,7 @@
             }).join('');
         }
 
-        // Lógica precisa para sanciones: 1 es Sancionado, 0 u otros es OK
+        // CORREGIDO: TOP 5 de Sanciones por defecto
         function filtrarTarjetas(query) {
             const container = document.getElementById("body-tar"); if (!container) return;
             const q = normalizarTexto(query);
@@ -310,11 +306,11 @@
 
             listaTarjetasFormateada.sort((a, b) => b.amarillas - a.amarillas);
 
-            const filtrados = q === '' ? listaTarjetasFormateada : listaTarjetasFormateada.filter(f => normalizarTexto(f.nombre).includes(q));
+            // Si está vacío, solo muestra los mejores 5 amonestados
+            const filtrados = q === '' ? listaTarjetasFormateada.slice(0, 5) : listaTarjetasFormateada.filter(f => normalizarTexto(f.nombre).includes(q));
             
             container.innerHTML = filtrados.map(jugador => {
                 let s = jugador.sancion;
-                // Si es estrictamente '1', se le marca como sancionado. Si es '0' queda OK.
                 let estado = (s === '1') ? `<span class="badge-sancion">SANCIONADO</span>` : `<span class="badge-ok">OK</span>`;
                 
                 return `<tr><td><b>${formatearNombreConCapitan(jugador.nombre)}</b></td><td class="txt-club">${jugador.club}</td><td class="txt-centro pj-gris">${jugador.partidos}</td><td class="txt-centro"><span class="badge-amarilla">${jugador.amarillas}</span></td><td class="txt-derecha">${estado}</td></tr>`;
@@ -365,7 +361,7 @@
                     }
                     if (!estadisticas[visitante]) {
                         let g = mapaGrupos[normalizarTexto(visitante)] || 'GENERAL';
-                        estadisticas[visitante] = { nombre: visitante, grupo: g, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
+                        estadisticas[visitante] = { nombre: visitante, group: g, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dif: 0, pts: 0 };
                     }
 
                     const gL = parseInt(fila[3]);
@@ -533,29 +529,35 @@
             intervaloCronometroLive = setInterval(actualizarCuentaAtras, 1000);
         }
 
-        // Lógica de mapeo exacta para la estructura real de tus Playoffs (Local, Visitante, GolesL, GolesV)
         function transformarPartidoBracket(filaFase, titulo) {
             if (!filaFase) return `<div class="bracket-match"><div class="bracket-match-title">${titulo}</div><div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div><div class="bracket-team-row"><span class="bracket-name">—</span><span class="bracket-goals empty">-</span></div></div>`;
             
-            // Fila[1] = Local, Fila[4] = Visitante, Fila[2] = GolesL, Fila[3] = GolesV
             const local = filaFase[1], visitante = filaFase[4], gL = parseInt(filaFase[2]), gV = parseInt(filaFase[3]);
             return `<div class="bracket-match"><div class="bracket-match-title">${titulo}</div><div class="bracket-team-row ${gL>gV?'winner':''}"><span class="bracket-name">${local||'—'}</span><span class="bracket-goals ${isNaN(gL)?'empty':''}">${isNaN(gL)?'-':gL}</span></div><div class="bracket-team-row ${gV>gL?'winner':''}"><span class="bracket-name">${visitante||'—'}</span><span class="bracket-goals ${isNaN(gV)?'empty':''}">${isNaN(gV)?'-':gV}</span></div></div>`;
         }
 
+        // CORREGIDO: Buscador flexible para que reconozca "Semifinal" y "Final" de tu Excel
         function renderBracketAdaptado(res) {
             const container = document.getElementById('bracket-container'); if (!container) return;
             if (!res.rows || res.rows.length <= 1) return;
             const fasesValidas = res.rows.filter((fila, idx) => idx > 0 && fila && fila[0] && fila[0].toString().trim() !== '');
-            const buscarFase = (nombre) => fasesValidas.find(f => normalizarTexto(f[0]) === normalizarTexto(nombre));
+            
+            // Busca de manera parcial (ej. si pides 'Semifinal 1' pero tu celda solo dice 'Semifinal')
+            const buscarFase = (nombre) => {
+                return fasesValidas.find(f => {
+                    let txtCelda = normalizarTexto(f[0]);
+                    let txtBuscado = normalizarTexto(nombre);
+                    return txtCelda.includes(txtBuscado) || txtBuscado.includes(txtCelda);
+                });
+            };
 
             if (torneoActual === 'femenino') {
                 container.innerHTML = `<div class="bracket-column final-col">${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}</div>`;
             } else if (torneoActual === 'mixto') {
-                // Renderizado completo para Mixto: Semifinales y Gran Final
                 container.innerHTML = `
                     <div class="bracket-column">
-                        ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}
-                        ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}
+                        ${transformarPartidoBracket(fasesValidas.filter(f => normalizarTexto(f[0]).includes('semifinal'))[0], 'Semifinal 1')}
+                        ${transformarPartidoBracket(fasesValidas.filter(f => normalizarTexto(f[0]).includes('semifinal'))[1], 'Semifinal 2')}
                     </div>
                     <div class="bracket-column final-col">
                         ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
@@ -569,8 +571,8 @@
                         ${transformarPartidoBracket(buscarFase('Cuartos 4'), 'Cuartos 4')}
                     </div>
                     <div class="bracket-column">
-                        ${transformarPartidoBracket(buscarFase('Semifinal 1'), 'Semifinal 1')}
-                        ${transformarPartidoBracket(buscarFase('Semifinal 2'), 'Semifinal 2')}
+                        ${transformarPartidoBracket(fasesValidas.filter(f => normalizarTexto(f[0]).includes('semifinal'))[0], 'Semifinal 1')}
+                        ${transformarPartidoBracket(fasesValidas.filter(f => normalizarTexto(f[0]).includes('semifinal'))[1], 'Semifinal 2')}
                     </div>
                     <div class="bracket-column final-col">
                         ${transformarPartidoBracket(buscarFase('Final'), '🏆 GRAN FINAL')}
